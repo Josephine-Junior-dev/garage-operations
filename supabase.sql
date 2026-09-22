@@ -60,6 +60,7 @@ create table if not exists public.requisitions (
     requested_by text not null,
     vehicle_id uuid references public.vehicles(id) on delete set null,
     item_description text not null,
+    expense_type text not null default 'Materials',
     quantity numeric(12,2) not null default 1,
     unit_cost numeric(12,2) not null default 0,
     total_amount numeric(12,2) not null default 0,
@@ -97,6 +98,7 @@ alter table public.petty_cash enable row level security;
 alter table public.requisitions enable row level security;
 
 drop policy if exists "garage vehicles" on public.vehicles;
+
 create policy "garage vehicles"
 on public.vehicles
 for all
@@ -105,6 +107,7 @@ using (true)
 with check (true);
 
 drop policy if exists "garage expenses" on public.expenses;
+
 create policy "garage expenses"
 on public.expenses
 for all
@@ -113,6 +116,7 @@ using (true)
 with check (true);
 
 drop policy if exists "garage petty cash" on public.petty_cash;
+
 create policy "garage petty cash"
 on public.petty_cash
 for all
@@ -121,6 +125,7 @@ using (true)
 with check (true);
 
 drop policy if exists "garage requisitions" on public.requisitions;
+
 create policy "garage requisitions"
 on public.requisitions
 for all
