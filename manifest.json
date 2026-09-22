@@ -1,0 +1,9 @@
+{
+  "name":"Garage Operations Pro",
+  "short_name":"Garage Ops",
+  "start_url":".",
+  "display":"standalone",
+  "background_color":"#f4f6f8",
+  "theme_color":"#132238",
+  "description":"Shared garage vehicle, expense, petty cash and requisition management"
+}

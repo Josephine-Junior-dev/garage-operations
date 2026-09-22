@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#132238">
+<meta name="description" content="Garage Operations vehicle, expenses, petty cash and requisition management">
+<title>Garage Operations Pro</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="login" class="screen">
+  <div class="login-card">
+    <h1>Garage Operations</h1>
+    <p>Vehicle repair & expense management</p>
+    <form id="loginForm">
+      <input id="username" type="text" placeholder="Username" required>
+      <input id="password" type="password" placeholder="Password" required>
+      <button>Sign in</button>
+    </form>
+    <p id="loginMsg" class="msg"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <div><h1>Garage Operations Pro</h1><small>Vehicles • Expenses • Petty Cash • Requisitions</small></div>
+  <button id="logout" class="secondary">Sign out</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="dashboard">Dashboard</button>
+  <button class="tab" data-tab="vehicles">Vehicles</button>
+  <button class="tab" data-tab="petty">Petty Cash</button>
+  <button class="tab" data-tab="requisitions">Requisitions</button>
+  <button class="tab" data-tab="reports">Print / Share</button>
+</nav>
+
+<main>
+<section id="dashboard" class="tabpage active">
+  <section class="stats">
+    <div><span>Total Vehicles</span><b id="nVehicles">0</b></div>
+    <div><span>Under Repair</span><b id="nRepair">0</b></div>
+    <div><span>Storage</span><b id="nStorage">0</b></div>
+    <div><span>Total Expenses</span><b id="nExpenses">KSh 0</b></div>
+    <div><span>Petty Cash</span><b id="nPetty">KSh 0</b></div>
+    <div><span>Outstanding</span><b id="nOutstanding">KSh 0</b></div>
+  </section>
+  <section class="panel">
+    <div class="head"><h2>Quick actions</h2></div>
+    <div class="quick">
+      <button id="quickVehicle">+ Add Vehicle</button>
+      <button id="quickExpense">+ Add Vehicle Expense</button>
+      <button id="quickPetty">+ Petty Cash</button>
+      <button id="quickReq">+ Requisition</button>
+      <button class="secondary" id="quickPrint">Print Summary</button>
+    </div>
+  </section>
+</section>
+
+<section id="vehicles" class="tabpage">
+  <section class="panel">
+    <div class="head"><h2>Vehicles</h2><button id="addVehicle">+ Add Vehicle</button></div>
+    <div class="filters">
+      <input id="search" placeholder="Search registration or customer">
+      <select id="filter">
+        <option value="">All statuses</option><option>Under Repair</option><option>Storage</option><option>Completed</option><option>Released</option>
+      </select>
+    </div>
+    <div id="list"></div>
+  </section>
+</section>
+
+<section id="petty" class="tabpage">
+  <section class="panel">
+    <div class="head"><h2>Petty Cash</h2><button id="addPetty">+ Add Petty Cash</button></div>
+    <div id="pettyList"></div>
+  </section>
+</section>
+
+<section id="requisitions" class="tabpage">
+  <section class="panel">
+    <div class="head"><h2>Requisitions</h2><button id="addReq">+ New Requisition</button></div>
+    <div id="reqList"></div>
+  </section>
+</section>
+
+<section id="reports" class="tabpage">
+  <section class="panel">
+    <div class="head"><h2>Print & Share</h2></div>
+    <div class="report-grid">
+      <button onclick="printSummary()">Print Garage Summary</button>
+      <button onclick="printVehicles()">Print Vehicle List</button>
+      <button onclick="printExpenses()">Print All Vehicle Expenses</button>
+      <button onclick="printPetty()">Print Petty Cash</button>
+      <button onclick="printRequisitions()">Print Requisitions</button>
+      <button onclick="shareGarage()">Share Garage Link</button>
+      <button onclick="shareSummary()">Share Summary</button>
+    </div>
+    <p class="muted">On Android, Share uses the phone's normal sharing menu. Printing opens the browser print dialog, where you can choose a printer or Save as PDF.</p>
+  </section>
+</section>
+</main>
+</div>
+
+<!-- Vehicle -->
+<div id="vehicleModal" class="modal hidden"><div class="card">
+  <div class="head"><h2 id="vTitle">Add Vehicle</h2><button class="x" data-close="vehicleModal">×</button></div>
+  <form id="vehicleForm">
+    <input type="hidden" id="vid">
+    <label>Registration<input id="reg" required></label>
+    <label>Customer<input id="customer" required></label>
+    <div class="two">
+      <label>Date received<input id="date_in" type="date" required></label>
+      <label>Job type<select id="job_type"><option>Repair</option><option>Storage</option></select></label>
+    </div>
+    <label>Status<select id="status"><option>Under Repair</option><option>Storage</option><option>Completed</option><option>Released</option></select></label>
+    <div id="storageFields" class="storage-box hidden">
+      <h3>Storage / Release Details</h3>
+      <div class="two">
+        <label>Date out<input id="date_out" type="date"></label>
+        <label>Released to<input id="released_to" placeholder="Name of person receiving vehicle"></label>
+      </div>
+      <label>Contact of person released to<input id="released_contact" type="tel" placeholder="Phone number"></label>
+      <p class="muted">For vehicles in storage, leave Date out blank until the vehicle is released.</p>
+    </div>
+    <label>Description<textarea id="description" rows="3"></textarea></label>
+    <div class="two">
+      <label>Charge-out<input id="billed" type="number" min="0" value="0"></label>
+      <label>Payment received<input id="paid" type="number" min="0" value="0"></label>
+    </div>
+    <div class="actions"><button type="button" class="secondary" data-close="vehicleModal">Cancel</button><button>Save Vehicle</button></div>
+  </form>
+</div></div>
+
+<!-- Expense -->
+<div id="expenseModal" class="modal hidden"><div class="card">
+  <div class="head"><h2>Add Vehicle Expense</h2><button class="x" data-close="expenseModal">×</button></div>
+  <form id="expenseForm">
+    <label>Vehicle<select id="evidSelect" required></select></label>
+    <input type="hidden" id="evid">
+    <label>Date<input id="edate" type="date" required></label>
+    <label>Description<input id="edesc" required placeholder="e.g. Windscreen, filler, service parts"></label>
+    <label>Category<select id="ecat"><option>Parts</option><option>Labour</option><option>Transport</option><option>Materials</option><option>Service</option><option>Other</option></select></label>
+    <label>Amount (KSh)<input id="eamount" type="number" min="0" required></label>
+    <div class="actions"><button type="button" class="secondary" data-close="expenseModal">Cancel</button><button>Save expense</button></div>
+  </form>
+</div></div>
+
+<!-- Petty cash -->
+<div id="pettyModal" class="modal hidden"><div class="card">
+  <div class="head"><h2>Petty Cash</h2><button class="x" data-close="pettyModal">×</button></div>
+  <form id="pettyForm">
+    <input type="hidden" id="pcid">
+    <div class="two"><label>Date<input id="pcdate" type="date" required></label><label>Amount (KSh)<input id="pcamount" type="number" min="0" required></label></div>
+    <label>Description<input id="pcdesc" required placeholder="e.g. bike, soap, newspaper"></label>
+    <div class="two"><label>Paid to / By<input id="pcperson"></label><label>Category<select id="pccat"><option>Transport</option><option>Materials</option><option>Food</option><option>Labour</option><option>Other</option></select></label></div>
+    <label>Reference / Notes<textarea id="pcnotes" rows="2"></textarea></label>
+    <div class="actions"><button type="button" class="secondary" data-close="pettyModal">Cancel</button><button>Save petty cash</button></div>
+  </form>
+</div></div>
+
+<!-- Requisition -->
+<div id="reqModal" class="modal hidden"><div class="card">
+  <div class="head"><h2 id="reqTitle">New Requisition</h2><button class="x" data-close="reqModal">×</button></div>
+  <form id="reqForm">
+    <input type="hidden" id="reqid">
+    <div class="two"><label>Requisition No.<input id="reqno" required placeholder="REQ-001"></label><label>Date<input id="reqdate" type="date" required></label></div>
+    <label>Requested by<input id="reqby" required></label>
+    <div class="two"><label>Vehicle<select id="reqvehicle"><option value="">General / No vehicle</option></select></label><label>Status<select id="reqstatus"><option>Pending</option><option>Approved</option><option>Purchased</option><option>Rejected</option></select></label></div>
+    <label>Item / Description<input id="reqitem" required placeholder="e.g. 5 litres thinner"></label>
+    <div class="three"><label>Quantity<input id="reqqty" type="number" min="0" step="0.01" value="1"></label><label>Unit Cost<input id="requnit" type="number" min="0" step="0.01" value="0"></label><label>Total<input id="reqtotal" type="number" min="0" step="0.01" value="0"></label></div>
+    <label>Notes<textarea id="reqnotes" rows="2"></textarea></label>
+    <div class="actions"><button type="button" class="secondary" data-close="reqModal">Cancel</button><button>Save requisition</button></div>
+  </form>
+</div></div>
+
+<div id="toast"></div>
+<script type="module" src="app.js"></script>
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
+</body>
+</html>
