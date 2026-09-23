@@ -1,7 +1,4 @@
-import {
-  createClient
-} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 // ======================================================
 // SUPABASE
@@ -13,47 +10,14 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
   "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
 
-const supabase =
-  createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
 
 
 // ======================================================
-// HELPERS
-// ======================================================
-
-const $ = id => document.getElementById(id);
-
-const num = value => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-};
-
-const money = value => {
-  return "KSh " + num(value).toLocaleString("en-KE", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  });
-};
-
-const today = () => {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-};
-
-const esc = value => {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-};
-
-
-// ======================================================
-// APPLICATION STATE
+// STATE
 // ======================================================
 
 let vehicles = [];
@@ -63,53 +27,60 @@ let requisitions = [];
 
 
 // ======================================================
-// DEMO LOGIN
+// HELPERS
 // ======================================================
 
-const USERS = {
-  Josephine: "1234",
-  Boss: "1234",
-  Staff: "1234"
-};
+const $ = id => document.getElementById(id);
 
-
-// ======================================================
-// TOAST
-// ======================================================
-
-function toast(message) {
-  const box = $("toast");
-
-  if (!box) {
-    alert(message);
-    return;
-  }
-
-  box.textContent = message;
-  box.style.display = "block";
-
-  clearTimeout(window.__toastTimer);
-
-  window.__toastTimer = setTimeout(() => {
-    box.style.display = "none";
-  }, 2800);
+function today() {
+  return new Date().toISOString().slice(0, 10);
 }
 
+function money(value) {
+  return "KSh " + Number(value || 0).toLocaleString(
+    "en-KE",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }
+  );
+}
 
-// ======================================================
-// SUPABASE ERROR HANDLER
-// ======================================================
+function num(value) {
+  return Number(value || 0);
+}
 
-function showDbError(action, error) {
+function esc(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-  console.error(action, error);
+function toast(message) {
+  const el = $("toast");
+
+  el.textContent = message;
+  el.style.display = "block";
+
+  clearTimeout(window.toastTimer);
+
+  window.toastTimer = setTimeout(() => {
+    el.style.display = "none";
+  }, 3000);
+}
+
+function showError(error) {
+  console.error(error);
 
   const message =
     error?.message ||
-    error?.details ||
-    "Unknown database error";
+    error?.error_description ||
+    "An unexpected error occurred.";
 
-  toast(`${action}: ${message}`);
+  toast(message);
 }
 
 
@@ -117,97 +88,132 @@ function showDbError(action, error) {
 // LOGIN
 // ======================================================
 
-$("loginForm")?.addEventListener("submit", async event => {
+const LOGIN_USERS = {
+  Josephine: "1234",
+  Boss: "1234",
+  Staff: "1234"
+};
+
+function currentUser() {
+  return localStorage.getItem("garage_logged_user");
+}
+
+function showApp() {
+  $("login").classList.add("hidden");
+  $("app").classList.remove("hidden");
+
+  $("loggedUser").textContent =
+    "Logged in as: " + (currentUser() || "");
+
+  loadAll();
+}
+
+function showLogin() {
+  $("app").classList.add("hidden");
+  $("login").classList.remove("hidden");
+}
+
+$("loginForm").addEventListener("submit", event => {
 
   event.preventDefault();
 
   const username = $("username").value.trim();
   const password = $("password").value;
 
-  const msg = $("loginMsg");
+  if (
+    LOGIN_USERS[username] &&
+    LOGIN_USERS[username] === password
+  ) {
 
-  if (!USERS[username] || USERS[username] !== password) {
-    msg.textContent = "Invalid username or password.";
-    return;
+    localStorage.setItem(
+      "garage_logged_user",
+      username
+    );
+
+    $("loginMsg").textContent = "";
+
+    showApp();
+
+  } else {
+
+    $("loginMsg").textContent =
+      "Invalid username or password.";
+
+    $("loginMsg").style.color = "#dc2626";
   }
-
-  localStorage.setItem(
-    "garage_logged_user",
-    username
-  );
-
-  msg.textContent = "";
-
-  $("login").classList.add("hidden");
-  $("app").classList.remove("hidden");
-
-  await load();
 });
 
 
-$("logout")?.addEventListener("click", () => {
+$("logout").addEventListener("click", () => {
 
   localStorage.removeItem("garage_logged_user");
 
-  $("app").classList.add("hidden");
-  $("login").classList.remove("hidden");
-
-  $("username").value = "";
-  $("password").value = "";
+  showLogin();
 });
 
 
-// ======================================================
-// STARTUP LOGIN
-// ======================================================
-
-const loggedUser =
-  localStorage.getItem("garage_logged_user");
-
-if (loggedUser && USERS[loggedUser]) {
-
-  $("login").classList.add("hidden");
-  $("app").classList.remove("hidden");
-
+if (currentUser()) {
+  showApp();
 }
 
 
 // ======================================================
-// TABS
+// NAVIGATION
 // ======================================================
 
-document.querySelectorAll(".tab").forEach(tab => {
+function openTab(tabName) {
 
-  tab.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.tab === tabName
+    );
+  });
 
-    const target = tab.dataset.tab;
+  document.querySelectorAll(".tabpage").forEach(page => {
+    page.classList.add("hidden");
+  });
 
-    document.querySelectorAll(".tab")
-      .forEach(x => x.classList.remove("active"));
+  const page = $(tabName);
 
-    document.querySelectorAll(".tabpage")
-      .forEach(x => x.classList.add("hidden"));
+  if (page) {
+    page.classList.remove("hidden");
+  }
 
-    tab.classList.add("active");
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
 
-    const page = $(target);
 
-    if (page) {
-      page.classList.remove("hidden");
-    }
+document.querySelectorAll(".tab").forEach(button => {
 
+  button.addEventListener("click", () => {
+    openTab(button.dataset.tab);
+  });
+
+});
+
+
+document.querySelectorAll("[data-go]").forEach(button => {
+
+  button.addEventListener("click", () => {
+    openTab(button.dataset.go);
   });
 
 });
 
 
 // ======================================================
-// LOAD EVERYTHING
+// LOAD ALL DATABASE DATA
 // ======================================================
 
-async function load() {
+async function loadAll() {
 
   try {
+
+    toast("Loading garage data...");
 
     const [
       vehicleResult,
@@ -219,45 +225,41 @@ async function load() {
       supabase
         .from("vehicles")
         .select("*")
-        .order("created_at", {
-          ascending: false
-        }),
+        .order("created_at", { ascending: false }),
 
       supabase
         .from("expenses")
         .select("*")
-        .order("expense_date", {
-          ascending: false
-        }),
+        .order("expense_date", { ascending: false }),
 
       supabase
         .from("petty_cash")
         .select("*")
-        .order("cash_date", {
-          ascending: false
-        }),
+        .order("cash_date", { ascending: false }),
 
       supabase
         .from("requisitions")
         .select("*")
-        .order("req_date", {
-          ascending: false
-        })
+        .order("req_date", { ascending: false })
 
     ]);
 
 
-    if (vehicleResult.error)
+    if (vehicleResult.error) {
       throw vehicleResult.error;
+    }
 
-    if (expenseResult.error)
+    if (expenseResult.error) {
       throw expenseResult.error;
+    }
 
-    if (pettyResult.error)
+    if (pettyResult.error) {
       throw pettyResult.error;
+    }
 
-    if (requisitionResult.error)
+    if (requisitionResult.error) {
       throw requisitionResult.error;
+    }
 
 
     vehicles = vehicleResult.data || [];
@@ -266,17 +268,13 @@ async function load() {
     requisitions = requisitionResult.data || [];
 
 
-    renderAll();
+    renderEverything();
 
   } catch (error) {
 
-    showDbError(
-      "Unable to load garage data",
-      error
-    );
+    showError(error);
 
   }
-
 }
 
 
@@ -284,14 +282,13 @@ async function load() {
 // RENDER EVERYTHING
 // ======================================================
 
-function renderAll() {
+function renderEverything() {
 
   renderDashboard();
   renderVehicles();
+  renderExpenses();
   renderPettyCash();
   renderRequisitions();
-
-  fillVehicleSelectors();
 
 }
 
@@ -302,48 +299,68 @@ function renderAll() {
 
 function renderDashboard() {
 
-  const totalVehicles = vehicles.length;
-
-  const repair = vehicles.filter(
-    v => v.status === "Under Repair"
-  ).length;
-
-  const storage = vehicles.filter(
-    v => v.status === "Storage"
-  ).length;
-
   const totalExpenses =
     expenses.reduce(
-      (sum, x) => sum + num(x.amount),
-      0
-    );
-
-  const totalPetty =
-    pettyCash.reduce(
-      (sum, x) => sum + num(x.amount),
-      0
-    );
-
-  const outstanding =
-    vehicles.reduce(
-      (sum, v) =>
-        sum +
-        Math.max(
-          0,
-          num(v.billed) - num(v.paid)
+      (sum, item) =>
+        sum + num(
+          item.amount ??
+          item.total_amount
         ),
       0
     );
 
 
+  const totalPetty =
+    pettyCash.reduce(
+      (sum, item) =>
+        sum + num(
+          item.amount
+        ),
+      0
+    );
+
+
+  const repairCount =
+    vehicles.filter(vehicle =>
+      String(vehicle.status || "")
+        .toLowerCase() === "repair"
+    ).length;
+
+
+  const storageCount =
+    vehicles.filter(vehicle =>
+      String(vehicle.status || "")
+        .toLowerCase() === "storage"
+    ).length;
+
+
+  const outstanding =
+    vehicles.reduce(
+      (sum, vehicle) => {
+
+        const billed =
+          num(vehicle.billed);
+
+        const paid =
+          num(vehicle.paid);
+
+        return sum + Math.max(
+          0,
+          billed - paid
+        );
+      },
+      0
+    );
+
+
   $("nVehicles").textContent =
-    totalVehicles;
+    vehicles.length;
 
   $("nRepair").textContent =
-    repair;
+    repairCount;
 
   $("nStorage").textContent =
-    storage;
+    storageCount;
 
   $("nExpenses").textContent =
     money(totalExpenses);
@@ -353,23 +370,50 @@ function renderDashboard() {
 
   $("nOutstanding").textContent =
     money(outstanding);
-
 }
 
 
 // ======================================================
-// VEHICLE SEARCH
+// VEHICLE HELPERS
 // ======================================================
 
-$("search")?.addEventListener(
-  "input",
-  renderVehicles
-);
+function vehicleName(id) {
 
-$("filter")?.addEventListener(
-  "change",
-  renderVehicles
-);
+  const vehicle =
+    vehicles.find(v => v.id === id);
+
+  if (!vehicle) {
+    return "No vehicle";
+  }
+
+  return vehicle.registration ||
+         vehicle.reg_no ||
+         vehicle.reg ||
+         "Vehicle";
+}
+
+
+function vehicleExpenses(vehicleId) {
+
+  return expenses.filter(
+    expense =>
+      expense.vehicle_id === vehicleId
+  );
+}
+
+
+function vehicleExpenseTotal(vehicleId) {
+
+  return vehicleExpenses(vehicleId)
+    .reduce(
+      (sum, expense) =>
+        sum + num(
+          expense.amount ??
+          expense.total_amount
+        ),
+      0
+    );
+}
 
 
 // ======================================================
@@ -380,44 +424,61 @@ function renderVehicles() {
 
   const list = $("list");
 
-  if (!list) return;
-
   const search =
-    ($("search")?.value || "")
-      .trim()
-      .toLowerCase();
+    $("search").value.trim().toLowerCase();
 
   const filter =
-    $("filter")?.value || "";
+    $("filter").value;
 
 
-  const filtered =
-    vehicles.filter(v => {
+  let rows = [...vehicles];
 
-      const matchesSearch =
-        !search ||
-        String(v.reg || "")
-          .toLowerCase()
-          .includes(search) ||
-        String(v.customer || "")
-          .toLowerCase()
-          .includes(search);
 
-      const matchesStatus =
-        !filter ||
-        v.status === filter;
+  if (search) {
 
-      return matchesSearch &&
-             matchesStatus;
+    rows = rows.filter(vehicle => {
+
+      const text = [
+        vehicle.registration,
+        vehicle.reg_no,
+        vehicle.reg,
+        vehicle.customer,
+        vehicle.job_type,
+        vehicle.description
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return text.includes(search);
+
+    });
+  }
+
+
+  if (filter) {
+
+    rows = rows.filter(vehicle => {
+
+      const status =
+        String(vehicle.status || "")
+          .toLowerCase();
+
+      return status === filter;
 
     });
 
+  }
 
-  if (!filtered.length) {
+
+  if (!rows.length) {
 
     list.innerHTML = `
-      <div class="empty">
-        No vehicles found.
+      <div class="card">
+        <strong>No vehicles found.</strong>
+        <p class="muted">
+          Add a vehicle using the button above.
+        </p>
       </div>
     `;
 
@@ -425,356 +486,140 @@ function renderVehicles() {
   }
 
 
-  list.innerHTML =
-    filtered.map(vehicleCard).join("");
+  list.innerHTML = rows.map(vehicle => {
 
-}
+    const reg =
+      vehicle.registration ||
+      vehicle.reg_no ||
+      vehicle.reg ||
+      "";
 
+    const expenseTotal =
+      vehicleExpenseTotal(vehicle.id);
 
-// ======================================================
-// VEHICLE CARD
-// ======================================================
+    const billed =
+      num(vehicle.billed);
 
-function vehicleCard(v) {
+    const paid =
+      num(vehicle.paid);
 
-  const vehicleExpenses =
-    expenses.filter(
-      e => e.vehicle_id === v.id
-    );
-
-
-  const totalExpense =
-    vehicleExpenses.reduce(
-      (sum, e) =>
-        sum + num(e.amount),
-      0
-    );
+    const balance =
+      Math.max(0, billed - paid);
 
 
-  const parts =
-    vehicleExpenses
-      .filter(e => e.category === "Parts")
-      .reduce(
-        (sum, e) => sum + num(e.amount),
-        0
-      );
+    return `
+      <div class="card">
 
+        <h3>${esc(reg)}</h3>
 
-  const materials =
-    vehicleExpenses
-      .filter(e => e.category === "Materials")
-      .reduce(
-        (sum, e) => sum + num(e.amount),
-        0
-      );
+        <div class="muted">
+          Customer: ${esc(vehicle.customer || "-")}
+        </div>
 
+        <div class="muted">
+          Job: ${esc(vehicle.job_type || "-")}
+        </div>
 
-  const labour =
-    vehicleExpenses
-      .filter(e => e.category === "Labour")
-      .reduce(
-        (sum, e) => sum + num(e.amount),
-        0
-      );
+        <div class="muted">
+          Status: ${esc(vehicle.status || "-")}
+        </div>
 
-
-  const billed = num(v.billed);
-  const paid = num(v.paid);
-
-  const balance =
-    Math.max(0, billed - paid);
-
-
-  const expenseRows =
-    vehicleExpenses.length
-      ? vehicleExpenses.map(e => `
-        <tr>
-          <td>${esc(e.expense_date)}</td>
-          <td>${esc(e.description)}</td>
-          <td>${esc(e.category)}</td>
-          <td>${money(e.amount)}</td>
-          <td>
-            <button
-              class="danger"
-              onclick="deleteExpense('${esc(e.id)}')">
-              Delete
-            </button>
-          </td>
-        </tr>
-      `).join("")
-      : `
-        <tr>
-          <td colspan="5">
-            No expenses recorded.
-          </td>
-        </tr>
-      `;
-
-
-  return `
-    <div class="vehicle-card">
-
-      <div class="vehicle-top">
+        <hr>
 
         <div>
-          <h3>${esc(v.reg)}</h3>
-          <div>${esc(v.customer)}</div>
+          <strong>Vehicle Expenses:</strong>
+          <span class="money">${money(expenseTotal)}</span>
         </div>
 
         <div>
-          <span class="badge">
-            ${esc(v.status || "Under Repair")}
-          </span>
-        </div>
-
-      </div>
-
-
-      <div class="vehicle-info">
-
-        <div>
-          <small>Date received</small>
-          ${esc(v.date_in || "")}
+          Billed:
+          <strong>${money(billed)}</strong>
         </div>
 
         <div>
-          <small>Job type</small>
-          ${esc(v.job_type || "")}
+          Paid:
+          <strong>${money(paid)}</strong>
         </div>
 
         <div>
-          <small>Charge-out</small>
-          <span class="money">
-            ${money(billed)}
-          </span>
-        </div>
-
-        <div>
-          <small>Balance</small>
-          <span class="money">
+          Balance:
+          <strong class="${balance > 0 ? "negative" : "positive"}">
             ${money(balance)}
-          </span>
+          </strong>
+        </div>
+
+        <div class="actions">
+
+          <button
+            class="btn"
+            onclick="openExpenseForVehicle('${vehicle.id}')">
+            + Expense
+          </button>
+
+          <button
+            class="btn warning"
+            onclick="editVehicle('${vehicle.id}')">
+            Edit
+          </button>
+
+          <button
+            class="btn secondary"
+            onclick="printVehicle('${vehicle.id}')">
+            Print
+          </button>
+
+          <button
+            class="btn danger"
+            onclick="deleteVehicle('${vehicle.id}')">
+            Delete
+          </button>
+
         </div>
 
       </div>
+    `;
 
-
-      ${
-        v.description
-          ? `
-            <p>
-              <strong>Description:</strong>
-              ${esc(v.description)}
-            </p>
-          `
-          : ""
-      }
-
-
-      ${
-        v.status === "Storage" ||
-        v.status === "Released"
-          ? `
-            <div class="storage-box">
-
-              <strong>
-                Storage / Release Details
-              </strong>
-
-              <p>
-                Date out:
-                ${esc(v.date_out || "Still in storage")}
-              </p>
-
-              <p>
-                Released to:
-                ${esc(v.released_to || "-")}
-              </p>
-
-              <p>
-                Contact:
-                ${esc(v.released_contact || "-")}
-              </p>
-
-            </div>
-          `
-          : ""
-      }
-
-
-      <div class="vehicle-info">
-
-        <div>
-          <small>Total expenses</small>
-          <span class="money">
-            ${money(totalExpense)}
-          </span>
-        </div>
-
-        <div>
-          <small>Parts</small>
-          ${money(parts)}
-        </div>
-
-        <div>
-          <small>Materials</small>
-          ${money(materials)}
-        </div>
-
-        <div>
-          <small>Labour</small>
-          ${money(labour)}
-        </div>
-
-      </div>
-
-
-      <div class="actions">
-
-        <button
-          onclick="expense('${esc(v.id)}')">
-          + Expense
-        </button>
-
-        <button
-          class="secondary"
-          onclick="edit('${esc(v.id)}')">
-          Edit
-        </button>
-
-        <button
-          class="secondary"
-          onclick="printVehicle('${esc(v.id)}')">
-          Print
-        </button>
-
-        <button
-          class="secondary"
-          onclick="shareVehicle('${esc(v.id)}')">
-          Share
-        </button>
-
-        <button
-          class="danger"
-          onclick="removeVehicle('${esc(v.id)}')">
-          Delete
-        </button>
-
-      </div>
-
-
-      <details style="margin-top:12px">
-
-        <summary>
-          View vehicle expenses
-          (${vehicleExpenses.length})
-        </summary>
-
-        <div class="table-wrap">
-
-          <table>
-
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Amount</th>
-                <th></th>
-              </tr>
-            </thead>
-
-            <tbody>
-              ${expenseRows}
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </details>
-
-    </div>
-  `;
-
+  }).join("");
 }
 
 
-// ======================================================
-// VEHICLE SELECTORS
-// ======================================================
+$("search").addEventListener(
+  "input",
+  renderVehicles
+);
 
-function fillVehicleSelectors() {
-
-  const expenseSelect =
-    $("evidSelect");
-
-  const reqSelect =
-    $("reqvehicle");
-
-
-  if (expenseSelect) {
-
-    expenseSelect.innerHTML =
-      `<option value="">Select vehicle</option>` +
-      vehicles.map(v => `
-        <option value="${esc(v.id)}">
-          ${esc(v.reg)} - ${esc(v.customer)}
-        </option>
-      `).join("");
-
-  }
-
-
-  if (reqSelect) {
-
-    reqSelect.innerHTML =
-      `<option value="">
-        General / No vehicle
-      </option>` +
-
-      vehicles.map(v => `
-        <option value="${esc(v.id)}">
-          ${esc(v.reg)} - ${esc(v.customer)}
-        </option>
-      `).join("");
-
-  }
-
-}
+$("filter").addEventListener(
+  "change",
+  renderVehicles
+);
 
 
 // ======================================================
 // VEHICLE MODAL
 // ======================================================
 
-$("addVehicle")?.addEventListener(
-  "click",
-  openVehicle
-);
-
-$("quickVehicle")?.addEventListener(
-  "click",
-  openVehicle
-);
-
-
-function openVehicle() {
+function clearVehicleForm() {
 
   $("vehicleForm").reset();
 
   $("vid").value = "";
 
+  $("date_in").value = today();
+
+  $("status").value = "repair";
+
+  $("billed").value = "0";
+
+  $("paid").value = "0";
+
   $("vTitle").textContent =
     "Add Vehicle";
+}
 
-  $("date_in").value =
-    today();
 
-  $("billed").value = 0;
-  $("paid").value = 0;
+function openVehicle() {
 
-  updateStorageFields();
+  clearVehicleForm();
 
   $("vehicleModal")
     .classList.remove("hidden");
@@ -782,177 +627,162 @@ function openVehicle() {
 }
 
 
-// ======================================================
-// EDIT VEHICLE
-// ======================================================
+$("addVehicle").addEventListener(
+  "click",
+  openVehicle
+);
 
-window.edit = function(id) {
+$("quickVehicle").addEventListener(
+  "click",
+  () => {
 
-  const v =
-    vehicles.find(x => x.id === id);
+    openTab("vehicles");
 
-  if (!v) return;
+    openVehicle();
+
+  }
+);
+
+
+window.editVehicle = function(id) {
+
+  const vehicle =
+    vehicles.find(v => v.id === id);
+
+  if (!vehicle) return;
 
 
   $("vid").value =
-    v.id;
+    vehicle.id;
 
   $("reg").value =
-    v.reg || "";
+    vehicle.registration ||
+    vehicle.reg_no ||
+    vehicle.reg ||
+    "";
 
   $("customer").value =
-    v.customer || "";
+    vehicle.customer || "";
 
   $("date_in").value =
-    v.date_in || today();
+    vehicle.date_in || "";
 
   $("job_type").value =
-    v.job_type || "Repair";
+    vehicle.job_type || "";
 
   $("status").value =
-    v.status || "Under Repair";
+    vehicle.status || "repair";
 
   $("date_out").value =
-    v.date_out || "";
+    vehicle.date_out || "";
 
   $("released_to").value =
-    v.released_to || "";
+    vehicle.released_to || "";
 
   $("released_contact").value =
-    v.released_contact || "";
+    vehicle.released_contact || "";
 
   $("description").value =
-    v.description || "";
+    vehicle.description || "";
 
   $("billed").value =
-    num(v.billed);
+    vehicle.billed || 0;
 
   $("paid").value =
-    num(v.paid);
+    vehicle.paid || 0;
 
   $("vTitle").textContent =
     "Edit Vehicle";
 
-  updateStorageFields();
-
   $("vehicleModal")
     .classList.remove("hidden");
-
 };
 
 
-// ======================================================
-// STORAGE FIELDS
-// ======================================================
-
-$("status")?.addEventListener(
-  "change",
-  updateStorageFields
-);
-
-
-function updateStorageFields() {
-
-  const status =
-    $("status")?.value;
-
-  if (
-    status === "Storage" ||
-    status === "Released"
-  ) {
-
-    $("storageFields")
-      ?.classList.remove("hidden");
-
-  } else {
-
-    $("storageFields")
-      ?.classList.add("hidden");
-
-  }
-
-}
-
-
-// ======================================================
-// SAVE VEHICLE
-// ======================================================
-
-$("vehicleForm")?.addEventListener(
+$("vehicleForm").addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
-    const id =
-      $("vid").value.trim();
-
-
-    const record = {
-
-      reg:
-        $("reg").value.trim(),
-
-      customer:
-        $("customer").value.trim(),
-
-      date_in:
-        $("date_in").value,
-
-      job_type:
-        $("job_type").value,
-
-      status:
-        $("status").value,
-
-      date_out:
-        $("date_out").value || null,
-
-      released_to:
-        $("released_to").value.trim() || null,
-
-      released_contact:
-        $("released_contact").value.trim() || null,
-
-      description:
-        $("description").value.trim(),
-
-      billed:
-        num($("billed").value),
-
-      paid:
-        num($("paid").value)
-
-    };
-
-
     try {
+
+      const id =
+        $("vid").value.trim();
+
+
+      const data = {
+
+        registration:
+          $("reg").value.trim(),
+
+        customer:
+          $("customer").value.trim(),
+
+        date_in:
+          $("date_in").value || null,
+
+        job_type:
+          $("job_type").value.trim(),
+
+        status:
+          $("status").value,
+
+        date_out:
+          $("date_out").value || null,
+
+        released_to:
+          $("released_to").value.trim(),
+
+        released_contact:
+          $("released_contact").value.trim(),
+
+        description:
+          $("description").value.trim(),
+
+        billed:
+          num($("billed").value),
+
+        paid:
+          num($("paid").value)
+
+      };
+
+
+      if (!data.registration) {
+        toast("Vehicle registration is required.");
+        return;
+      }
+
 
       let result;
 
+
       if (id) {
 
-        result =
-          await supabase
-            .from("vehicles")
-            .update(record)
-            .eq("id", id);
+        // UPDATE
+        result = await supabase
+          .from("vehicles")
+          .update(data)
+          .eq("id", id);
 
       } else {
 
-        result =
-          await supabase
-            .from("vehicles")
-            .insert(record);
+        // INSERT
+        result = await supabase
+          .from("vehicles")
+          .insert(data);
 
       }
 
 
-      if (result.error)
+      if (result.error) {
         throw result.error;
+      }
 
 
-      closeModal("vehicleModal");
+      $("vehicleModal")
+        .classList.add("hidden");
 
       toast(
         id
@@ -960,14 +790,11 @@ $("vehicleForm")?.addEventListener(
           : "Vehicle added successfully."
       );
 
-      await load();
+      await loadAll();
 
     } catch (error) {
 
-      showDbError(
-        "Unable to save vehicle",
-        error
-      );
+      showError(error);
 
     }
 
@@ -979,38 +806,45 @@ $("vehicleForm")?.addEventListener(
 // DELETE VEHICLE
 // ======================================================
 
-window.removeVehicle = async function(id) {
+window.deleteVehicle = async function(id) {
 
-  const v =
-    vehicles.find(x => x.id === id);
+  const vehicle =
+    vehicles.find(v => v.id === id);
 
-  if (!v) return;
+  if (!vehicle) return;
 
 
-  if (
-    !confirm(
-      `Delete vehicle ${v.reg} and its vehicle expenses?`
-    )
-  ) {
+  const registration =
+    vehicle.registration ||
+    vehicle.reg_no ||
+    vehicle.reg ||
+    "vehicle";
+
+
+  if (!confirm(
+    `Delete ${registration}? This will also delete its expenses.`
+  )) {
     return;
   }
 
 
   try {
 
-    // Delete vehicle expenses first.
-    const expenseDelete =
+    // Delete vehicle expenses first
+    const expenseResult =
       await supabase
         .from("expenses")
         .delete()
         .eq("vehicle_id", id);
 
-    if (expenseDelete.error)
-      throw expenseDelete.error;
+
+    if (expenseResult.error) {
+      throw expenseResult.error;
+    }
 
 
-    // Remove vehicle link from requisitions.
-    const reqUpdate =
+    // Unlink requisitions
+    const reqResult =
       await supabase
         .from("requisitions")
         .update({
@@ -1018,137 +852,398 @@ window.removeVehicle = async function(id) {
         })
         .eq("vehicle_id", id);
 
-    if (reqUpdate.error)
-      throw reqUpdate.error;
+
+    if (reqResult.error) {
+      throw reqResult.error;
+    }
 
 
-    // Delete vehicle.
-    const vehicleDelete =
+    // Delete vehicle
+    const vehicleResult =
       await supabase
         .from("vehicles")
         .delete()
         .eq("id", id);
 
-    if (vehicleDelete.error)
-      throw vehicleDelete.error;
+
+    if (vehicleResult.error) {
+      throw vehicleResult.error;
+    }
 
 
-    toast(
-      "Vehicle deleted successfully."
-    );
+    toast("Vehicle deleted.");
 
-    await load();
+    await loadAll();
 
   } catch (error) {
 
-    showDbError(
-      "Unable to delete vehicle",
-      error
-    );
+    showError(error);
 
   }
-
 };
 
 
 // ======================================================
-// VEHICLE EXPENSE MODAL
+// EXPENSE VEHICLE SELECT
 // ======================================================
 
-$("quickExpense")?.addEventListener(
-  "click",
-  () => openExpense()
-);
+function populateVehicleSelect(
+  elementId,
+  allowEmpty = false
+) {
+
+  const select =
+    $(elementId);
+
+  if (!select) return;
 
 
-window.expense = function(vehicleId) {
-  openExpense(vehicleId);
-};
+  let html = "";
 
-
-function openExpense(vehicleId = "") {
-
-  $("expenseForm").reset();
-
-  $("edate").value =
-    today();
-
-  $("evid").value =
-    vehicleId || "";
-
-  fillVehicleSelectors();
-
-  if (vehicleId) {
-
-    $("evidSelect").value =
-      vehicleId;
-
+  if (allowEmpty) {
+    html += `
+      <option value="">
+        No vehicle
+      </option>
+    `;
   }
 
-  $("expenseModal")
-    .classList.remove("hidden");
 
+  html += vehicles.map(vehicle => {
+
+    const reg =
+      vehicle.registration ||
+      vehicle.reg_no ||
+      vehicle.reg ||
+      "Vehicle";
+
+
+    return `
+      <option value="${vehicle.id}">
+        ${esc(reg)}
+      </option>
+    `;
+
+  }).join("");
+
+
+  select.innerHTML = html;
 }
 
 
 // ======================================================
-// EXPENSE VEHICLE CHANGE
+// EXPENSE MODAL
 // ======================================================
 
-$("evidSelect")?.addEventListener(
-  "change",
+function clearExpenseForm() {
+
+  $("expenseForm").reset();
+
+  $("evid").value = "";
+
+  $("edate").value =
+    today();
+
+  $("ecat").value =
+    "Parts";
+
+  $("expenseTitle").textContent =
+    "Add Expense";
+
+  populateVehicleSelect(
+    "evidSelect"
+  );
+}
+
+
+function openExpense() {
+
+  clearExpenseForm();
+
+  $("expenseModal")
+    .classList.remove("hidden");
+}
+
+
+$("addExpense").addEventListener(
+  "click",
+  openExpense
+);
+
+
+$("quickExpense").addEventListener(
+  "click",
   () => {
 
-    $("evid").value =
-      $("evidSelect").value;
+    openTab("expenses");
+
+    openExpense();
 
   }
 );
+
+
+window.openExpenseForVehicle =
+  function(vehicleId) {
+
+    clearExpenseForm();
+
+    $("evidSelect").value =
+      vehicleId;
+
+    $("expenseModal")
+      .classList.remove("hidden");
+  };
+
+
+// ======================================================
+// RENDER EXPENSES
+// ======================================================
+
+function renderExpenses() {
+
+  const list =
+    $("expenseList");
+
+  if (!expenses.length) {
+
+    list.innerHTML = `
+      <div class="card">
+        <strong>No expenses recorded.</strong>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  list.innerHTML =
+    expenses.map(expense => {
+
+      const amount =
+        num(
+          expense.amount ??
+          expense.total_amount
+        );
+
+
+      return `
+        <div class="card">
+
+          <h3>
+            ${esc(
+              expense.description ||
+              expense.item_description ||
+              "Expense"
+            )}
+          </h3>
+
+          <div class="muted">
+            Vehicle:
+            ${esc(
+              vehicleName(
+                expense.vehicle_id
+              )
+            )}
+          </div>
+
+          <div class="muted">
+            Date:
+            ${esc(
+              expense.expense_date || "-"
+            )}
+          </div>
+
+          <div class="muted">
+            Category:
+            ${esc(
+              expense.category ||
+              expense.expense_type ||
+              "-"
+            )}
+          </div>
+
+          <p class="money">
+            ${money(amount)}
+          </p>
+
+          <div class="actions">
+
+            <button
+              class="btn warning"
+              onclick="editExpense('${expense.id}')">
+              Edit
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="deleteExpense('${expense.id}')">
+              Delete
+            </button>
+
+          </div>
+
+        </div>
+      `;
+
+    }).join("");
+}
 
 
 // ======================================================
 // SAVE EXPENSE
 // ======================================================
 
-$("expenseForm")?.addEventListener(
+$("expenseForm").addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
-    const vehicleId =
-      $("evidSelect").value ||
-      $("evid").value;
+    try {
+
+      const id =
+        $("evid").value.trim();
 
 
-    if (!vehicleId) {
+      const data = {
+
+        vehicle_id:
+          $("evidSelect").value || null,
+
+        expense_date:
+          $("edate").value || today(),
+
+        description:
+          $("edesc").value.trim(),
+
+        category:
+          $("ecat").value,
+
+        amount:
+          num($("eamount").value)
+
+      };
+
+
+      if (!data.description) {
+        toast("Expense description is required.");
+        return;
+      }
+
+
+      let result;
+
+
+      if (id) {
+
+        // UPDATE
+        result = await supabase
+          .from("expenses")
+          .update(data)
+          .eq("id", id);
+
+      } else {
+
+        // INSERT
+        result = await supabase
+          .from("expenses")
+          .insert(data);
+
+      }
+
+
+      if (result.error) {
+        throw result.error;
+      }
+
+
+      $("expenseModal")
+        .classList.add("hidden");
 
       toast(
-        "Please select a vehicle."
+        id
+          ? "Expense updated."
+          : "Expense added."
       );
 
-      return;
+      await loadAll();
+
+    } catch (error) {
+
+      showError(error);
+
     }
 
+  }
+);
 
-    const record = {
 
-      vehicle_id:
-        vehicleId,
+// ======================================================
+// EDIT EXPENSE
+// ======================================================
 
-      expense_date:
-        $("edate").value,
+window.editExpense =
+  function(id) {
 
-      description:
-        $("edesc").value.trim(),
+    const expense =
+      expenses.find(
+        item => item.id === id
+      );
 
-      category:
-        $("ecat").value,
+    if (!expense) return;
 
-      amount:
-        num($("eamount").value)
 
-    };
+    populateVehicleSelect(
+      "evidSelect"
+    );
+
+
+    $("evid").value =
+      expense.id;
+
+    $("evidSelect").value =
+      expense.vehicle_id || "";
+
+    $("edate").value =
+      expense.expense_date || today();
+
+    $("edesc").value =
+      expense.description ||
+      expense.item_description ||
+      "";
+
+    $("ecat").value =
+      expense.category ||
+      expense.expense_type ||
+      "Other";
+
+    $("eamount").value =
+      expense.amount ??
+      expense.total_amount ??
+      0;
+
+    $("expenseTitle").textContent =
+      "Edit Expense";
+
+    $("expenseModal")
+      .classList.remove("hidden");
+
+  };
+
+
+// ======================================================
+// DELETE EXPENSE
+// ======================================================
+
+window.deleteExpense =
+  async function(id) {
+
+    if (!confirm(
+      "Delete this expense?"
+    )) {
+      return;
+    }
 
 
     try {
@@ -1156,91 +1251,33 @@ $("expenseForm")?.addEventListener(
       const result =
         await supabase
           .from("expenses")
-          .insert(record);
+          .delete()
+          .eq("id", id);
 
 
-      if (result.error)
+      if (result.error) {
         throw result.error;
+      }
 
 
-      closeModal("expenseModal");
+      toast("Expense deleted.");
 
-      toast(
-        "Vehicle expense saved."
-      );
-
-      await load();
+      await loadAll();
 
     } catch (error) {
 
-      showDbError(
-        "Unable to save vehicle expense",
-        error
-      );
+      showError(error);
 
     }
 
-  }
-);
-
-
-// ======================================================
-// DELETE EXPENSE
-// ======================================================
-
-window.deleteExpense = async function(id) {
-
-  if (!confirm("Delete this expense?"))
-    return;
-
-
-  try {
-
-    const result =
-      await supabase
-        .from("expenses")
-        .delete()
-        .eq("id", id);
-
-
-    if (result.error)
-      throw result.error;
-
-
-    toast(
-      "Expense deleted."
-    );
-
-    await load();
-
-  } catch (error) {
-
-    showDbError(
-      "Unable to delete expense",
-      error
-    );
-
-  }
-
-};
+  };
 
 
 // ======================================================
 // PETTY CASH
 // ======================================================
 
-$("addPetty")?.addEventListener(
-  "click",
-  openPetty
-);
-
-$("quickPetty")?.addEventListener(
-  "click",
-  openPetty
-);
-
-
-function openPetty() {
+function clearPettyForm() {
 
   $("pettyForm").reset();
 
@@ -1249,74 +1286,35 @@ function openPetty() {
   $("pcdate").value =
     today();
 
+  $("pettyTitle").textContent =
+    "Petty Cash";
+
+}
+
+
+function openPetty() {
+
+  clearPettyForm();
+
   $("pettyModal")
     .classList.remove("hidden");
 
 }
 
 
-// ======================================================
-// SAVE PETTY CASH
-// ======================================================
-
-$("pettyForm")?.addEventListener(
-  "submit",
-  async event => {
-
-    event.preventDefault();
+$("addPetty").addEventListener(
+  "click",
+  openPetty
+);
 
 
-    const record = {
+$("quickPetty").addEventListener(
+  "click",
+  () => {
 
-      cash_date:
-        $("pcdate").value,
+    openTab("petty");
 
-      description:
-        $("pcdesc").value.trim(),
-
-      paid_to:
-        $("pcperson").value.trim(),
-
-      category:
-        $("pccat").value,
-
-      amount:
-        num($("pcamount").value),
-
-      notes:
-        $("pcnotes").value.trim()
-
-    };
-
-
-    try {
-
-      const result =
-        await supabase
-          .from("petty_cash")
-          .insert(record);
-
-
-      if (result.error)
-        throw result.error;
-
-
-      closeModal("pettyModal");
-
-      toast(
-        "Petty cash saved."
-      );
-
-      await load();
-
-    } catch (error) {
-
-      showDbError(
-        "Unable to save petty cash",
-        error
-      );
-
-    }
+    openPetty();
 
   }
 );
@@ -1328,17 +1326,15 @@ $("pettyForm")?.addEventListener(
 
 function renderPettyCash() {
 
-  const box =
+  const list =
     $("pettyList");
-
-  if (!box) return;
 
 
   if (!pettyCash.length) {
 
-    box.innerHTML = `
-      <div class="empty">
-        No petty cash records found.
+    list.innerHTML = `
+      <div class="card">
+        <strong>No petty cash transactions.</strong>
       </div>
     `;
 
@@ -1346,150 +1342,289 @@ function renderPettyCash() {
   }
 
 
-  const total =
-    pettyCash.reduce(
-      (sum, p) =>
-        sum + num(p.amount),
-      0
-    );
+  list.innerHTML =
+    pettyCash.map(item => {
 
+      return `
+        <div class="card">
 
-  box.innerHTML = `
+          <h3>
+            ${esc(
+              item.description ||
+              "Petty Cash"
+            )}
+          </h3>
 
-    <div class="panel">
-      <strong>
-        Total Petty Cash:
-        ${money(total)}
-      </strong>
-    </div>
+          <div class="muted">
+            Date:
+            ${esc(
+              item.cash_date || "-"
+            )}
+          </div>
 
-    <div class="table-wrap">
+          <div class="muted">
+            Person:
+            ${esc(
+              item.person || "-"
+            )}
+          </div>
 
-      <table>
+          <div class="muted">
+            Category:
+            ${esc(
+              item.category || "-"
+            )}
+          </div>
 
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Paid To / By</th>
-            <th>Category</th>
-            <th>Amount</th>
-            <th>Notes</th>
-            <th></th>
-          </tr>
-        </thead>
+          <p class="money">
+            ${money(item.amount)}
+          </p>
 
-        <tbody>
+          <div class="actions">
 
-          ${
-            pettyCash.map(p => `
-              <tr>
+            <button
+              class="btn warning"
+              onclick="editPetty('${item.id}')">
+              Edit
+            </button>
 
-                <td>
-                  ${esc(p.cash_date)}
-                </td>
+            <button
+              class="btn danger"
+              onclick="deletePetty('${item.id}')">
+              Delete
+            </button>
 
-                <td>
-                  ${esc(p.description)}
-                </td>
+          </div>
 
-                <td>
-                  ${esc(p.paid_to)}
-                </td>
+        </div>
+      `;
 
-                <td>
-                  ${esc(p.category)}
-                </td>
-
-                <td>
-                  <strong>
-                    ${money(p.amount)}
-                  </strong>
-                </td>
-
-                <td>
-                  ${esc(p.notes)}
-                </td>
-
-                <td>
-                  <button
-                    class="danger"
-                    onclick="deletePetty('${esc(p.id)}')">
-                    Delete
-                  </button>
-                </td>
-
-              </tr>
-            `).join("")
-          }
-
-        </tbody>
-
-      </table>
-
-    </div>
-  `;
-
+    }).join("");
 }
+
+
+// ======================================================
+// SAVE PETTY CASH
+// ======================================================
+
+$("pettyForm").addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+    try {
+
+      const id =
+        $("pcid").value.trim();
+
+
+      const data = {
+
+        cash_date:
+          $("pcdate").value || today(),
+
+        amount:
+          num($("pcamount").value),
+
+        description:
+          $("pcdesc").value.trim(),
+
+        person:
+          $("pcperson").value.trim(),
+
+        category:
+          $("pccat").value.trim(),
+
+        notes:
+          $("pcnotes").value.trim()
+
+      };
+
+
+      let result;
+
+
+      if (id) {
+
+        // UPDATE
+        result = await supabase
+          .from("petty_cash")
+          .update(data)
+          .eq("id", id);
+
+      } else {
+
+        // INSERT
+        result = await supabase
+          .from("petty_cash")
+          .insert(data);
+
+      }
+
+
+      if (result.error) {
+        throw result.error;
+      }
+
+
+      $("pettyModal")
+        .classList.add("hidden");
+
+      toast(
+        id
+          ? "Petty cash updated."
+          : "Petty cash added."
+      );
+
+      await loadAll();
+
+    } catch (error) {
+
+      showError(error);
+
+    }
+
+  }
+);
+
+
+// ======================================================
+// EDIT PETTY CASH
+// ======================================================
+
+window.editPetty =
+  function(id) {
+
+    const item =
+      pettyCash.find(
+        row => row.id === id
+      );
+
+    if (!item) return;
+
+
+    $("pcid").value =
+      item.id;
+
+    $("pcdate").value =
+      item.cash_date || today();
+
+    $("pcamount").value =
+      item.amount || 0;
+
+    $("pcdesc").value =
+      item.description || "";
+
+    $("pcperson").value =
+      item.person || "";
+
+    $("pccat").value =
+      item.category || "";
+
+    $("pcnotes").value =
+      item.notes || "";
+
+    $("pettyTitle").textContent =
+      "Edit Petty Cash";
+
+    $("pettyModal")
+      .classList.remove("hidden");
+
+  };
 
 
 // ======================================================
 // DELETE PETTY CASH
 // ======================================================
 
-window.deletePetty = async function(id) {
+window.deletePetty =
+  async function(id) {
 
-  if (!confirm("Delete this petty cash record?"))
-    return;
-
-
-  try {
-
-    const result =
-      await supabase
-        .from("petty_cash")
-        .delete()
-        .eq("id", id);
+    if (!confirm(
+      "Delete this petty cash transaction?"
+    )) {
+      return;
+    }
 
 
-    if (result.error)
-      throw result.error;
+    try {
+
+      const result =
+        await supabase
+          .from("petty_cash")
+          .delete()
+          .eq("id", id);
 
 
-    toast(
-      "Petty cash deleted."
-    );
+      if (result.error) {
+        throw result.error;
+      }
 
-    await load();
 
-  } catch (error) {
+      toast("Petty cash deleted.");
 
-    showDbError(
-      "Unable to delete petty cash",
-      error
-    );
+      await loadAll();
 
-  }
+    } catch (error) {
 
-};
+      showError(error);
+
+    }
+
+  };
 
 
 // ======================================================
 // REQUISITIONS
 // ======================================================
 
-$("addReq")?.addEventListener(
-  "click",
-  openRequisition
-);
+function getReqCategory(req) {
 
-$("quickReq")?.addEventListener(
-  "click",
-  openRequisition
-);
+  return (
+    req.expense_type ||
+    req.category ||
+    req.type ||
+    req.req_type ||
+    req.item_type ||
+    "Materials"
+  );
+
+}
 
 
-function openRequisition() {
+async function nextReqNumber() {
+
+  const numbers =
+    requisitions
+      .map(req => {
+
+        const match =
+          String(req.req_no || "")
+            .match(/(\d+)$/);
+
+        return match
+          ? Number(match[1])
+          : 0;
+
+      });
+
+
+  const next =
+    Math.max(
+      0,
+      ...numbers
+    ) + 1;
+
+
+  return "REQ-" +
+    String(next)
+      .padStart(3, "0");
+
+}
+
+
+function clearReqForm() {
 
   $("reqForm").reset();
 
@@ -1498,30 +1633,61 @@ function openRequisition() {
   $("reqdate").value =
     today();
 
+  $("reqqty").value =
+    "1";
+
+  $("requnit").value =
+    "0";
+
+  $("reqtotal").value =
+    "0";
+
   $("reqstatus").value =
     "Pending";
 
   $("reqcat").value =
     "Materials";
 
-  $("reqqty").value = 1;
-  $("requnit").value = 0;
-  $("reqtotal").value = 0;
+  populateVehicleSelect(
+    "reqvehicle",
+    true
+  );
 
-  fillVehicleSelectors();
-
-  nextReqNumber()
-    .then(number => {
-      $("reqno").value = number;
-    });
+  nextReqNumber().then(number => {
+    $("reqno").value = number;
+  });
 
   $("reqTitle").textContent =
-    "New Requisition";
+    "Add Requisition";
+}
+
+
+function openRequisition() {
+
+  clearReqForm();
 
   $("reqModal")
     .classList.remove("hidden");
 
 }
+
+
+$("addReq").addEventListener(
+  "click",
+  openRequisition
+);
+
+
+$("quickReq").addEventListener(
+  "click",
+  () => {
+
+    openTab("requisitions");
+
+    openRequisition();
+
+  }
+);
 
 
 // ======================================================
@@ -1542,205 +1708,15 @@ function calculateReqTotal() {
 }
 
 
-$("reqqty")?.addEventListener(
+$("reqqty").addEventListener(
   "input",
   calculateReqTotal
 );
 
-$("requnit")?.addEventListener(
+$("requnit").addEventListener(
   "input",
   calculateReqTotal
 );
-
-
-// ======================================================
-// NEXT REQUISITION NUMBER
-// ======================================================
-
-async function nextReqNumber() {
-
-  try {
-
-    const result =
-      await supabase
-        .from("requisitions")
-        .select("req_no")
-        .order("req_no", {
-          ascending: false
-        })
-        .limit(100);
-
-
-    if (result.error)
-      throw result.error;
-
-
-    let highest = 0;
-
-
-    (result.data || [])
-      .forEach(row => {
-
-        const match =
-          String(row.req_no || "")
-            .match(/(\d+)$/);
-
-        if (match) {
-
-          highest =
-            Math.max(
-              highest,
-              Number(match[1])
-            );
-
-        }
-
-      });
-
-
-    return `REQ-${String(highest + 1)
-      .padStart(3, "0")}`;
-
-
-  } catch (error) {
-
-    console.error(
-      "Requisition number error",
-      error
-    );
-
-    return `REQ-${Date.now()
-      .toString()
-      .slice(-6)}`;
-
-  }
-
-}
-
-
-// ======================================================
-// SAVE REQUISITION
-// ======================================================
-
-$("reqForm")?.addEventListener(
-  "submit",
-  async event => {
-
-    event.preventDefault();
-
-
-    calculateReqTotal();
-
-
-    const id =
-      $("reqid").value.trim();
-
-
-    const record = {
-
-      req_no:
-        $("reqno").value.trim(),
-
-      req_date:
-        $("reqdate").value,
-
-      requested_by:
-        $("reqby").value.trim(),
-
-      vehicle_id:
-        $("reqvehicle").value ||
-        null,
-
-      item_description:
-        $("reqitem").value.trim(),
-
-      expense_type:
-        $("reqcat").value,
-
-      quantity:
-        num($("reqqty").value),
-
-      unit_cost:
-        num($("requnit").value),
-
-      total_amount:
-        num($("reqtotal").value),
-
-      status:
-        $("reqstatus").value,
-
-      notes:
-        $("reqnotes").value.trim()
-
-    };
-
-
-    try {
-
-      let result;
-
-
-      if (id) {
-
-        result =
-          await supabase
-            .from("requisitions")
-            .update(record)
-            .eq("id", id);
-
-      } else {
-
-        result =
-          await supabase
-            .from("requisitions")
-            .insert(record);
-
-      }
-
-
-      if (result.error)
-        throw result.error;
-
-
-      closeModal("reqModal");
-
-      toast(
-        id
-          ? "Requisition updated."
-          : "Requisition saved."
-      );
-
-      await load();
-
-    } catch (error) {
-
-      showDbError(
-        "Unable to save requisition",
-        error
-      );
-
-    }
-
-  }
-);
-
-
-// ======================================================
-// REQUISITION CATEGORY
-// ======================================================
-
-function getReqCategory(req) {
-
-  return (
-    req.expense_type ||
-    req.category ||
-    req.type ||
-    req.req_type ||
-    req.item_type ||
-    "Materials"
-  );
-
-}
 
 
 // ======================================================
@@ -1749,17 +1725,15 @@ function getReqCategory(req) {
 
 function renderRequisitions() {
 
-  const box =
+  const list =
     $("reqList");
-
-  if (!box) return;
 
 
   if (!requisitions.length) {
 
-    box.innerHTML = `
-      <div class="empty">
-        No requisitions found.
+    list.innerHTML = `
+      <div class="card">
+        <strong>No requisitions found.</strong>
       </div>
     `;
 
@@ -1767,218 +1741,381 @@ function renderRequisitions() {
   }
 
 
-  box.innerHTML = `
+  list.innerHTML =
+    requisitions.map(req => {
 
-    <div class="table-wrap">
-
-      <table>
-
-        <thead>
-
-          <tr>
-            <th>No.</th>
-            <th>Date</th>
-            <th>Requested By</th>
-            <th>Vehicle</th>
-            <th>Type</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-
-        </thead>
+      const category =
+        getReqCategory(req);
 
 
-        <tbody>
+      return `
+        <div class="card">
 
-          ${
-            requisitions.map(r => {
+          <h3>
+            ${esc(
+              req.req_no || "Requisition"
+            )}
+          </h3>
 
-              const vehicle =
-                vehicles.find(
-                  v => v.id === r.vehicle_id
-                );
+          <div class="muted">
+            Date:
+            ${esc(
+              req.req_date || "-"
+            )}
+          </div>
 
+          <div class="muted">
+            Requested by:
+            ${esc(
+              req.requested_by || "-"
+            )}
+          </div>
 
-              return `
+          <div class="muted">
+            Vehicle:
+            ${esc(
+              vehicleName(
+                req.vehicle_id
+              )
+            )}
+          </div>
 
-                <tr>
+          <div class="muted">
+            Type:
+            <strong>
+              ${esc(category)}
+            </strong>
+          </div>
 
-                  <td>
-                    ${esc(r.req_no)}
-                  </td>
+          <div>
+            ${esc(
+              req.item_description ||
+              "-"
+            )}
+          </div>
 
-                  <td>
-                    ${esc(r.req_date)}
-                  </td>
+          <div class="muted">
+            Qty:
+            ${num(req.quantity)}
+            ×
+            ${money(req.unit_cost)}
+          </div>
 
-                  <td>
-                    ${esc(r.requested_by)}
-                  </td>
+          <p class="money">
+            ${money(req.total_amount)}
+          </p>
 
-                  <td>
-                    ${
-                      vehicle
-                        ? esc(vehicle.reg)
-                        : "General"
-                    }
-                  </td>
+          <div class="muted">
+            Status:
+            ${esc(
+              req.status || "Pending"
+            )}
+          </div>
 
-                  <td>
-                    ${esc(getReqCategory(r))}
-                  </td>
+          <div class="actions">
 
-                  <td>
-                    ${esc(r.item_description)}
-                  </td>
+            <button
+              class="btn warning"
+              onclick="editRequisition('${req.id}')">
+              Edit
+            </button>
 
-                  <td>
-                    ${num(r.quantity)}
-                  </td>
+            <button
+              class="btn secondary"
+              onclick="printRequisition('${req.id}')">
+              Print
+            </button>
 
-                  <td>
-                    ${money(r.unit_cost)}
-                  </td>
+            <button
+              class="btn danger"
+              onclick="deleteRequisition('${req.id}')">
+              Delete
+            </button>
 
-                  <td>
-                    <strong>
-                      ${money(r.total_amount)}
-                    </strong>
-                  </td>
+          </div>
 
-                  <td>
-                    <span class="badge">
-                      ${esc(r.status)}
-                    </span>
-                  </td>
+        </div>
+      `;
 
-                  <td>
-
-                    <button
-                      class="secondary"
-                      onclick="printReq('${esc(r.id)}')">
-                      Print
-                    </button>
-
-                    <button
-                      class="danger"
-                      onclick="deleteReq('${esc(r.id)}')">
-                      Delete
-                    </button>
-
-                  </td>
-
-                </tr>
-
-              `;
-
-            }).join("")
-          }
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-  `;
-
+    }).join("");
 }
+
+
+// ======================================================
+// SAVE REQUISITION
+// ======================================================
+
+$("reqForm").addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+    try {
+
+      const id =
+        $("reqid").value.trim();
+
+
+      const quantity =
+        num($("reqqty").value);
+
+
+      const unitCost =
+        num($("requnit").value);
+
+
+      const data = {
+
+        req_no:
+          $("reqno").value.trim(),
+
+        req_date:
+          $("reqdate").value || today(),
+
+        requested_by:
+          $("reqby").value.trim(),
+
+        vehicle_id:
+          $("reqvehicle").value || null,
+
+        expense_type:
+          $("reqcat").value,
+
+        item_description:
+          $("reqitem").value.trim(),
+
+        quantity,
+
+        unit_cost:
+          unitCost,
+
+        total_amount:
+          quantity * unitCost,
+
+        status:
+          $("reqstatus").value,
+
+        notes:
+          $("reqnotes").value.trim()
+
+      };
+
+
+      if (!data.requested_by) {
+        toast("Requested by is required.");
+        return;
+      }
+
+
+      if (!data.item_description) {
+        toast("Item description is required.");
+        return;
+      }
+
+
+      let result;
+
+
+      if (id) {
+
+        // UPDATE
+        result = await supabase
+          .from("requisitions")
+          .update(data)
+          .eq("id", id);
+
+      } else {
+
+        // INSERT
+        result = await supabase
+          .from("requisitions")
+          .insert(data);
+
+      }
+
+
+      if (result.error) {
+        throw result.error;
+      }
+
+
+      $("reqModal")
+        .classList.add("hidden");
+
+      toast(
+        id
+          ? "Requisition updated."
+          : "Requisition added."
+      );
+
+      await loadAll();
+
+    } catch (error) {
+
+      showError(error);
+
+    }
+
+  }
+);
+
+
+// ======================================================
+// EDIT REQUISITION
+// ======================================================
+
+window.editRequisition =
+  function(id) {
+
+    const req =
+      requisitions.find(
+        item => item.id === id
+      );
+
+    if (!req) return;
+
+
+    populateVehicleSelect(
+      "reqvehicle",
+      true
+    );
+
+
+    $("reqid").value =
+      req.id;
+
+    $("reqno").value =
+      req.req_no || "";
+
+    $("reqdate").value =
+      req.req_date || today();
+
+    $("reqby").value =
+      req.requested_by || "";
+
+    $("reqvehicle").value =
+      req.vehicle_id || "";
+
+    $("reqcat").value =
+      getReqCategory(req);
+
+    $("reqstatus").value =
+      req.status || "Pending";
+
+    $("reqitem").value =
+      req.item_description || "";
+
+    $("reqqty").value =
+      req.quantity || 1;
+
+    $("requnit").value =
+      req.unit_cost || 0;
+
+    $("reqtotal").value =
+      req.total_amount || 0;
+
+    $("reqnotes").value =
+      req.notes || "";
+
+    $("reqTitle").textContent =
+      "Edit Requisition";
+
+    $("reqModal")
+      .classList.remove("hidden");
+
+  };
 
 
 // ======================================================
 // DELETE REQUISITION
 // ======================================================
 
-window.deleteReq = async function(id) {
+window.deleteRequisition =
+  async function(id) {
 
-  if (!confirm("Delete this requisition?"))
-    return;
-
-
-  try {
-
-    const result =
-      await supabase
-        .from("requisitions")
-        .delete()
-        .eq("id", id);
+    if (!confirm(
+      "Delete this requisition?"
+    )) {
+      return;
+    }
 
 
-    if (result.error)
-      throw result.error;
+    try {
+
+      const result =
+        await supabase
+          .from("requisitions")
+          .delete()
+          .eq("id", id);
 
 
-    toast(
-      "Requisition deleted."
-    );
+      if (result.error) {
+        throw result.error;
+      }
 
-    await load();
 
-  } catch (error) {
+      toast("Requisition deleted.");
 
-    showDbError(
-      "Unable to delete requisition",
-      error
-    );
+      await loadAll();
 
-  }
+    } catch (error) {
 
-};
+      showError(error);
+
+    }
+
+  };
 
 
 // ======================================================
-// CLOSE MODALS
+// MODAL CLOSE
 // ======================================================
 
-document.querySelectorAll("[data-close]")
-  .forEach(button => {
+document.querySelectorAll(
+  "[data-close]"
+).forEach(button => {
 
-    button.addEventListener(
-      "click",
-      () => {
+  button.addEventListener(
+    "click",
+    () => {
 
-        closeModal(
-          button.dataset.close
+      const modalId =
+        button.dataset.close;
+
+      $(modalId)
+        .classList.add("hidden");
+
+    }
+  );
+
+});
+
+
+document.querySelectorAll(
+  ".modal"
+).forEach(modal => {
+
+  modal.addEventListener(
+    "click",
+    event => {
+
+      if (event.target === modal) {
+
+        modal.classList.add(
+          "hidden"
         );
 
       }
-    );
 
-  });
+    }
+  );
 
-
-function closeModal(id) {
-
-  $(id)?.classList.add("hidden");
-
-}
-
-
-// Close modal when clicking outside card.
-
-document.querySelectorAll(".modal")
-  .forEach(modal => {
-
-    modal.addEventListener(
-      "click",
-      event => {
-
-        if (event.target === modal) {
-          modal.classList.add("hidden");
-        }
-
-      }
-    );
-
-  });
+});
 
 
 // ======================================================
-// PRINT ENGINE
+// PRINT
 // ======================================================
 
 function printPage(title, content) {
@@ -1992,7 +2129,7 @@ function printPage(title, content) {
   if (!win) {
 
     toast(
-      "Please allow pop-ups for printing."
+      "Please allow pop-ups to print."
     );
 
     return;
@@ -2000,947 +2137,586 @@ function printPage(title, content) {
 
 
   win.document.write(`
-
-    <!doctype html>
-
+    <!DOCTYPE html>
     <html>
-
     <head>
-
       <title>${esc(title)}</title>
 
-      <meta
-        name="viewport"
-        content="width=device-width,initial-scale=1">
-
       <style>
-
-        body{
-          font-family:Arial,sans-serif;
-          padding:25px;
-          color:#111;
+        body {
+          font-family: Arial;
+          padding: 25px;
+          color: #111;
         }
 
-        h1,h2{
-          margin-bottom:8px;
+        h1 {
+          margin-bottom: 5px;
         }
 
-        table{
-          width:100%;
-          border-collapse:collapse;
-          margin-top:15px;
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
         }
 
-        th,td{
-          border:1px solid #bbb;
-          padding:7px;
-          text-align:left;
-          font-size:12px;
+        th,
+        td {
+          border: 1px solid #ccc;
+          padding: 8px;
+          text-align: left;
         }
 
-        th{
-          background:#eee;
+        th {
+          background: #eee;
         }
-
-        .total{
-          font-weight:bold;
-          margin-top:15px;
-        }
-
-        @media print{
-          button{
-            display:none;
-          }
-        }
-
       </style>
-
     </head>
 
     <body>
 
+      <h1>${esc(title)}</h1>
+
+      <p>
+        Generated:
+        ${new Date().toLocaleString()}
+      </p>
+
       ${content}
 
       <script>
-        window.onload=function(){
+        window.onload = function() {
           window.print();
         };
       <\/script>
 
     </body>
-
     </html>
-
   `);
 
   win.document.close();
-
 }
 
 
-// ======================================================
-// PRINT SUMMARY
-// ======================================================
-
-window.printSummary = function() {
-
-  const totalExpenses =
-    expenses.reduce(
-      (s,e) => s + num(e.amount),
-      0
-    );
-
-  const totalPetty =
-    pettyCash.reduce(
-      (s,p) => s + num(p.amount),
-      0
-    );
-
-  const billed =
-    vehicles.reduce(
-      (s,v) => s + num(v.billed),
-      0
-    );
-
-  const paid =
-    vehicles.reduce(
-      (s,v) => s + num(v.paid),
-      0
-    );
-
-
-  printPage(
-    "Garage Summary",
-    `
-
-      <h1>Garage Operations Pro</h1>
-
-      <h2>Garage Summary</h2>
-
-      <p>
-        Report date:
-        ${today()}
-      </p>
-
-      <table>
-
-        <tr>
-          <th>Total Vehicles</th>
-          <td>${vehicles.length}</td>
-        </tr>
-
-        <tr>
-          <th>Under Repair</th>
-          <td>
-            ${
-              vehicles.filter(
-                v => v.status === "Under Repair"
-              ).length
-            }
-          </td>
-        </tr>
-
-        <tr>
-          <th>Storage</th>
-          <td>
-            ${
-              vehicles.filter(
-                v => v.status === "Storage"
-              ).length
-            }
-          </td>
-        </tr>
-
-        <tr>
-          <th>Total Vehicle Expenses</th>
-          <td>${money(totalExpenses)}</td>
-        </tr>
-
-        <tr>
-          <th>Total Petty Cash</th>
-          <td>${money(totalPetty)}</td>
-        </tr>
-
-        <tr>
-          <th>Total Charge-Out</th>
-          <td>${money(billed)}</td>
-        </tr>
-
-        <tr>
-          <th>Total Payments</th>
-          <td>${money(paid)}</td>
-        </tr>
-
-        <tr>
-          <th>Outstanding</th>
-          <td>
-            ${money(Math.max(0,billed-paid))}
-          </td>
-        </tr>
-
-      </table>
-
-    `
-  );
-
-};
-
-
-// ======================================================
-// PRINT VEHICLES
-// ======================================================
-
-window.printVehicles = function() {
-
-  printPage(
-    "Vehicle List",
-    `
-
-      <h1>Garage Operations Pro</h1>
-
-      <h2>Vehicle List</h2>
-
-      <table>
-
-        <thead>
-
-          <tr>
-            <th>Registration</th>
-            <th>Customer</th>
-            <th>Date In</th>
-            <th>Job Type</th>
-            <th>Status</th>
-            <th>Charge-Out</th>
-            <th>Paid</th>
-            <th>Balance</th>
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          ${
-            vehicles.map(v => `
-
-              <tr>
-
-                <td>${esc(v.reg)}</td>
-                <td>${esc(v.customer)}</td>
-                <td>${esc(v.date_in)}</td>
-                <td>${esc(v.job_type)}</td>
-                <td>${esc(v.status)}</td>
-                <td>${money(v.billed)}</td>
-                <td>${money(v.paid)}</td>
-                <td>
-                  ${money(
-                    Math.max(
-                      0,
-                      num(v.billed)-num(v.paid)
-                    )
-                  )}
-                </td>
-
-              </tr>
-
-            `).join("")
-          }
-
-        </tbody>
-
-      </table>
-
-    `
-  );
-
-};
-
-
-// ======================================================
-// PRINT ALL EXPENSES
-// ======================================================
-
-window.printExpenses = function() {
-
-  const total =
-    expenses.reduce(
-      (s,e) => s + num(e.amount),
-      0
-    );
-
-
-  printPage(
-    "Vehicle Expenses",
-    `
-
-      <h1>Garage Operations Pro</h1>
-
-      <h2>Vehicle Expenses</h2>
-
-      <table>
-
-        <thead>
-
-          <tr>
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Amount</th>
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          ${
-            expenses.map(e => {
-
-              const v =
-                vehicles.find(
-                  x => x.id === e.vehicle_id
-                );
-
-              return `
-
-                <tr>
-
-                  <td>${esc(e.expense_date)}</td>
-
-                  <td>
-                    ${
-                      v
-                        ? esc(v.reg)
-                        : "Unknown"
-                    }
-                  </td>
-
-                  <td>${esc(e.description)}</td>
-
-                  <td>${esc(e.category)}</td>
-
-                  <td>${money(e.amount)}</td>
-
-                </tr>
-
-              `;
-
-            }).join("")
-          }
-
-        </tbody>
-
-      </table>
-
-      <p class="total">
-        Total:
-        ${money(total)}
-      </p>
-
-    `
-  );
-
-};
-
-
-// ======================================================
-// PRINT PETTY CASH
-// ======================================================
-
-window.printPetty = function() {
-
-  const total =
-    pettyCash.reduce(
-      (s,p) => s + num(p.amount),
-      0
-    );
-
-
-  printPage(
-    "Petty Cash",
-    `
-
-      <h1>Garage Operations Pro</h1>
-
-      <h2>Petty Cash</h2>
-
-      <table>
-
-        <thead>
-
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Paid To / By</th>
-            <th>Category</th>
-            <th>Amount</th>
-            <th>Notes</th>
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          ${
-            pettyCash.map(p => `
-
-              <tr>
-
-                <td>${esc(p.cash_date)}</td>
-
-                <td>${esc(p.description)}</td>
-
-                <td>${esc(p.paid_to)}</td>
-
-                <td>${esc(p.category)}</td>
-
-                <td>${money(p.amount)}</td>
-
-                <td>${esc(p.notes)}</td>
-
-              </tr>
-
-            `).join("")
-          }
-
-        </tbody>
-
-      </table>
-
-      <p class="total">
-        Total:
-        ${money(total)}
-      </p>
-
-    `
-  );
-
-};
-
-
-// ======================================================
-// PRINT REQUISITIONS
-// ======================================================
-
-window.printRequisitions = function() {
-
-  const total =
-    requisitions.reduce(
-      (s,r) => s + num(r.total_amount),
-      0
-    );
-
-
-  printPage(
-    "Requisitions",
-    `
-
-      <h1>Garage Operations Pro</h1>
-
-      <h2>Requisitions</h2>
-
-      <table>
-
-        <thead>
-
-          <tr>
-            <th>No.</th>
-            <th>Date</th>
-            <th>Requested By</th>
-            <th>Vehicle</th>
-            <th>Type</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Total</th>
-            <th>Status</th>
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          ${
-            requisitions.map(r => {
-
-              const v =
-                vehicles.find(
-                  x => x.id === r.vehicle_id
-                );
-
-              return `
-
-                <tr>
-
-                  <td>${esc(r.req_no)}</td>
-
-                  <td>${esc(r.req_date)}</td>
-
-                  <td>${esc(r.requested_by)}</td>
-
-                  <td>
-                    ${
-                      v
-                        ? esc(v.reg)
-                        : "General"
-                    }
-                  </td>
-
-                  <td>
-                    ${esc(getReqCategory(r))}
-                  </td>
-
-                  <td>
-                    ${esc(r.item_description)}
-                  </td>
-
-                  <td>
-                    ${num(r.quantity)}
-                  </td>
-
-                  <td>
-                    ${money(r.total_amount)}
-                  </td>
-
-                  <td>
-                    ${esc(r.status)}
-                  </td>
-
-                </tr>
-
-              `;
-
-            }).join("")
-          }
-
-        </tbody>
-
-      </table>
-
-      <p class="total">
-        Total Requisitions:
-        ${money(total)}
-      </p>
-
-    `
-  );
-
-};
-
-
-// ======================================================
-// PRINT ONE VEHICLE
-// ======================================================
-
-window.printVehicle = function(id) {
-
-  const v =
-    vehicles.find(
-      x => x.id === id
-    );
-
-  if (!v) return;
-
-
-  const list =
-    expenses.filter(
-      e => e.vehicle_id === id
-    );
-
-
-  const total =
-    list.reduce(
-      (s,e) => s + num(e.amount),
-      0
-    );
-
-
-  printPage(
-    `Vehicle ${v.reg}`,
-    `
-
-      <h1>Garage Operations Pro</h1>
-
-      <h2>Vehicle Repair Report</h2>
-
-      <table>
-
-        <tr>
-          <th>Registration</th>
-          <td>${esc(v.reg)}</td>
-        </tr>
-
-        <tr>
-          <th>Customer</th>
-          <td>${esc(v.customer)}</td>
-        </tr>
-
-        <tr>
-          <th>Date Received</th>
-          <td>${esc(v.date_in)}</td>
-        </tr>
-
-        <tr>
-          <th>Job Type</th>
-          <td>${esc(v.job_type)}</td>
-        </tr>
-
-        <tr>
-          <th>Status</th>
-          <td>${esc(v.status)}</td>
-        </tr>
-
-        <tr>
-          <th>Charge-Out</th>
-          <td>${money(v.billed)}</td>
-        </tr>
-
-        <tr>
-          <th>Paid</th>
-          <td>${money(v.paid)}</td>
-        </tr>
-
-        <tr>
-          <th>Outstanding</th>
-          <td>
-            ${money(
-              Math.max(
-                0,
-                num(v.billed)-num(v.paid)
-              )
-            )}
-          </td>
-        </tr>
-
-      </table>
-
-
-      <h2>Expenses</h2>
-
-      <table>
-
-        <thead>
-
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Amount</th>
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          ${
-            list.map(e => `
-
-              <tr>
-
-                <td>${esc(e.expense_date)}</td>
-                <td>${esc(e.description)}</td>
-                <td>${esc(e.category)}</td>
-                <td>${money(e.amount)}</td>
-
-              </tr>
-
-            `).join("")
-          }
-
-        </tbody>
-
-      </table>
-
-      <p class="total">
-        Total Vehicle Expenses:
-        ${money(total)}
-      </p>
-
-    `
-  );
-
-};
-
-
-// ======================================================
-// PRINT ONE REQUISITION
-// ======================================================
-
-window.printReq = function(id) {
-
-  const r =
-    requisitions.find(
-      x => x.id === id
-    );
-
-  if (!r) return;
-
-
-  const v =
-    vehicles.find(
-      x => x.id === r.vehicle_id
-    );
-
-
-  printPage(
-    `Requisition ${r.req_no}`,
-    `
-
-      <h1>Garage Operations Pro</h1>
-
-      <h2>Requisition</h2>
-
-      <table>
-
-        <tr>
-          <th>Requisition No.</th>
-          <td>${esc(r.req_no)}</td>
-        </tr>
-
-        <tr>
-          <th>Date</th>
-          <td>${esc(r.req_date)}</td>
-        </tr>
-
-        <tr>
-          <th>Requested By</th>
-          <td>${esc(r.requested_by)}</td>
-        </tr>
-
-        <tr>
-          <th>Vehicle</th>
-          <td>
-            ${
-              v
-                ? esc(v.reg)
-                : "General / No vehicle"
-            }
-          </td>
-        </tr>
-
-        <tr>
-          <th>Expense Type</th>
-          <td>${esc(getReqCategory(r))}</td>
-        </tr>
-
-        <tr>
-          <th>Item</th>
-          <td>${esc(r.item_description)}</td>
-        </tr>
-
-        <tr>
-          <th>Quantity</th>
-          <td>${num(r.quantity)}</td>
-        </tr>
-
-        <tr>
-          <th>Unit Cost</th>
-          <td>${money(r.unit_cost)}</td>
-        </tr>
-
-        <tr>
-          <th>Total</th>
-          <td>${money(r.total_amount)}</td>
-        </tr>
-
-        <tr>
-          <th>Status</th>
-          <td>${esc(r.status)}</td>
-        </tr>
-
-        <tr>
-          <th>Notes</th>
-          <td>${esc(r.notes)}</td>
-        </tr>
-
-      </table>
-
-    `
-  );
-
-};
-
-
-// ======================================================
-// SHARE ENGINE
-// ======================================================
-
-async function doShare(title, text) {
-
-  const data = {
-    title,
-    text,
-    url: location.href
-  };
-
-
-  try {
-
-    if (
-      navigator.share &&
-      typeof navigator.share === "function"
-    ) {
-
-      await navigator.share(data);
-
-      return;
-    }
-
-
-    if (
-      navigator.clipboard &&
-      navigator.clipboard.writeText
-    ) {
-
-      await navigator.clipboard.writeText(
-        `${text}\n${location.href}`
-      );
-
-      toast(
-        "Copied to clipboard."
-      );
-
-      return;
-    }
-
-
-    toast(
-      "Sharing is not available on this browser."
-    );
-
-
-  } catch (error) {
-
-    if (error?.name !== "AbortError") {
-
-      console.error(
-        "Share error",
-        error
-      );
-
-    }
-
-  }
-
-}
-
-
-// ======================================================
-// SHARE GARAGE
-// ======================================================
-
-window.shareGarage = function() {
-
-  doShare(
-    "Garage Operations Pro",
-    "Garage Operations Pro vehicle and expense management."
-  );
-
-};
-
-
-// ======================================================
-// SHARE SUMMARY
-// ======================================================
-
-window.shareSummary = function() {
-
-  const totalExpenses =
-    expenses.reduce(
-      (s,e) => s + num(e.amount),
-      0
-    );
-
-  const totalPetty =
-    pettyCash.reduce(
-      (s,p) => s + num(p.amount),
-      0
-    );
-
-  const outstanding =
-    vehicles.reduce(
-      (s,v) =>
-        s +
-        Math.max(
-          0,
-          num(v.billed)-num(v.paid)
-        ),
-      0
-    );
-
-
-  doShare(
-    "Garage Summary",
-    `Garage Summary
-
-Vehicles: ${vehicles.length}
-Vehicle Expenses: ${money(totalExpenses)}
-Petty Cash: ${money(totalPetty)}
-Outstanding: ${money(outstanding)}`
-  );
-
-};
-
-
-// ======================================================
-// SHARE VEHICLE
-// ======================================================
-
-window.shareVehicle = function(id) {
-
-  const v =
-    vehicles.find(
-      x => x.id === id
-    );
-
-  if (!v) return;
-
-
-  const total =
-    expenses
-      .filter(e => e.vehicle_id === id)
-      .reduce(
-        (s,e) => s + num(e.amount),
+window.printSummary =
+  function() {
+
+    const totalExpenses =
+      expenses.reduce(
+        (s, e) =>
+          s + num(
+            e.amount ??
+            e.total_amount
+          ),
         0
       );
 
 
-  doShare(
-    `Vehicle ${v.reg}`,
-    `Vehicle: ${v.reg}
-Customer: ${v.customer}
-Status: ${v.status}
-Charge-out: ${money(v.billed)}
-Paid: ${money(v.paid)}
-Outstanding: ${money(
-      Math.max(
-        0,
-        num(v.billed)-num(v.paid)
-      )
-    )}
-Vehicle expenses: ${money(total)}`
-  );
+    const totalPetty =
+      pettyCash.reduce(
+        (s, e) =>
+          s + num(e.amount),
+        0
+      );
 
-};
+
+    printPage(
+      "Garage Operations Summary",
+      `
+        <table>
+          <tr>
+            <th>Item</th>
+            <th>Total</th>
+          </tr>
+
+          <tr>
+            <td>Vehicles</td>
+            <td>${vehicles.length}</td>
+          </tr>
+
+          <tr>
+            <td>Vehicle Expenses</td>
+            <td>${money(totalExpenses)}</td>
+          </tr>
+
+          <tr>
+            <td>Petty Cash</td>
+            <td>${money(totalPetty)}</td>
+          </tr>
+
+          <tr>
+            <td>Requisitions</td>
+            <td>${requisitions.length}</td>
+          </tr>
+        </table>
+      `
+    );
+  };
+
+
+window.printVehicles =
+  function() {
+
+    const rows =
+      vehicles.map(vehicle => `
+        <tr>
+          <td>
+            ${esc(
+              vehicle.registration ||
+              vehicle.reg_no ||
+              vehicle.reg ||
+              ""
+            )}
+          </td>
+
+          <td>
+            ${esc(
+              vehicle.customer || ""
+            )}
+          </td>
+
+          <td>
+            ${esc(
+              vehicle.status || ""
+            )}
+          </td>
+
+          <td>
+            ${money(
+              vehicleExpenseTotal(
+                vehicle.id
+              )
+            )}
+          </td>
+        </tr>
+      `).join("");
+
+
+    printPage(
+      "Vehicle Report",
+      `
+        <table>
+          <tr>
+            <th>Registration</th>
+            <th>Customer</th>
+            <th>Status</th>
+            <th>Expenses</th>
+          </tr>
+
+          ${rows}
+        </table>
+      `
+    );
+  };
+
+
+window.printExpenses =
+  function() {
+
+    const rows =
+      expenses.map(expense => `
+        <tr>
+          <td>
+            ${esc(
+              expense.expense_date || ""
+            )}
+          </td>
+
+          <td>
+            ${esc(
+              vehicleName(
+                expense.vehicle_id
+              )
+            )}
+          </td>
+
+          <td>
+            ${esc(
+              expense.category ||
+              expense.expense_type ||
+              ""
+            )}
+          </td>
+
+          <td>
+            ${esc(
+              expense.description ||
+              expense.item_description ||
+              ""
+            )}
+          </td>
+
+          <td>
+            ${money(
+              expense.amount ??
+              expense.total_amount
+            )}
+          </td>
+        </tr>
+      `).join("");
+
+
+    printPage(
+      "Vehicle Expense Report",
+      `
+        <table>
+          <tr>
+            <th>Date</th>
+            <th>Vehicle</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+
+          ${rows}
+        </table>
+      `
+    );
+  };
+
+
+window.printPetty =
+  function() {
+
+    const rows =
+      pettyCash.map(item => `
+        <tr>
+          <td>${esc(item.cash_date || "")}</td>
+          <td>${esc(item.person || "")}</td>
+          <td>${esc(item.category || "")}</td>
+          <td>${esc(item.description || "")}</td>
+          <td>${money(item.amount)}</td>
+        </tr>
+      `).join("");
+
+
+    printPage(
+      "Petty Cash Report",
+      `
+        <table>
+          <tr>
+            <th>Date</th>
+            <th>Person</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+
+          ${rows}
+        </table>
+      `
+    );
+  };
+
+
+window.printRequisitions =
+  function() {
+
+    const rows =
+      requisitions.map(req => `
+        <tr>
+          <td>${esc(req.req_no || "")}</td>
+          <td>${esc(req.req_date || "")}</td>
+          <td>${esc(vehicleName(req.vehicle_id))}</td>
+          <td>${esc(getReqCategory(req))}</td>
+          <td>${esc(req.item_description || "")}</td>
+          <td>${money(req.total_amount)}</td>
+          <td>${esc(req.status || "")}</td>
+        </tr>
+      `).join("");
+
+
+    printPage(
+      "Requisition Report",
+      `
+        <table>
+          <tr>
+            <th>Req No.</th>
+            <th>Date</th>
+            <th>Vehicle</th>
+            <th>Type</th>
+            <th>Item</th>
+            <th>Total</th>
+            <th>Status</th>
+          </tr>
+
+          ${rows}
+        </table>
+      `
+    );
+  };
+
+
+window.printVehicle =
+  function(id) {
+
+    const vehicle =
+      vehicles.find(
+        v => v.id === id
+      );
+
+    if (!vehicle) return;
+
+
+    const reg =
+      vehicle.registration ||
+      vehicle.reg_no ||
+      vehicle.reg ||
+      "";
+
+
+    const rows =
+      vehicleExpenses(id)
+        .map(expense => `
+          <tr>
+            <td>
+              ${esc(
+                expense.expense_date || ""
+              )}
+            </td>
+
+            <td>
+              ${esc(
+                expense.category ||
+                expense.expense_type ||
+                ""
+              )}
+            </td>
+
+            <td>
+              ${esc(
+                expense.description ||
+                expense.item_description ||
+                ""
+              )}
+            </td>
+
+            <td>
+              ${money(
+                expense.amount ??
+                expense.total_amount
+              )}
+            </td>
+          </tr>
+        `).join("");
+
+
+    printPage(
+      `Vehicle - ${reg}`,
+      `
+        <h2>${esc(reg)}</h2>
+
+        <p>
+          Customer:
+          ${esc(vehicle.customer || "-")}
+        </p>
+
+        <p>
+          Status:
+          ${esc(vehicle.status || "-")}
+        </p>
+
+        <p>
+          Billed:
+          ${money(vehicle.billed)}
+        </p>
+
+        <p>
+          Paid:
+          ${money(vehicle.paid)}
+        </p>
+
+        <p>
+          Balance:
+          ${money(
+            Math.max(
+              0,
+              num(vehicle.billed) -
+              num(vehicle.paid)
+            )
+          )}
+        </p>
+
+        <h3>Expenses</h3>
+
+        <table>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+
+          ${rows}
+        </table>
+      `
+    );
+  };
+
+
+window.printRequisition =
+  function(id) {
+
+    const req =
+      requisitions.find(
+        r => r.id === id
+      );
+
+    if (!req) return;
+
+
+    printPage(
+      `Requisition ${req.req_no || ""}`,
+      `
+        <table>
+
+          <tr>
+            <th>Requisition No.</th>
+            <td>${esc(req.req_no || "")}</td>
+          </tr>
+
+          <tr>
+            <th>Date</th>
+            <td>${esc(req.req_date || "")}</td>
+          </tr>
+
+          <tr>
+            <th>Requested By</th>
+            <td>${esc(req.requested_by || "")}</td>
+          </tr>
+
+          <tr>
+            <th>Vehicle</th>
+            <td>${esc(vehicleName(req.vehicle_id))}</td>
+          </tr>
+
+          <tr>
+            <th>Type</th>
+            <td>${esc(getReqCategory(req))}</td>
+          </tr>
+
+          <tr>
+            <th>Item</th>
+            <td>${esc(req.item_description || "")}</td>
+          </tr>
+
+          <tr>
+            <th>Quantity</th>
+            <td>${num(req.quantity)}</td>
+          </tr>
+
+          <tr>
+            <th>Unit Cost</th>
+            <td>${money(req.unit_cost)}</td>
+          </tr>
+
+          <tr>
+            <th>Total</th>
+            <td>${money(req.total_amount)}</td>
+          </tr>
+
+          <tr>
+            <th>Status</th>
+            <td>${esc(req.status || "")}</td>
+          </tr>
+
+        </table>
+      `
+    );
+  };
+
+
+// ======================================================
+// SHARE
+// ======================================================
+
+window.shareGarage =
+  async function() {
+
+    const text =
+      "Garage Operations Pro\n" +
+      `Vehicles: ${vehicles.length}\n` +
+      `Expenses: ${money(
+        expenses.reduce(
+          (s, e) =>
+            s + num(
+              e.amount ??
+              e.total_amount
+            ),
+          0
+        )
+      )}\n` +
+      `Petty Cash: ${money(
+        pettyCash.reduce(
+          (s, e) =>
+            s + num(e.amount),
+          0
+        )
+      )}`;
+
+    try {
+
+      if (
+        navigator.share
+      ) {
+
+        await navigator.share({
+          title: "Garage Operations Pro",
+          text
+        });
+
+      } else {
+
+        await navigator.clipboard.writeText(text);
+
+        toast(
+          "Summary copied to clipboard."
+        );
+
+      }
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+  };
+
+
+window.shareSummary =
+  window.shareGarage;
 
 
 // ======================================================
 // QUICK PRINT
 // ======================================================
 
-$("quickPrint")?.addEventListener(
+$("quickPrint").addEventListener(
   "click",
-  () => printSummary()
+  () => {
+
+    window.printSummary();
+
+  }
 );
 
 
 // ======================================================
-// INITIAL LOAD
+// INITIAL DATE DEFAULTS
 // ======================================================
 
-if (
-  localStorage.getItem("garage_logged_user") &&
-  USERS[localStorage.getItem("garage_logged_user")]
-) {
+$("date_in").value =
+  today();
 
-  load();
+$("edate").value =
+  today();
 
-}
+$("pcdate").value =
+  today();
+
+$("reqdate").value =
+  today();
+
+
+// ======================================================
+// END
+// ======================================================
