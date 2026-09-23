@@ -1,1327 +1,967 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1,viewport-fit=cover"
-  >
-
-  <meta
-    name="theme-color"
-    content="#132238"
-  >
-
-  <meta
-    name="description"
-    content="Garage Operations Pro - vehicle, expenses, petty cash and requisition management"
-  >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
 
   <title>Garage Operations Pro</title>
 
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* LOGIN */
+    #login {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #0f172a;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      border-radius: 18px;
+      padding: 25px;
+      box-shadow: 0 15px 50px rgba(0,0,0,.25);
+    }
+
+    .login-box h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .login-box p {
+      text-align: center;
+      color: #64748b;
+    }
+
+    /* APP */
+    #app {
+      min-height: 100vh;
+    }
+
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 15px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-top h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .user-name {
+      font-size: 12px;
+      opacity: .8;
+    }
+
+    nav {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin-top: 12px;
+      padding-bottom: 3px;
+    }
+
+    nav button {
+      border: 0;
+      background: #1e293b;
+      color: white;
+      padding: 9px 13px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    nav button.active {
+      background: #2563eb;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: auto;
+      padding: 15px;
+    }
+
+    /* CARDS */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .dash-card {
+      background: white;
+      border: 0;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: left;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      width: 100%;
+    }
+
+    .dash-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .dash-card .label {
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .dash-card .value {
+      display: block;
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 7px;
+    }
+
+    /* TOOLBAR */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .toolbar input,
+    .toolbar select {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn.secondary {
+      background: #475569;
+    }
+
+    .btn.success {
+      background: #15803d;
+    }
+
+    .btn.danger {
+      background: #dc2626;
+    }
+
+    .btn.warning {
+      background: #d97706;
+    }
+
+    .btn.light {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* LISTS */
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .actions button {
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 7px;
+    }
+
+    .money {
+      font-weight: bold;
+    }
+
+    .positive {
+      color: #15803d;
+    }
+
+    .negative {
+      color: #dc2626;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+    }
+
+    /* MODAL */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.65);
+      z-index: 500;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: white;
+      width: 100%;
+      max-width: 650px;
+      max-height: 94vh;
+      overflow-y: auto;
+      border-radius: 18px 18px 0 0;
+      padding: 20px;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+    }
+
+    .close {
+      border: 0;
+      background: #e2e8f0;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .form-actions button {
+      flex: 1;
+    }
+
+    /* REPORTS */
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .report-grid button {
+      padding: 15px;
+      border: 0;
+      background: white;
+      border-radius: 12px;
+      text-align: left;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      z-index: 1000;
+      display: none;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    @media (min-width: 700px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .modal {
+        align-items: center;
+      }
+
+      .modal-box {
+        border-radius: 18px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-group.full {
+        grid-column: auto;
+      }
+
+      .report-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-  <!-- ==================================================
-       LOGIN
-  =================================================== -->
+<!-- LOGIN -->
+<section id="login">
+  <div class="login-box">
+    <h1>Garage Operations</h1>
+    <p>Sign in to continue</p>
 
-  <div id="login" class="screen">
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Username</label>
+        <input id="username" required autocomplete="username">
+      </div>
 
-    <div class="login-card">
+      <div class="form-group">
+        <label>Password</label>
+        <input id="password" type="password" required autocomplete="current-password">
+      </div>
 
-      <h1>Garage Operations</h1>
+      <button class="btn" style="width:100%;" type="submit">
+        Login
+      </button>
 
-      <p>
-        Vehicle repair & expense management
-      </p>
-
-      <form id="loginForm">
-
-        <input
-          id="username"
-          type="text"
-          placeholder="Username"
-          autocomplete="username"
-          required
-        >
-
-        <input
-          id="password"
-          type="password"
-          placeholder="Password"
-          autocomplete="current-password"
-          required
-        >
-
-        <button type="submit">
-          Sign in
-        </button>
-
-      </form>
-
-      <p id="loginMsg" class="msg"></p>
-
-    </div>
-
+      <p id="loginMsg"></p>
+    </form>
   </div>
+</section>
 
 
-  <!-- ==================================================
-       MAIN APPLICATION
-  =================================================== -->
+<!-- APPLICATION -->
+<section id="app" class="hidden">
 
-  <div id="app" class="hidden">
-
-    <!-- HEADER -->
-
-    <header>
-
+  <header>
+    <div class="header-top">
       <div>
         <h1>Garage Operations Pro</h1>
-
-        <small>
-          Vehicles • Expenses • Petty Cash • Requisitions
-        </small>
+        <div class="user-name" id="loggedUser"></div>
       </div>
 
-      <button
-        id="logout"
-        class="secondary"
-        type="button"
-      >
-        Sign out
+      <button class="btn danger" id="logout">
+        Logout
       </button>
+    </div>
 
-    </header>
-
-
-    <!-- ==================================================
-         NAVIGATION
-    =================================================== -->
-
-    <nav class="tabs">
-
-      <button
-        class="tab active"
-        data-tab="dashboard"
-        type="button"
-      >
-        Dashboard
-      </button>
-
-      <button
-        class="tab"
-        data-tab="vehicles"
-        type="button"
-      >
-        Vehicles
-      </button>
-
-      <button
-        class="tab"
-        data-tab="petty"
-        type="button"
-      >
-        Petty Cash
-      </button>
-
-      <button
-        class="tab"
-        data-tab="requisitions"
-        type="button"
-      >
-        Requisitions
-      </button>
-
-      <button
-        class="tab"
-        data-tab="reports"
-        type="button"
-      >
-        Print / Share
-      </button>
-
+    <!-- MAIN NAVIGATION -->
+    <nav>
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="vehicles">Vehicles</button>
+      <button class="tab" data-tab="expenses">Expenses</button>
+      <button class="tab" data-tab="petty">Petty Cash</button>
+      <button class="tab" data-tab="requisitions">Requisitions</button>
+      <button class="tab" data-tab="reports">Reports</button>
     </nav>
-
-
-    <!-- ==================================================
-         MAIN
-    =================================================== -->
-
-    <main>
-
-
-      <!-- ==================================================
-           DASHBOARD
-      =================================================== -->
-
-      <section
-        id="dashboard"
-        class="tabpage active"
-      >
-
-        <section class="stats">
-
-          <div>
-            <span>Total Vehicles</span>
-            <b id="nVehicles">0</b>
-          </div>
-
-          <div>
-            <span>Under Repair</span>
-            <b id="nRepair">0</b>
-          </div>
-
-          <div>
-            <span>Storage</span>
-            <b id="nStorage">0</b>
-          </div>
-
-          <div>
-            <span>Total Expenses</span>
-            <b id="nExpenses">KSh 0</b>
-          </div>
-
-          <div>
-            <span>Petty Cash</span>
-            <b id="nPetty">KSh 0</b>
-          </div>
-
-          <div>
-            <span>Outstanding</span>
-            <b id="nOutstanding">KSh 0</b>
-          </div>
-
-        </section>
-
-
-        <!-- QUICK ACTIONS -->
-
-        <section class="panel">
-
-          <div class="head">
-            <h2>Quick Actions</h2>
-          </div>
-
-          <div class="quick">
-
-            <button
-              id="quickVehicle"
-              type="button"
-            >
-              + Add Vehicle
-            </button>
-
-            <button
-              id="quickExpense"
-              type="button"
-            >
-              + Add Vehicle Expense
-            </button>
-
-            <button
-              id="quickPetty"
-              type="button"
-            >
-              + Petty Cash
-            </button>
-
-            <button
-              id="quickReq"
-              type="button"
-            >
-              + Requisition
-            </button>
-
-            <button
-              class="secondary"
-              id="quickPrint"
-              type="button"
-            >
-              Print Summary
-            </button>
-
-          </div>
-
-        </section>
-
-      </section>
-
-
-      <!-- ==================================================
-           VEHICLES
-      =================================================== -->
-
-      <section
-        id="vehicles"
-        class="tabpage hidden"
-      >
-
-        <section class="panel">
-
-          <div class="head">
-
-            <h2>Vehicles</h2>
-
-            <button
-              id="addVehicle"
-              type="button"
-            >
-              + Add Vehicle
-            </button>
-
-          </div>
-
-
-          <div class="filters">
-
-            <input
-              id="search"
-              type="search"
-              placeholder="Search registration or customer"
-            >
-
-            <select id="filter">
-
-              <option value="">
-                All statuses
-              </option>
-
-              <option value="Under Repair">
-                Under Repair
-              </option>
-
-              <option value="Storage">
-                Storage
-              </option>
-
-              <option value="Completed">
-                Completed
-              </option>
-
-              <option value="Released">
-                Released
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div id="list"></div>
-
-        </section>
-
-      </section>
-
-
-      <!-- ==================================================
-           PETTY CASH
-      =================================================== -->
-
-      <section
-        id="petty"
-        class="tabpage hidden"
-      >
-
-        <section class="panel">
-
-          <div class="head">
-
-            <h2>Petty Cash</h2>
-
-            <button
-              id="addPetty"
-              type="button"
-            >
-              + Add Petty Cash
-            </button>
-
-          </div>
-
-
-          <div id="pettyList"></div>
-
-        </section>
-
-      </section>
-
-
-      <!-- ==================================================
-           REQUISITIONS
-      =================================================== -->
-
-      <section
-        id="requisitions"
-        class="tabpage hidden"
-      >
-
-        <section class="panel">
-
-          <div class="head">
-
-            <h2>Requisitions</h2>
-
-            <button
-              id="addReq"
-              type="button"
-            >
-              + New Requisition
-            </button>
-
-          </div>
-
-
-          <div id="reqList"></div>
-
-        </section>
-
-      </section>
-
-
-      <!-- ==================================================
-           REPORTS
-      =================================================== -->
-
-      <section
-        id="reports"
-        class="tabpage hidden"
-      >
-
-        <section class="panel">
-
-          <div class="head">
-            <h2>Print & Share</h2>
-          </div>
-
-
-          <div class="report-grid">
-
-            <button
-              type="button"
-              onclick="printSummary()"
-            >
-              Print Garage Summary
-            </button>
-
-            <button
-              type="button"
-              onclick="printVehicles()"
-            >
-              Print Vehicle List
-            </button>
-
-            <button
-              type="button"
-              onclick="printExpenses()"
-            >
-              Print All Vehicle Expenses
-            </button>
-
-            <button
-              type="button"
-              onclick="printPetty()"
-            >
-              Print Petty Cash
-            </button>
-
-            <button
-              type="button"
-              onclick="printRequisitions()"
-            >
-              Print Requisitions
-            </button>
-
-            <button
-              type="button"
-              onclick="shareGarage()"
-            >
-              Share Garage Link
-            </button>
-
-            <button
-              type="button"
-              onclick="shareSummary()"
-            >
-              Share Summary
-            </button>
-
-          </div>
-
-
-          <p class="muted">
-
-            On Android, Share uses your phone's normal
-            sharing menu. Printing opens the browser print
-            dialog, where you can choose a printer or
-            Save as PDF.
-
-          </p>
-
-        </section>
-
-      </section>
-
-    </main>
-
-  </div>
-
-
-  <!-- ==================================================
-       VEHICLE MODAL
-  =================================================== -->
-
-  <div
-    id="vehicleModal"
-    class="modal hidden"
-  >
-
-    <div class="card">
-
-      <div class="head">
-
-        <h2 id="vTitle">
-          Add Vehicle
-        </h2>
-
-        <button
-          class="x"
-          type="button"
-          data-close="vehicleModal"
-        >
-          ×
+  </header>
+
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="tabpage">
+
+      <div class="section-title">
+        <h2>Dashboard</h2>
+        <button class="btn" id="quickVehicle">+ Vehicle</button>
+      </div>
+
+      <div class="dashboard-grid">
+
+        <button class="dash-card" data-go="vehicles">
+          <span class="label">Vehicles</span>
+          <span class="value" id="nVehicles">0</span>
+          <span class="muted">Tap to open</span>
+        </button>
+
+        <button class="dash-card" data-go="vehicles">
+          <span class="label">Under Repair</span>
+          <span class="value" id="nRepair">0</span>
+          <span class="muted">Tap to view vehicles</span>
+        </button>
+
+        <button class="dash-card" data-go="vehicles">
+          <span class="label">In Storage</span>
+          <span class="value" id="nStorage">0</span>
+          <span class="muted">Tap to view vehicles</span>
+        </button>
+
+        <button class="dash-card" data-go="expenses">
+          <span class="label">Vehicle Expenses</span>
+          <span class="value" id="nExpenses">KSh 0</span>
+          <span class="muted">Tap to open expenses</span>
+        </button>
+
+        <button class="dash-card" data-go="petty">
+          <span class="label">Petty Cash</span>
+          <span class="value" id="nPetty">KSh 0</span>
+          <span class="muted">Tap to open petty cash</span>
+        </button>
+
+        <button class="dash-card" data-go="vehicles">
+          <span class="label">Outstanding</span>
+          <span class="value" id="nOutstanding">KSh 0</span>
+          <span class="muted">Vehicle balances</span>
         </button>
 
       </div>
 
+      <div class="toolbar">
+        <button class="btn" id="quickExpense">+ Expense</button>
+        <button class="btn success" id="quickPetty">+ Petty Cash</button>
+        <button class="btn warning" id="quickReq">+ Requisition</button>
+        <button class="btn secondary" id="quickPrint">Print Summary</button>
+      </div>
 
-      <form id="vehicleForm">
-
-        <input
-          type="hidden"
-          id="vid"
-        >
-
-
-        <label>
-          Registration
-
-          <input
-            id="reg"
-            type="text"
-            required
-            autocomplete="off"
-          >
-
-        </label>
+    </section>
 
 
-        <label>
-          Customer
+    <!-- VEHICLES -->
+    <section id="vehicles" class="tabpage hidden">
 
-          <input
-            id="customer"
-            type="text"
-            required
-          >
+      <div class="section-title">
+        <h2>Vehicles</h2>
+        <button class="btn" id="addVehicle">+ Vehicle</button>
+      </div>
 
-        </label>
+      <div class="toolbar">
+        <input id="search" placeholder="Search registration, customer...">
 
+        <select id="filter">
+          <option value="">All Vehicles</option>
+          <option value="repair">Under Repair</option>
+          <option value="storage">In Storage</option>
+          <option value="released">Released</option>
+        </select>
+      </div>
 
-        <div class="two">
+      <div id="list" class="list"></div>
 
-          <label>
-            Date received
-
-            <input
-              id="date_in"
-              type="date"
-              required
-            >
-
-          </label>
+    </section>
 
 
-          <label>
-            Job type
+    <!-- EXPENSES -->
+    <section id="expenses" class="tabpage hidden">
 
-            <select id="job_type">
+      <div class="section-title">
+        <h2>Vehicle Expenses</h2>
+        <button class="btn" id="addExpense">+ Expense</button>
+      </div>
 
-              <option value="Repair">
-                Repair
-              </option>
+      <div id="expenseList" class="list"></div>
 
-              <option value="Storage">
-                Storage
-              </option>
+    </section>
 
-            </select>
 
-          </label>
+    <!-- PETTY CASH -->
+    <section id="petty" class="tabpage hidden">
 
+      <div class="section-title">
+        <h2>Petty Cash</h2>
+        <button class="btn success" id="addPetty">+ Transaction</button>
+      </div>
+
+      <div id="pettyList" class="list"></div>
+
+    </section>
+
+
+    <!-- REQUISITIONS -->
+    <section id="requisitions" class="tabpage hidden">
+
+      <div class="section-title">
+        <h2>Requisitions</h2>
+        <button class="btn warning" id="addReq">+ Requisition</button>
+      </div>
+
+      <div id="reqList" class="list"></div>
+
+    </section>
+
+
+    <!-- REPORTS -->
+    <section id="reports" class="tabpage hidden">
+
+      <div class="section-title">
+        <h2>Reports</h2>
+      </div>
+
+      <div class="report-grid">
+
+        <button onclick="printSummary()">
+          <strong>Dashboard Summary</strong><br>
+          <span class="muted">Print current summary</span>
+        </button>
+
+        <button onclick="printVehicles()">
+          <strong>Vehicle Report</strong><br>
+          <span class="muted">All vehicles</span>
+        </button>
+
+        <button onclick="printExpenses()">
+          <strong>Expense Report</strong><br>
+          <span class="muted">All vehicle expenses</span>
+        </button>
+
+        <button onclick="printPetty()">
+          <strong>Petty Cash Report</strong><br>
+          <span class="muted">Petty cash transactions</span>
+        </button>
+
+        <button onclick="printRequisitions()">
+          <strong>Requisition Report</strong><br>
+          <span class="muted">All requisitions</span>
+        </button>
+
+        <button onclick="shareGarage()">
+          <strong>Share Garage</strong><br>
+          <span class="muted">Share application information</span>
+        </button>
+
+      </div>
+
+    </section>
+
+  </main>
+</section>
+
+
+<!-- VEHICLE MODAL -->
+<div id="vehicleModal" class="modal hidden">
+
+  <div class="modal-box">
+
+    <div class="modal-head">
+      <h2 id="vTitle">Add Vehicle</h2>
+      <button class="close" data-close="vehicleModal">×</button>
+    </div>
+
+    <form id="vehicleForm">
+
+      <input type="hidden" id="vid">
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label>Registration *</label>
+          <input id="reg" required>
         </div>
 
+        <div class="form-group">
+          <label>Customer</label>
+          <input id="customer">
+        </div>
 
-        <label>
-          Status
+        <div class="form-group">
+          <label>Date In</label>
+          <input id="date_in" type="date">
+        </div>
 
+        <div class="form-group">
+          <label>Job Type</label>
+          <input id="job_type" placeholder="Repair / Service / Body work">
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
           <select id="status">
-
-            <option value="Under Repair">
-              Under Repair
-            </option>
-
-            <option value="Storage">
-              Storage
-            </option>
-
-            <option value="Completed">
-              Completed
-            </option>
-
-            <option value="Released">
-              Released
-            </option>
-
+            <option value="repair">Under Repair</option>
+            <option value="storage">In Storage</option>
+            <option value="released">Released</option>
           </select>
-
-        </label>
-
-
-        <!-- STORAGE / RELEASE -->
-
-        <div
-          id="storageFields"
-          class="storage-box hidden"
-        >
-
-          <h3>
-            Storage / Release Details
-          </h3>
-
-
-          <div class="two">
-
-            <label>
-              Date out
-
-              <input
-                id="date_out"
-                type="date"
-              >
-
-            </label>
-
-
-            <label>
-              Released to
-
-              <input
-                id="released_to"
-                type="text"
-                placeholder="Name of person receiving vehicle"
-              >
-
-            </label>
-
-          </div>
-
-
-          <label>
-            Contact of person released to
-
-            <input
-              id="released_contact"
-              type="tel"
-              inputmode="tel"
-              placeholder="Phone number"
-            >
-
-          </label>
-
-
-          <p class="muted">
-
-            For vehicles in storage, leave Date out
-            blank until the vehicle is released.
-
-          </p>
-
         </div>
 
-
-        <label>
-          Description
-
-          <textarea
-            id="description"
-            rows="3"
-            placeholder="Describe the repair or storage job"
-          ></textarea>
-
-        </label>
-
-
-        <div class="two">
-
-          <label>
-            Charge-out
-
-            <input
-              id="billed"
-              type="number"
-              min="0"
-              step="0.01"
-              value="0"
-              inputmode="decimal"
-            >
-
-          </label>
-
-
-          <label>
-            Payment received
-
-            <input
-              id="paid"
-              type="number"
-              min="0"
-              step="0.01"
-              value="0"
-              inputmode="decimal"
-            >
-
-          </label>
-
+        <div class="form-group" id="storageFields">
+          <label>Date Out</label>
+          <input id="date_out" type="date">
         </div>
 
-
-        <div class="actions">
-
-          <button
-            type="button"
-            class="secondary"
-            data-close="vehicleModal"
-          >
-            Cancel
-          </button>
-
-          <button type="submit">
-            Save Vehicle
-          </button>
-
+        <div class="form-group">
+          <label>Released To</label>
+          <input id="released_to">
         </div>
 
-      </form>
+        <div class="form-group">
+          <label>Released Contact</label>
+          <input id="released_contact">
+        </div>
 
-    </div>
+        <div class="form-group">
+          <label>Billed Amount</label>
+          <input id="billed" type="number" step="0.01" value="0">
+        </div>
 
-  </div>
+        <div class="form-group">
+          <label>Paid Amount</label>
+          <input id="paid" type="number" step="0.01" value="0">
+        </div>
 
-
-  <!-- ==================================================
-       VEHICLE EXPENSE MODAL
-  =================================================== -->
-
-  <div
-    id="expenseModal"
-    class="modal hidden"
-  >
-
-    <div class="card">
-
-      <div class="head">
-
-        <h2>
-          Add Vehicle Expense
-        </h2>
-
-        <button
-          class="x"
-          type="button"
-          data-close="expenseModal"
-        >
-          ×
-        </button>
+        <div class="form-group full">
+          <label>Description</label>
+          <textarea id="description"></textarea>
+        </div>
 
       </div>
 
+      <div class="form-actions">
+        <button type="button" class="btn light" data-close="vehicleModal">
+          Cancel
+        </button>
 
-      <form id="expenseForm">
+        <button type="submit" class="btn">
+          Save / Update
+        </button>
+      </div>
 
-        <label>
-          Vehicle
-
-          <select
-            id="evidSelect"
-            required
-          >
-
-            <option value="">
-              Select vehicle
-            </option>
-
-          </select>
-
-        </label>
+    </form>
+  </div>
+</div>
 
 
-        <input
-          type="hidden"
-          id="evid"
-        >
+<!-- EXPENSE MODAL -->
+<div id="expenseModal" class="modal hidden">
 
+  <div class="modal-box">
 
-        <label>
-          Date
+    <div class="modal-head">
+      <h2 id="expenseTitle">Add Expense</h2>
+      <button class="close" data-close="expenseModal">×</button>
+    </div>
 
-          <input
-            id="edate"
-            type="date"
-            required
-          >
+    <form id="expenseForm">
 
-        </label>
+      <input type="hidden" id="evid">
 
+      <div class="form-grid">
 
-        <label>
-          Description
+        <div class="form-group full">
+          <label>Vehicle *</label>
+          <select id="evidSelect" required></select>
+        </div>
 
-          <input
-            id="edesc"
-            type="text"
-            required
-            placeholder="e.g. Windscreen, filler, service parts"
-          >
+        <div class="form-group">
+          <label>Date</label>
+          <input id="edate" type="date">
+        </div>
 
-        </label>
-
-
-        <label>
-          Category
-
+        <div class="form-group">
+          <label>Category</label>
           <select id="ecat">
-
-            <option value="Parts">
-              Parts
-            </option>
-
-            <option value="Materials">
-              Materials
-            </option>
-
-            <option value="Labour">
-              Labour
-            </option>
-
-            <option value="Transport">
-              Transport
-            </option>
-
-            <option value="Service">
-              Service
-            </option>
-
-            <option value="Other">
-              Other
-            </option>
-
+            <option value="Parts">Parts</option>
+            <option value="Materials">Materials</option>
+            <option value="Labour">Labour</option>
+            <option value="Other">Other</option>
           </select>
-
-        </label>
-
-
-        <label>
-          Amount (KSh)
-
-          <input
-            id="eamount"
-            type="number"
-            min="0"
-            step="0.01"
-            required
-            inputmode="decimal"
-          >
-
-        </label>
-
-
-        <div class="actions">
-
-          <button
-            type="button"
-            class="secondary"
-            data-close="expenseModal"
-          >
-            Cancel
-          </button>
-
-          <button type="submit">
-            Save Expense
-          </button>
-
         </div>
 
-      </form>
+        <div class="form-group full">
+          <label>Description *</label>
+          <input id="edesc" required>
+        </div>
 
-    </div>
-
-  </div>
-
-
-  <!-- ==================================================
-       PETTY CASH MODAL
-  =================================================== -->
-
-  <div
-    id="pettyModal"
-    class="modal hidden"
-  >
-
-    <div class="card">
-
-      <div class="head">
-
-        <h2>
-          Petty Cash
-        </h2>
-
-        <button
-          class="x"
-          type="button"
-          data-close="pettyModal"
-        >
-          ×
-        </button>
+        <div class="form-group">
+          <label>Amount *</label>
+          <input id="eamount" type="number" step="0.01" min="0" required>
+        </div>
 
       </div>
 
+      <div class="form-actions">
+        <button type="button" class="btn light" data-close="expenseModal">
+          Cancel
+        </button>
 
-      <form id="pettyForm">
+        <button type="submit" class="btn">
+          Save / Update
+        </button>
+      </div>
 
-        <input
-          type="hidden"
-          id="pcid"
-        >
-
-
-        <div class="two">
-
-          <label>
-            Date
-
-            <input
-              id="pcdate"
-              type="date"
-              required
-            >
-
-          </label>
+    </form>
+  </div>
+</div>
 
 
-          <label>
-            Amount (KSh)
+<!-- PETTY CASH MODAL -->
+<div id="pettyModal" class="modal hidden">
 
-            <input
-              id="pcamount"
-              type="number"
-              min="0"
-              step="0.01"
-              required
-              inputmode="decimal"
-            >
+  <div class="modal-box">
 
-          </label>
-
-        </div>
-
-
-        <label>
-          Description
-
-          <input
-            id="pcdesc"
-            type="text"
-            required
-            placeholder="e.g. bike, soap, newspaper"
-          >
-
-        </label>
-
-
-        <div class="two">
-
-          <label>
-            Paid to / By
-
-            <input
-              id="pcperson"
-              type="text"
-            >
-
-          </label>
-
-
-          <label>
-            Category
-
-            <select id="pccat">
-
-              <option value="Transport">
-                Transport
-              </option>
-
-              <option value="Materials">
-                Materials
-              </option>
-
-              <option value="Food">
-                Food
-              </option>
-
-              <option value="Labour">
-                Labour
-              </option>
-
-              <option value="Other">
-                Other
-              </option>
-
-            </select>
-
-          </label>
-
-        </div>
-
-
-        <label>
-          Reference / Notes
-
-          <textarea
-            id="pcnotes"
-            rows="3"
-            placeholder="Optional reference or notes"
-          ></textarea>
-
-        </label>
-
-
-        <div class="actions">
-
-          <button
-            type="button"
-            class="secondary"
-            data-close="pettyModal"
-          >
-            Cancel
-          </button>
-
-          <button type="submit">
-            Save Petty Cash
-          </button>
-
-        </div>
-
-      </form>
-
+    <div class="modal-head">
+      <h2 id="pettyTitle">Petty Cash</h2>
+      <button class="close" data-close="pettyModal">×</button>
     </div>
 
-  </div>
+    <form id="pettyForm">
 
+      <input type="hidden" id="pcid">
 
-  <!-- ==================================================
-       REQUISITION MODAL
-  =================================================== -->
+      <div class="form-grid">
 
-  <div
-    id="reqModal"
-    class="modal hidden"
-  >
+        <div class="form-group">
+          <label>Date</label>
+          <input id="pcdate" type="date">
+        </div>
 
-    <div class="card">
+        <div class="form-group">
+          <label>Amount *</label>
+          <input id="pcamount" type="number" step="0.01" min="0" required>
+        </div>
 
-      <div class="head">
+        <div class="form-group full">
+          <label>Description *</label>
+          <input id="pcdesc" required>
+        </div>
 
-        <h2 id="reqTitle">
-          New Requisition
-        </h2>
+        <div class="form-group">
+          <label>Person</label>
+          <input id="pcperson">
+        </div>
 
-        <button
-          class="x"
-          type="button"
-          data-close="reqModal"
-        >
-          ×
-        </button>
+        <div class="form-group">
+          <label>Category</label>
+          <input id="pccat" placeholder="Transport / Food / Other">
+        </div>
+
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="pcnotes"></textarea>
+        </div>
 
       </div>
 
+      <div class="form-actions">
+        <button type="button" class="btn light" data-close="pettyModal">
+          Cancel
+        </button>
 
-      <form id="reqForm">
+        <button type="submit" class="btn success">
+          Save / Update
+        </button>
+      </div>
 
-        <input
-          type="hidden"
-          id="reqid"
-        >
-
-
-        <div class="two">
-
-          <label>
-            Requisition No.
-
-            <input
-              id="reqno"
-              type="text"
-              required
-              placeholder="REQ-001"
-            >
-
-          </label>
+    </form>
+  </div>
+</div>
 
 
-          <label>
-            Date
+<!-- REQUISITION MODAL -->
+<div id="reqModal" class="modal hidden">
 
-            <input
-              id="reqdate"
-              type="date"
-              required
-            >
+  <div class="modal-box">
 
-          </label>
+    <div class="modal-head">
+      <h2 id="reqTitle">Add Requisition</h2>
+      <button class="close" data-close="reqModal">×</button>
+    </div>
 
+    <form id="reqForm">
+
+      <input type="hidden" id="reqid">
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label>Requisition No.</label>
+          <input id="reqno" readonly>
         </div>
 
-
-        <label>
-          Requested by
-
-          <input
-            id="reqby"
-            type="text"
-            required
-          >
-
-        </label>
-
-
-        <div class="two">
-
-          <label>
-            Vehicle
-
-            <select id="reqvehicle">
-
-              <option value="">
-                General / No vehicle
-              </option>
-
-            </select>
-
-          </label>
-
-
-          <label>
-            Expense Type
-
-            <select id="reqcat">
-
-              <option value="Parts">
-                Parts
-              </option>
-
-              <option value="Materials">
-                Materials
-              </option>
-
-              <option value="Labour">
-                Labour
-              </option>
-
-            </select>
-
-          </label>
-
+        <div class="form-group">
+          <label>Date</label>
+          <input id="reqdate" type="date">
         </div>
 
+        <div class="form-group">
+          <label>Requested By *</label>
+          <input id="reqby" required>
+        </div>
 
-        <label>
-          Status
+        <div class="form-group">
+          <label>Vehicle</label>
+          <select id="reqvehicle"></select>
+        </div>
 
+        <div class="form-group">
+          <label>Expense Type *</label>
+          <select id="reqcat" required>
+            <option value="Parts">Parts</option>
+            <option value="Materials">Materials</option>
+            <option value="Labour">Labour</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
           <select id="reqstatus">
-
-            <option value="Pending">
-              Pending
-            </option>
-
-            <option value="Approved">
-              Approved
-            </option>
-
-            <option value="Purchased">
-              Purchased
-            </option>
-
-            <option value="Rejected">
-              Rejected
-            </option>
-
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Purchased">Purchased</option>
+            <option value="Paid">Paid</option>
+            <option value="Rejected">Rejected</option>
           </select>
-
-        </label>
-
-
-        <label>
-          Item / Description
-
-          <input
-            id="reqitem"
-            type="text"
-            required
-            placeholder="e.g. 5 litres thinner"
-          >
-
-        </label>
-
-
-        <div class="three">
-
-          <label>
-            Quantity
-
-            <input
-              id="reqqty"
-              type="number"
-              min="0"
-              step="0.01"
-              value="1"
-              inputmode="decimal"
-            >
-
-          </label>
-
-
-          <label>
-            Unit Cost
-
-            <input
-              id="requnit"
-              type="number"
-              min="0"
-              step="0.01"
-              value="0"
-              inputmode="decimal"
-            >
-
-          </label>
-
-
-          <label>
-            Total
-
-            <input
-              id="reqtotal"
-              type="number"
-              min="0"
-              step="0.01"
-              value="0"
-              readonly
-            >
-
-          </label>
-
         </div>
 
-
-        <label>
-          Notes
-
-          <textarea
-            id="reqnotes"
-            rows="3"
-            placeholder="Optional notes"
-          ></textarea>
-
-        </label>
-
-
-        <div class="actions">
-
-          <button
-            type="button"
-            class="secondary"
-            data-close="reqModal"
-          >
-            Cancel
-          </button>
-
-          <button type="submit">
-            Save Requisition
-          </button>
-
+        <div class="form-group full">
+          <label>Item / Description *</label>
+          <input id="reqitem" required>
         </div>
 
-      </form>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input id="reqqty" type="number" step="0.01" value="1">
+        </div>
 
-    </div>
+        <div class="form-group">
+          <label>Unit Cost</label>
+          <input id="requnit" type="number" step="0.01" value="0">
+        </div>
 
+        <div class="form-group">
+          <label>Total</label>
+          <input id="reqtotal" type="number" step="0.01" readonly>
+        </div>
+
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="reqnotes"></textarea>
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn light" data-close="reqModal">
+          Cancel
+        </button>
+
+        <button type="submit" class="btn warning">
+          Save / Update
+        </button>
+      </div>
+
+    </form>
   </div>
+</div>
 
 
-  <!-- ==================================================
-       TOAST
-  =================================================== -->
-
-  <div
-    id="toast"
-    role="status"
-    aria-live="polite"
-  ></div>
+<div id="toast"></div>
 
 
-  <!-- ==================================================
-       JAVASCRIPT
-  =================================================== -->
+<script type="module" src="./app.js"></script>
 
-  <script
-    type="module"
-    src="./app.js"
-  ></script>
-
-
-  <!-- ==================================================
-       SERVICE WORKER
-  =================================================== -->
-
-  <script>
-
-    if ("serviceWorker" in navigator) {
-
-      window.addEventListener(
-        "load",
-        () => {
-
-          navigator.serviceWorker
-            .register("./sw.js")
-            .catch(error => {
-              console.log(
-                "Service worker registration:",
-                error
-              );
-            });
-
-        }
-      );
-
-    }
-
-  </script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
 
 </body>
-</html>
+  </html>
