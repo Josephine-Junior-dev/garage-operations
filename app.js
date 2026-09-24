@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 // ======================================================
-// SUPABASE CONNECTION
+// SUPABASE
 // ======================================================
 
 const SUPABASE_URL =
@@ -40,9 +40,7 @@ let requisitions = [];
 // ======================================================
 
 function money(value) {
-  const n = Number(value || 0);
-
-  return "KSh " + n.toLocaleString("en-KE", {
+  return "KSh " + Number(value || 0).toLocaleString("en-KE", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
   });
@@ -79,9 +77,7 @@ function vehicleName(id) {
 function statusClass(status) {
   const s = String(status || "").toLowerCase();
 
-  if (s.includes("repair")) {
-    return "status-repair";
-  }
+  if (s.includes("repair")) return "status-repair";
 
   if (
     s.includes("completed") ||
@@ -91,9 +87,7 @@ function statusClass(status) {
     return "status-completed";
   }
 
-  if (s.includes("rejected")) {
-    return "status-rejected";
-  }
+  if (s.includes("rejected")) return "status-rejected";
 
   return "status-pending";
 }
@@ -107,13 +101,11 @@ function showToast(message, error = false) {
   }
 
   toast.textContent = message;
-
-  toast.className =
-    "toast show" + (error ? " error" : "");
+  toast.className = "toast show" + (error ? " error" : "");
 
   setTimeout(() => {
     toast.className = "toast";
-  }, 5000);
+  }, 4500);
 }
 
 function supabaseError(prefix, error) {
@@ -124,9 +116,7 @@ function supabaseError(prefix, error) {
     error?.details,
     error?.hint,
     error?.code
-  ]
-    .filter(Boolean)
-    .join(" | ");
+  ].filter(Boolean).join(" | ");
 
   showToast(
     prefix + (details ? ": " + details : ""),
@@ -134,20 +124,14 @@ function supabaseError(prefix, error) {
   );
 }
 
-function closeModal(id) {
-  const modal = document.getElementById(id);
-
-  if (modal) {
-    modal.classList.remove("show");
-  }
-}
-
 function openModal(id) {
   const modal = document.getElementById(id);
+  if (modal) modal.classList.add("show");
+}
 
-  if (modal) {
-    modal.classList.add("show");
-  }
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) modal.classList.remove("show");
 }
 
 // ======================================================
@@ -156,15 +140,13 @@ function openModal(id) {
 
 window.showSection = function(sectionId, button) {
 
-  document.querySelectorAll(".section")
-    .forEach(section => {
-      section.classList.remove("active");
-    });
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.remove("active");
+  });
 
-  document.querySelectorAll(".nav button")
-    .forEach(btn => {
-      btn.classList.remove("active");
-    });
+  document.querySelectorAll(".nav button").forEach(btn => {
+    btn.classList.remove("active");
+  });
 
   const section = document.getElementById(sectionId);
 
@@ -174,6 +156,50 @@ window.showSection = function(sectionId, button) {
 
   if (button) {
     button.classList.add("active");
+  }
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+};
+
+// ======================================================
+// DASHBOARD NAVIGATION
+// ======================================================
+
+window.goToDashboardSection = function(sectionId) {
+
+  const buttons =
+    document.querySelectorAll(".nav button");
+
+  let matchingButton = null;
+
+  buttons.forEach(btn => {
+    const onclick = btn.getAttribute("onclick") || "";
+
+    if (onclick.includes(`'${sectionId}'`) ||
+        onclick.includes(`"${sectionId}"`)) {
+      matchingButton = btn;
+    }
+  });
+
+  showSection(sectionId, matchingButton);
+
+  if (sectionId === "vehiclesSection") {
+    renderVehicles();
+  }
+
+  if (sectionId === "expensesSection") {
+    renderExpenses();
+  }
+
+  if (sectionId === "pettySection") {
+    renderPettyCash();
+  }
+
+  if (sectionId === "requisitionsSection") {
+    renderRequisitions();
   }
 };
 
@@ -357,26 +383,22 @@ function populateVehicleSelects() {
 
 function renderDashboard() {
 
-  const totalVehicles =
-    vehicles.length;
+  const totalVehicles = vehicles.length;
 
   const underRepair =
     vehicles.filter(v =>
-      String(v.status || "")
-        .toLowerCase() === "under repair"
+      String(v.status || "").toLowerCase() === "under repair"
     ).length;
 
   const billed =
     vehicles.reduce(
-      (sum, v) =>
-        sum + number(v.billed),
+      (sum, v) => sum + number(v.billed),
       0
     );
 
   const paid =
     vehicles.reduce(
-      (sum, v) =>
-        sum + number(v.paid),
+      (sum, v) => sum + number(v.paid),
       0
     );
 
@@ -385,73 +407,33 @@ function renderDashboard() {
 
   const expenseTotal =
     expenses.reduce(
-      (sum, e) =>
-        sum + number(e.amount),
+      (sum, e) => sum + number(e.amount),
       0
     );
 
   const pettyTotal =
     pettyCash.reduce(
-      (sum, p) =>
-        sum + number(p.amount),
+      (sum, p) => sum + number(p.amount),
       0
     );
 
-  const dashVehicles =
-    document.getElementById("dashVehicles");
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
 
-  const dashRepair =
-    document.getElementById("dashRepair");
-
-  const dashBilled =
-    document.getElementById("dashBilled");
-
-  const dashPaid =
-    document.getElementById("dashPaid");
-
-  const dashOutstanding =
-    document.getElementById("dashOutstanding");
-
-  const dashExpenses =
-    document.getElementById("dashExpenses");
-
-  const dashPetty =
-    document.getElementById("dashPetty");
-
-  const dashReq =
-    document.getElementById("dashReq");
-
-  if (dashVehicles)
-    dashVehicles.textContent = totalVehicles;
-
-  if (dashRepair)
-    dashRepair.textContent = underRepair;
-
-  if (dashBilled)
-    dashBilled.textContent = money(billed);
-
-  if (dashPaid)
-    dashPaid.textContent = money(paid);
-
-  if (dashOutstanding)
-    dashOutstanding.textContent =
-      money(outstanding);
-
-  if (dashExpenses)
-    dashExpenses.textContent =
-      money(expenseTotal);
-
-  if (dashPetty)
-    dashPetty.textContent =
-      money(pettyTotal);
-
-  if (dashReq)
-    dashReq.textContent =
-      requisitions.length;
+  set("dashVehicles", totalVehicles);
+  set("dashRepair", underRepair);
+  set("dashBilled", money(billed));
+  set("dashPaid", money(paid));
+  set("dashOutstanding", money(outstanding));
+  set("dashExpenses", money(expenseTotal));
+  set("dashPetty", money(pettyTotal));
+  set("dashReq", requisitions.length);
 }
 
 // ======================================================
-// VEHICLES RENDER
+// VEHICLES
 // ======================================================
 
 window.renderVehicles = function() {
@@ -487,10 +469,7 @@ window.renderVehicles = function() {
         !status ||
         vehicle.status === status;
 
-      return (
-        matchesSearch &&
-        matchesStatus
-      );
+      return matchesSearch && matchesStatus;
     });
 
   if (!filtered.length) {
@@ -509,21 +488,13 @@ window.renderVehicles = function() {
   body.innerHTML =
     filtered.map(vehicle => {
 
-      const billed =
-        number(vehicle.billed);
-
-      const paid =
-        number(vehicle.paid);
-
-      const outstanding =
-        billed - paid;
+      const billed = number(vehicle.billed);
+      const paid = number(vehicle.paid);
+      const outstanding = billed - paid;
 
       return `
-        <tr
-          class="clickable-row"
-          data-vehicle-id="${escapeHtml(vehicle.id)}"
-          title="Tap to open and edit vehicle"
-        >
+        <tr class="clickable-row"
+            data-vehicle-id="${escapeHtml(vehicle.id)}">
 
           <td>
             <strong>
@@ -531,17 +502,11 @@ window.renderVehicles = function() {
             </strong>
           </td>
 
-          <td>
-            ${escapeHtml(vehicle.customer)}
-          </td>
+          <td>${escapeHtml(vehicle.customer)}</td>
 
-          <td>
-            ${escapeHtml(vehicle.date_in || "")}
-          </td>
+          <td>${escapeHtml(vehicle.date_in || "")}</td>
 
-          <td>
-            ${escapeHtml(vehicle.job_type || "")}
-          </td>
+          <td>${escapeHtml(vehicle.job_type || "")}</td>
 
           <td>
             <span class="status ${statusClass(vehicle.status)}">
@@ -549,17 +514,11 @@ window.renderVehicles = function() {
             </span>
           </td>
 
-          <td>
-            ${money(billed)}
-          </td>
+          <td>${money(billed)}</td>
 
-          <td>
-            ${money(paid)}
-          </td>
+          <td>${money(paid)}</td>
 
-          <td>
-            ${money(outstanding)}
-          </td>
+          <td>${money(outstanding)}</td>
 
           <td>
             <div class="actions">
@@ -567,16 +526,14 @@ window.renderVehicles = function() {
               <button
                 type="button"
                 class="btn btn-secondary btn-small"
-                onclick="event.stopPropagation(); editVehicle('${vehicle.id}')"
-              >
+                onclick="event.stopPropagation(); editVehicle('${vehicle.id}')">
                 Edit
               </button>
 
               <button
                 type="button"
                 class="btn btn-danger btn-small"
-                onclick="event.stopPropagation(); deleteVehicle('${vehicle.id}')"
-              >
+                onclick="event.stopPropagation(); deleteVehicle('${vehicle.id}')">
                 Delete
               </button>
 
@@ -590,7 +547,7 @@ window.renderVehicles = function() {
 };
 
 // ======================================================
-// OPEN VEHICLE MODAL
+// VEHICLE MODAL
 // ======================================================
 
 window.openVehicleModal = function(id = null) {
@@ -601,63 +558,25 @@ window.openVehicleModal = function(id = null) {
   document.getElementById(
     "vehicleModalTitle"
   ).textContent =
-    id
-      ? "Edit Vehicle"
-      : "Add Vehicle";
+    id ? "Edit Vehicle" : "Add Vehicle";
 
   if (!id) {
 
-    document.getElementById(
-      "vehicleRegistration"
-    ).value = "";
-
-    document.getElementById(
-      "vehicleCustomer"
-    ).value = "";
-
-    document.getElementById(
-      "vehicleDateIn"
-    ).value = today();
-
-    document.getElementById(
-      "vehicleDateOut"
-    ).value = "";
-
-    document.getElementById(
-      "vehicleJobType"
-    ).value = "Repair";
-
-    document.getElementById(
-      "vehicleStatus"
-    ).value = "Under Repair";
-
-    document.getElementById(
-      "vehicleBilled"
-    ).value = "0";
-
-    document.getElementById(
-      "vehiclePaid"
-    ).value = "0";
-
-    document.getElementById(
-      "vehicleReleasedTo"
-    ).value = "";
-
-    document.getElementById(
-      "vehicleReleasedContact"
-    ).value = "";
-
-    document.getElementById(
-      "vehicleDescription"
-    ).value = "";
+    document.getElementById("vehicleRegistration").value = "";
+    document.getElementById("vehicleCustomer").value = "";
+    document.getElementById("vehicleDateIn").value = today();
+    document.getElementById("vehicleDateOut").value = "";
+    document.getElementById("vehicleJobType").value = "Repair";
+    document.getElementById("vehicleStatus").value = "Under Repair";
+    document.getElementById("vehicleBilled").value = "0";
+    document.getElementById("vehiclePaid").value = "0";
+    document.getElementById("vehicleReleasedTo").value = "";
+    document.getElementById("vehicleReleasedContact").value = "";
+    document.getElementById("vehicleDescription").value = "";
   }
 
   openModal("vehicleModal");
 };
-
-// ======================================================
-// EDIT VEHICLE
-// ======================================================
 
 window.editVehicle = function(id) {
 
@@ -665,130 +584,59 @@ window.editVehicle = function(id) {
     vehicles.find(v => v.id === id);
 
   if (!vehicle) {
-
-    showToast(
-      "Vehicle could not be found.",
-      true
-    );
-
+    showToast("Vehicle not found.", true);
     return;
   }
 
-  document.getElementById(
-    "vehicleId"
-  ).value = vehicle.id;
-
-  document.getElementById(
-    "vehicleRegistration"
-  ).value =
+  document.getElementById("vehicleId").value = vehicle.id;
+  document.getElementById("vehicleRegistration").value =
     vehicle.registration || "";
-
-  document.getElementById(
-    "vehicleCustomer"
-  ).value =
+  document.getElementById("vehicleCustomer").value =
     vehicle.customer || "";
-
-  document.getElementById(
-    "vehicleDateIn"
-  ).value =
+  document.getElementById("vehicleDateIn").value =
     vehicle.date_in || today();
-
-  document.getElementById(
-    "vehicleDateOut"
-  ).value =
+  document.getElementById("vehicleDateOut").value =
     vehicle.date_out || "";
-
-  document.getElementById(
-    "vehicleJobType"
-  ).value =
+  document.getElementById("vehicleJobType").value =
     vehicle.job_type || "Repair";
-
-  document.getElementById(
-    "vehicleStatus"
-  ).value =
+  document.getElementById("vehicleStatus").value =
     vehicle.status || "Under Repair";
-
-  document.getElementById(
-    "vehicleBilled"
-  ).value =
+  document.getElementById("vehicleBilled").value =
     vehicle.billed || 0;
-
-  document.getElementById(
-    "vehiclePaid"
-  ).value =
+  document.getElementById("vehiclePaid").value =
     vehicle.paid || 0;
-
-  document.getElementById(
-    "vehicleReleasedTo"
-  ).value =
+  document.getElementById("vehicleReleasedTo").value =
     vehicle.released_to || "";
-
-  document.getElementById(
-    "vehicleReleasedContact"
-  ).value =
+  document.getElementById("vehicleReleasedContact").value =
     vehicle.released_contact || "";
-
-  document.getElementById(
-    "vehicleDescription"
-  ).value =
+  document.getElementById("vehicleDescription").value =
     vehicle.description || "";
 
   document.getElementById(
     "vehicleModalTitle"
-  ).textContent =
-    "Edit Vehicle";
+  ).textContent = "Edit Vehicle";
 
   openModal("vehicleModal");
 };
-
-// ======================================================
-// SAVE VEHICLE
-// ======================================================
 
 window.saveVehicle = async function(event) {
 
   event.preventDefault();
 
   const id =
-    document.getElementById(
-      "vehicleId"
-    ).value;
-
-  const registration =
-    document.getElementById(
-      "vehicleRegistration"
-    ).value.trim();
-
-  const customer =
-    document.getElementById(
-      "vehicleCustomer"
-    ).value.trim();
-
-  if (!registration) {
-
-    showToast(
-      "Vehicle registration is required.",
-      true
-    );
-
-    return;
-  }
-
-  if (!customer) {
-
-    showToast(
-      "Customer name is required.",
-      true
-    );
-
-    return;
-  }
+    document.getElementById("vehicleId").value;
 
   const payload = {
 
-    registration,
+    registration:
+      document.getElementById(
+        "vehicleRegistration"
+      ).value.trim(),
 
-    customer,
+    customer:
+      document.getElementById(
+        "vehicleCustomer"
+      ).value.trim(),
 
     date_in:
       document.getElementById(
@@ -840,6 +688,14 @@ window.saveVehicle = async function(event) {
       )
   };
 
+  if (!payload.registration || !payload.customer) {
+    showToast(
+      "Registration and customer are required.",
+      true
+    );
+    return;
+  }
+
   try {
 
     let result;
@@ -858,9 +714,7 @@ window.saveVehicle = async function(event) {
         .insert(payload);
     }
 
-    if (result.error) {
-      throw result.error;
-    }
+    if (result.error) throw result.error;
 
     closeModal("vehicleModal");
 
@@ -881,10 +735,6 @@ window.saveVehicle = async function(event) {
   }
 };
 
-// ======================================================
-// DELETE VEHICLE
-// ======================================================
-
 window.deleteVehicle = async function(id) {
 
   const vehicle =
@@ -892,12 +742,11 @@ window.deleteVehicle = async function(id) {
 
   if (!vehicle) return;
 
-  const confirmed =
-    confirm(
-      `Delete vehicle ${vehicle.registration}?`
-    );
-
-  if (!confirmed) return;
+  if (!confirm(
+    `Delete vehicle ${vehicle.registration}?`
+  )) {
+    return;
+  }
 
   try {
 
@@ -907,15 +756,11 @@ window.deleteVehicle = async function(id) {
         .delete()
         .eq("id", id);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     await loadAllData();
 
-    showToast(
-      "Vehicle deleted successfully."
-    );
+    showToast("Vehicle deleted.");
 
   } catch (error) {
 
@@ -927,15 +772,13 @@ window.deleteVehicle = async function(id) {
 };
 
 // ======================================================
-// EXPENSES RENDER
+// EXPENSES
 // ======================================================
 
 window.renderExpenses = function() {
 
   const body =
-    document.getElementById(
-      "expensesBody"
-    );
+    document.getElementById("expensesBody");
 
   if (!body) return;
 
@@ -961,14 +804,10 @@ window.renderExpenses = function() {
 
       const matchesSearch =
         !search ||
-        String(
-          expense.description || ""
-        )
+        String(expense.description || "")
           .toLowerCase()
           .includes(search) ||
-        String(
-          vehicle?.registration || ""
-        )
+        String(vehicle?.registration || "")
           .toLowerCase()
           .includes(search);
 
@@ -976,10 +815,7 @@ window.renderExpenses = function() {
         !category ||
         expense.category === category;
 
-      return (
-        matchesSearch &&
-        matchesCategory
-      );
+      return matchesSearch && matchesCategory;
     });
 
   if (!filtered.length) {
@@ -999,11 +835,8 @@ window.renderExpenses = function() {
     filtered.map(expense => {
 
       return `
-        <tr
-          class="clickable-row"
-          data-expense-id="${escapeHtml(expense.id)}"
-          title="Tap to edit expense"
-        >
+        <tr class="clickable-row"
+            data-expense-id="${escapeHtml(expense.id)}">
 
           <td>
             ${escapeHtml(
@@ -1012,9 +845,7 @@ window.renderExpenses = function() {
           </td>
 
           <td>
-            ${vehicleName(
-              expense.vehicle_id
-            )}
+            ${vehicleName(expense.vehicle_id)}
           </td>
 
           <td>
@@ -1039,16 +870,14 @@ window.renderExpenses = function() {
               <button
                 type="button"
                 class="btn btn-secondary btn-small"
-                onclick="event.stopPropagation(); editExpense('${expense.id}')"
-              >
+                onclick="event.stopPropagation(); editExpense('${expense.id}')">
                 Edit
               </button>
 
               <button
                 type="button"
                 class="btn btn-danger btn-small"
-                onclick="event.stopPropagation(); deleteExpense('${expense.id}')"
-              >
+                onclick="event.stopPropagation(); deleteExpense('${expense.id}')">
                 Delete
               </button>
 
@@ -1061,139 +890,67 @@ window.renderExpenses = function() {
     }).join("");
 };
 
-// ======================================================
-// OPEN EXPENSE MODAL
-// ======================================================
-
 window.openExpenseModal = function(id = null) {
 
-  document.getElementById(
-    "expenseId"
-  ).value = id || "";
+  document.getElementById("expenseId").value =
+    id || "";
 
   document.getElementById(
     "expenseModalTitle"
   ).textContent =
-    id
-      ? "Edit Expense"
-      : "Add Expense";
+    id ? "Edit Expense" : "Add Expense";
 
   populateVehicleSelects();
 
   if (!id) {
 
-    document.getElementById(
-      "expenseVehicle"
-    ).value = "";
-
-    document.getElementById(
-      "expenseDate"
-    ).value = today();
-
-    document.getElementById(
-      "expenseDescription"
-    ).value = "";
-
-    document.getElementById(
-      "expenseCategory"
-    ).value = "Parts";
-
-    document.getElementById(
-      "expenseAmount"
-    ).value = "0";
+    document.getElementById("expenseVehicle").value = "";
+    document.getElementById("expenseDate").value = today();
+    document.getElementById("expenseDescription").value = "";
+    document.getElementById("expenseCategory").value = "Parts";
+    document.getElementById("expenseAmount").value = "0";
   }
 
   openModal("expenseModal");
 };
 
-// ======================================================
-// EDIT EXPENSE
-// ======================================================
-
 window.editExpense = function(id) {
 
   const expense =
-    expenses.find(
-      e => e.id === id
-    );
+    expenses.find(e => e.id === id);
 
   if (!expense) {
-
-    showToast(
-      "Expense could not be found.",
-      true
-    );
-
+    showToast("Expense not found.", true);
     return;
   }
 
   populateVehicleSelects();
 
-  document.getElementById(
-    "expenseId"
-  ).value =
-    expense.id;
-
-  document.getElementById(
-    "expenseVehicle"
-  ).value =
+  document.getElementById("expenseId").value = expense.id;
+  document.getElementById("expenseVehicle").value =
     expense.vehicle_id || "";
-
-  document.getElementById(
-    "expenseDate"
-  ).value =
+  document.getElementById("expenseDate").value =
     expense.expense_date || today();
-
-  document.getElementById(
-    "expenseDescription"
-  ).value =
+  document.getElementById("expenseDescription").value =
     expense.description || "";
-
-  document.getElementById(
-    "expenseCategory"
-  ).value =
+  document.getElementById("expenseCategory").value =
     expense.category || "Other";
-
-  document.getElementById(
-    "expenseAmount"
-  ).value =
+  document.getElementById("expenseAmount").value =
     expense.amount || 0;
 
   document.getElementById(
     "expenseModalTitle"
-  ).textContent =
-    "Edit Expense";
+  ).textContent = "Edit Expense";
 
   openModal("expenseModal");
 };
-
-// ======================================================
-// SAVE EXPENSE
-// ======================================================
 
 window.saveExpense = async function(event) {
 
   event.preventDefault();
 
   const id =
-    document.getElementById(
-      "expenseId"
-    ).value;
-
-  const description =
-    document.getElementById(
-      "expenseDescription"
-    ).value.trim();
-
-  if (!description) {
-
-    showToast(
-      "Expense description is required.",
-      true
-    );
-
-    return;
-  }
+    document.getElementById("expenseId").value;
 
   const payload = {
 
@@ -1207,7 +964,10 @@ window.saveExpense = async function(event) {
         "expenseDate"
       ).value || today(),
 
-    description,
+    description:
+      document.getElementById(
+        "expenseDescription"
+      ).value.trim(),
 
     category:
       document.getElementById(
@@ -1221,6 +981,14 @@ window.saveExpense = async function(event) {
         ).value
       )
   };
+
+  if (!payload.description) {
+    showToast(
+      "Expense description is required.",
+      true
+    );
+    return;
+  }
 
   try {
 
@@ -1240,9 +1008,7 @@ window.saveExpense = async function(event) {
         .insert(payload);
     }
 
-    if (result.error) {
-      throw result.error;
-    }
+    if (result.error) throw result.error;
 
     closeModal("expenseModal");
 
@@ -1263,15 +1029,9 @@ window.saveExpense = async function(event) {
   }
 };
 
-// ======================================================
-// DELETE EXPENSE
-// ======================================================
-
 window.deleteExpense = async function(id) {
 
-  if (!confirm("Delete this expense?")) {
-    return;
-  }
+  if (!confirm("Delete this expense?")) return;
 
   try {
 
@@ -1281,15 +1041,11 @@ window.deleteExpense = async function(id) {
         .delete()
         .eq("id", id);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     await loadAllData();
 
-    showToast(
-      "Expense deleted successfully."
-    );
+    showToast("Expense deleted.");
 
   } catch (error) {
 
@@ -1301,15 +1057,13 @@ window.deleteExpense = async function(id) {
 };
 
 // ======================================================
-// PETTY CASH RENDER
+// PETTY CASH
 // ======================================================
 
 window.renderPettyCash = function() {
 
   const body =
-    document.getElementById(
-      "pettyBody"
-    );
+    document.getElementById("pettyBody");
 
   if (!body) return;
 
@@ -1330,14 +1084,10 @@ window.renderPettyCash = function() {
 
       const matchesSearch =
         !search ||
-        String(
-          item.description || ""
-        )
+        String(item.description || "")
           .toLowerCase()
           .includes(search) ||
-        String(
-          item.paid_to || ""
-        )
+        String(item.paid_to || "")
           .toLowerCase()
           .includes(search);
 
@@ -1345,10 +1095,7 @@ window.renderPettyCash = function() {
         !category ||
         item.category === category;
 
-      return (
-        matchesSearch &&
-        matchesCategory
-      );
+      return matchesSearch && matchesCategory;
     });
 
   if (!filtered.length) {
@@ -1368,34 +1115,23 @@ window.renderPettyCash = function() {
     filtered.map(item => {
 
       return `
-        <tr
-          class="clickable-row"
-          data-petty-id="${escapeHtml(item.id)}"
-          title="Tap to edit petty cash"
-        >
+        <tr class="clickable-row"
+            data-petty-id="${escapeHtml(item.id)}">
 
           <td>
-            ${escapeHtml(
-              item.cash_date || ""
-            )}
+            ${escapeHtml(item.cash_date || "")}
           </td>
 
           <td>
-            ${escapeHtml(
-              item.description
-            )}
+            ${escapeHtml(item.description)}
           </td>
 
           <td>
-            ${escapeHtml(
-              item.paid_to || ""
-            )}
+            ${escapeHtml(item.paid_to || "")}
           </td>
 
           <td>
-            ${escapeHtml(
-              item.category || ""
-            )}
+            ${escapeHtml(item.category || "")}
           </td>
 
           <td>
@@ -1403,9 +1139,7 @@ window.renderPettyCash = function() {
           </td>
 
           <td>
-            ${escapeHtml(
-              item.notes || ""
-            )}
+            ${escapeHtml(item.notes || "")}
           </td>
 
           <td>
@@ -1414,16 +1148,14 @@ window.renderPettyCash = function() {
               <button
                 type="button"
                 class="btn btn-secondary btn-small"
-                onclick="event.stopPropagation(); editPettyCash('${item.id}')"
-              >
+                onclick="event.stopPropagation(); editPettyCash('${item.id}')">
                 Edit
               </button>
 
               <button
                 type="button"
                 class="btn btn-danger btn-small"
-                onclick="event.stopPropagation(); deletePettyCash('${item.id}')"
-              >
+                onclick="event.stopPropagation(); deletePettyCash('${item.id}')">
                 Delete
               </button>
 
@@ -1436,144 +1168,69 @@ window.renderPettyCash = function() {
     }).join("");
 };
 
-// ======================================================
-// OPEN PETTY CASH MODAL
-// ======================================================
-
 window.openPettyModal = function(id = null) {
 
-  document.getElementById(
-    "pettyId"
-  ).value = id || "";
+  document.getElementById("pettyId").value =
+    id || "";
 
   document.getElementById(
     "pettyModalTitle"
   ).textContent =
-    id
-      ? "Edit Petty Cash"
-      : "Add Petty Cash";
+    id ? "Edit Petty Cash" : "Add Petty Cash";
 
   if (!id) {
 
-    document.getElementById(
-      "pettyDate"
-    ).value = today();
-
-    document.getElementById(
-      "pettyDescription"
-    ).value = "";
-
-    document.getElementById(
-      "pettyPaidTo"
-    ).value = "";
-
-    document.getElementById(
-      "pettyCategory"
-    ).value = "Transport";
-
-    document.getElementById(
-      "pettyAmount"
-    ).value = "0";
-
-    document.getElementById(
-      "pettyNotes"
-    ).value = "";
+    document.getElementById("pettyDate").value = today();
+    document.getElementById("pettyDescription").value = "";
+    document.getElementById("pettyPaidTo").value = "";
+    document.getElementById("pettyCategory").value = "Transport";
+    document.getElementById("pettyAmount").value = "0";
+    document.getElementById("pettyNotes").value = "";
   }
 
   openModal("pettyModal");
 };
-
-// ======================================================
-// EDIT PETTY CASH
-// ======================================================
 
 window.editPettyCash = function(id) {
 
   const item =
-    pettyCash.find(
-      p => p.id === id
-    );
+    pettyCash.find(p => p.id === id);
 
   if (!item) {
-
     showToast(
-      "Petty cash record could not be found.",
+      "Petty cash record not found.",
       true
     );
-
     return;
   }
 
-  document.getElementById(
-    "pettyId"
-  ).value =
-    item.id;
-
-  document.getElementById(
-    "pettyDate"
-  ).value =
+  document.getElementById("pettyId").value = item.id;
+  document.getElementById("pettyDate").value =
     item.cash_date || today();
-
-  document.getElementById(
-    "pettyDescription"
-  ).value =
+  document.getElementById("pettyDescription").value =
     item.description || "";
-
-  document.getElementById(
-    "pettyPaidTo"
-  ).value =
+  document.getElementById("pettyPaidTo").value =
     item.paid_to || "";
-
-  document.getElementById(
-    "pettyCategory"
-  ).value =
+  document.getElementById("pettyCategory").value =
     item.category || "Other";
-
-  document.getElementById(
-    "pettyAmount"
-  ).value =
+  document.getElementById("pettyAmount").value =
     item.amount || 0;
-
-  document.getElementById(
-    "pettyNotes"
-  ).value =
+  document.getElementById("pettyNotes").value =
     item.notes || "";
 
   document.getElementById(
     "pettyModalTitle"
-  ).textContent =
-    "Edit Petty Cash";
+  ).textContent = "Edit Petty Cash";
 
   openModal("pettyModal");
 };
-
-// ======================================================
-// SAVE PETTY CASH
-// ======================================================
 
 window.savePettyCash = async function(event) {
 
   event.preventDefault();
 
   const id =
-    document.getElementById(
-      "pettyId"
-    ).value;
-
-  const description =
-    document.getElementById(
-      "pettyDescription"
-    ).value.trim();
-
-  if (!description) {
-
-    showToast(
-      "Petty cash description is required.",
-      true
-    );
-
-    return;
-  }
+    document.getElementById("pettyId").value;
 
   const payload = {
 
@@ -1582,7 +1239,10 @@ window.savePettyCash = async function(event) {
         "pettyDate"
       ).value || today(),
 
-    description,
+    description:
+      document.getElementById(
+        "pettyDescription"
+      ).value.trim(),
 
     paid_to:
       document.getElementById(
@@ -1607,6 +1267,14 @@ window.savePettyCash = async function(event) {
       ).value.trim() || null
   };
 
+  if (!payload.description) {
+    showToast(
+      "Petty cash description is required.",
+      true
+    );
+    return;
+  }
+
   try {
 
     let result;
@@ -1625,9 +1293,7 @@ window.savePettyCash = async function(event) {
         .insert(payload);
     }
 
-    if (result.error) {
-      throw result.error;
-    }
+    if (result.error) throw result.error;
 
     closeModal("pettyModal");
 
@@ -1648,17 +1314,11 @@ window.savePettyCash = async function(event) {
   }
 };
 
-// ======================================================
-// DELETE PETTY CASH
-// ======================================================
-
 window.deletePettyCash = async function(id) {
 
-  if (
-    !confirm(
-      "Delete this petty cash record?"
-    )
-  ) {
+  if (!confirm(
+    "Delete this petty cash record?"
+  )) {
     return;
   }
 
@@ -1670,9 +1330,7 @@ window.deletePettyCash = async function(id) {
         .delete()
         .eq("id", id);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     await loadAllData();
 
@@ -1690,7 +1348,7 @@ window.deletePettyCash = async function(id) {
 };
 
 // ======================================================
-// REQUISITIONS RENDER
+// REQUISITIONS
 // ======================================================
 
 window.renderRequisitions = function() {
@@ -1722,14 +1380,10 @@ window.renderRequisitions = function() {
         String(req.req_no || "")
           .toLowerCase()
           .includes(search) ||
-        String(
-          req.item_description || ""
-        )
+        String(req.item_description || "")
           .toLowerCase()
           .includes(search) ||
-        String(
-          req.requested_by || ""
-        )
+        String(req.requested_by || "")
           .toLowerCase()
           .includes(search);
 
@@ -1737,10 +1391,7 @@ window.renderRequisitions = function() {
         !status ||
         req.status === status;
 
-      return (
-        matchesSearch &&
-        matchesStatus
-      );
+      return matchesSearch && matchesStatus;
     });
 
   if (!filtered.length) {
@@ -1760,11 +1411,8 @@ window.renderRequisitions = function() {
     filtered.map(req => {
 
       return `
-        <tr
-          class="clickable-row"
-          data-requisition-id="${escapeHtml(req.id)}"
-          title="Tap to edit requisition"
-        >
+        <tr class="clickable-row"
+            data-requisition-id="${escapeHtml(req.id)}">
 
           <td>
             <strong>
@@ -1773,27 +1421,19 @@ window.renderRequisitions = function() {
           </td>
 
           <td>
-            ${escapeHtml(
-              req.req_date || ""
-            )}
+            ${escapeHtml(req.req_date || "")}
           </td>
 
           <td>
-            ${escapeHtml(
-              req.requested_by
-            )}
+            ${escapeHtml(req.requested_by)}
           </td>
 
           <td>
-            ${vehicleName(
-              req.vehicle_id
-            )}
+            ${vehicleName(req.vehicle_id)}
           </td>
 
           <td>
-            ${escapeHtml(
-              req.item_description
-            )}
+            ${escapeHtml(req.item_description)}
           </td>
 
           <td>
@@ -1811,16 +1451,12 @@ window.renderRequisitions = function() {
           </td>
 
           <td>
-            ${escapeHtml(
-              req.expense_type || ""
-            )}
+            ${escapeHtml(req.expense_type || "")}
           </td>
 
           <td>
             <span class="status ${statusClass(req.status)}">
-              ${escapeHtml(
-                req.status || ""
-              )}
+              ${escapeHtml(req.status || "")}
             </span>
           </td>
 
@@ -1830,16 +1466,14 @@ window.renderRequisitions = function() {
               <button
                 type="button"
                 class="btn btn-secondary btn-small"
-                onclick="event.stopPropagation(); editRequisition('${req.id}')"
-              >
+                onclick="event.stopPropagation(); editRequisition('${req.id}')">
                 Edit
               </button>
 
               <button
                 type="button"
                 class="btn btn-danger btn-small"
-                onclick="event.stopPropagation(); deleteRequisition('${req.id}')"
-              >
+                onclick="event.stopPropagation(); deleteRequisition('${req.id}')">
                 Delete
               </button>
 
@@ -1851,10 +1485,6 @@ window.renderRequisitions = function() {
 
     }).join("");
 };
-
-// ======================================================
-// REQUISITION TOTAL
-// ======================================================
 
 window.calculateReqTotal = function() {
 
@@ -1893,10 +1523,6 @@ window.calculateReqTotal = function() {
   }
 };
 
-// ======================================================
-// OPEN REQUISITION MODAL
-// ======================================================
-
 window.openRequisitionModal =
   function(id = null) {
 
@@ -1915,55 +1541,22 @@ window.openRequisitionModal =
 
     if (!id) {
 
-      document.getElementById(
-        "reqNo"
-      ).value = "";
-
-      document.getElementById(
-        "reqDate"
-      ).value = today();
-
-      document.getElementById(
-        "reqRequestedBy"
-      ).value = "";
-
-      document.getElementById(
-        "reqVehicle"
-      ).value = "";
-
-      document.getElementById(
-        "reqItemDescription"
-      ).value = "";
-
-      document.getElementById(
-        "reqQuantity"
-      ).value = "1";
-
-      document.getElementById(
-        "reqUnitCost"
-      ).value = "0";
-
-      document.getElementById(
-        "reqExpenseType"
-      ).value = "Materials";
-
-      document.getElementById(
-        "reqStatus"
-      ).value = "Pending";
-
-      document.getElementById(
-        "reqNotes"
-      ).value = "";
+      document.getElementById("reqNo").value = "";
+      document.getElementById("reqDate").value = today();
+      document.getElementById("reqRequestedBy").value = "";
+      document.getElementById("reqVehicle").value = "";
+      document.getElementById("reqItemDescription").value = "";
+      document.getElementById("reqQuantity").value = "1";
+      document.getElementById("reqUnitCost").value = "0";
+      document.getElementById("reqExpenseType").value = "Materials";
+      document.getElementById("reqStatus").value = "Pending";
+      document.getElementById("reqNotes").value = "";
 
       calculateReqTotal();
     }
 
     openModal("requisitionModal");
   };
-
-// ======================================================
-// EDIT REQUISITION
-// ======================================================
 
 window.editRequisition =
   function(id) {
@@ -1974,85 +1567,44 @@ window.editRequisition =
       );
 
     if (!req) {
-
       showToast(
-        "Requisition could not be found.",
+        "Requisition not found.",
         true
       );
-
       return;
     }
 
     populateVehicleSelects();
 
-    document.getElementById(
-      "reqId"
-    ).value =
-      req.id;
-
-    document.getElementById(
-      "reqNo"
-    ).value =
-      req.req_no || "";
-
-    document.getElementById(
-      "reqDate"
-    ).value =
+    document.getElementById("reqId").value = req.id;
+    document.getElementById("reqNo").value = req.req_no || "";
+    document.getElementById("reqDate").value =
       req.req_date || today();
-
-    document.getElementById(
-      "reqRequestedBy"
-    ).value =
+    document.getElementById("reqRequestedBy").value =
       req.requested_by || "";
-
-    document.getElementById(
-      "reqVehicle"
-    ).value =
+    document.getElementById("reqVehicle").value =
       req.vehicle_id || "";
-
-    document.getElementById(
-      "reqItemDescription"
-    ).value =
+    document.getElementById("reqItemDescription").value =
       req.item_description || "";
-
-    document.getElementById(
-      "reqQuantity"
-    ).value =
+    document.getElementById("reqQuantity").value =
       req.quantity || 1;
-
-    document.getElementById(
-      "reqUnitCost"
-    ).value =
+    document.getElementById("reqUnitCost").value =
       req.unit_cost || 0;
-
-    document.getElementById(
-      "reqExpenseType"
-    ).value =
+    document.getElementById("reqExpenseType").value =
       req.expense_type || "Materials";
-
-    document.getElementById(
-      "reqStatus"
-    ).value =
+    document.getElementById("reqStatus").value =
       req.status || "Pending";
-
-    document.getElementById(
-      "reqNotes"
-    ).value =
+    document.getElementById("reqNotes").value =
       req.notes || "";
 
     calculateReqTotal();
 
     document.getElementById(
       "requisitionModalTitle"
-    ).textContent =
-      "Edit Requisition";
+    ).textContent = "Edit Requisition";
 
     openModal("requisitionModal");
   };
-
-// ======================================================
-// SAVE REQUISITION
-// ======================================================
 
 window.saveRequisition =
   async function(event) {
@@ -2063,51 +1615,6 @@ window.saveRequisition =
       document.getElementById(
         "reqId"
       ).value;
-
-    const reqNo =
-      document.getElementById(
-        "reqNo"
-      ).value.trim();
-
-    const requestedBy =
-      document.getElementById(
-        "reqRequestedBy"
-      ).value.trim();
-
-    const itemDescription =
-      document.getElementById(
-        "reqItemDescription"
-      ).value.trim();
-
-    if (!reqNo) {
-
-      showToast(
-        "Requisition number is required.",
-        true
-      );
-
-      return;
-    }
-
-    if (!requestedBy) {
-
-      showToast(
-        "Requested by is required.",
-        true
-      );
-
-      return;
-    }
-
-    if (!itemDescription) {
-
-      showToast(
-        "Item description is required.",
-        true
-      );
-
-      return;
-    }
 
     const quantity =
       number(
@@ -2123,19 +1630,22 @@ window.saveRequisition =
         ).value
       );
 
-    const total =
-      quantity * unitCost;
-
     const payload = {
 
-      req_no: reqNo,
+      req_no:
+        document.getElementById(
+          "reqNo"
+        ).value.trim(),
 
       req_date:
         document.getElementById(
           "reqDate"
         ).value || today(),
 
-      requested_by: requestedBy,
+      requested_by:
+        document.getElementById(
+          "reqRequestedBy"
+        ).value.trim(),
 
       vehicle_id:
         document.getElementById(
@@ -2143,7 +1653,9 @@ window.saveRequisition =
         ).value || null,
 
       item_description:
-        itemDescription,
+        document.getElementById(
+          "reqItemDescription"
+        ).value.trim(),
 
       quantity,
 
@@ -2151,7 +1663,7 @@ window.saveRequisition =
         unitCost,
 
       total_amount:
-        total,
+        quantity * unitCost,
 
       status:
         document.getElementById(
@@ -2168,6 +1680,20 @@ window.saveRequisition =
           "reqExpenseType"
         ).value
     };
+
+    if (
+      !payload.req_no ||
+      !payload.requested_by ||
+      !payload.item_description
+    ) {
+
+      showToast(
+        "Requisition number, requested by and item description are required.",
+        true
+      );
+
+      return;
+    }
 
     try {
 
@@ -2187,9 +1713,7 @@ window.saveRequisition =
           .insert(payload);
       }
 
-      if (result.error) {
-        throw result.error;
-      }
+      if (result.error) throw result.error;
 
       closeModal(
         "requisitionModal"
@@ -2212,18 +1736,12 @@ window.saveRequisition =
     }
   };
 
-// ======================================================
-// DELETE REQUISITION
-// ======================================================
-
 window.deleteRequisition =
   async function(id) {
 
-    if (
-      !confirm(
-        "Delete this requisition?"
-      )
-    ) {
+    if (!confirm(
+      "Delete this requisition?"
+    )) {
       return;
     }
 
@@ -2235,14 +1753,12 @@ window.deleteRequisition =
           .delete()
           .eq("id", id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       await loadAllData();
 
       showToast(
-        "Requisition deleted successfully."
+        "Requisition deleted."
       );
 
     } catch (error) {
@@ -2255,32 +1771,21 @@ window.deleteRequisition =
   };
 
 // ======================================================
-// CLICKABLE RECORDS
-// ======================================================
-// This is the important new part.
-// Tapping an existing record opens its edit form.
-// Delete/Edit buttons are protected from row click.
+// CLICKABLE TABLE ROWS
 // ======================================================
 
-function setupClickableRecords() {
+function setupClickableRows() {
 
   const vehiclesBody =
-    document.getElementById(
-      "vehiclesBody"
-    );
+    document.getElementById("vehiclesBody");
 
   if (vehiclesBody) {
 
     vehiclesBody.addEventListener(
       "click",
-      function(event) {
+      event => {
 
-        if (
-          event.target.closest("button") ||
-          event.target.closest("a") ||
-          event.target.closest("input") ||
-          event.target.closest("select")
-        ) {
+        if (event.target.closest("button")) {
           return;
         }
 
@@ -2289,35 +1794,25 @@ function setupClickableRecords() {
             "tr[data-vehicle-id]"
           );
 
-        if (!row) return;
-
-        const id =
-          row.dataset.vehicleId;
-
-        if (id) {
-          editVehicle(id);
+        if (row) {
+          editVehicle(
+            row.dataset.vehicleId
+          );
         }
       }
     );
   }
 
   const expensesBody =
-    document.getElementById(
-      "expensesBody"
-    );
+    document.getElementById("expensesBody");
 
   if (expensesBody) {
 
     expensesBody.addEventListener(
       "click",
-      function(event) {
+      event => {
 
-        if (
-          event.target.closest("button") ||
-          event.target.closest("a") ||
-          event.target.closest("input") ||
-          event.target.closest("select")
-        ) {
+        if (event.target.closest("button")) {
           return;
         }
 
@@ -2326,35 +1821,25 @@ function setupClickableRecords() {
             "tr[data-expense-id]"
           );
 
-        if (!row) return;
-
-        const id =
-          row.dataset.expenseId;
-
-        if (id) {
-          editExpense(id);
+        if (row) {
+          editExpense(
+            row.dataset.expenseId
+          );
         }
       }
     );
   }
 
   const pettyBody =
-    document.getElementById(
-      "pettyBody"
-    );
+    document.getElementById("pettyBody");
 
   if (pettyBody) {
 
     pettyBody.addEventListener(
       "click",
-      function(event) {
+      event => {
 
-        if (
-          event.target.closest("button") ||
-          event.target.closest("a") ||
-          event.target.closest("input") ||
-          event.target.closest("select")
-        ) {
+        if (event.target.closest("button")) {
           return;
         }
 
@@ -2363,13 +1848,10 @@ function setupClickableRecords() {
             "tr[data-petty-id]"
           );
 
-        if (!row) return;
-
-        const id =
-          row.dataset.pettyId;
-
-        if (id) {
-          editPettyCash(id);
+        if (row) {
+          editPettyCash(
+            row.dataset.pettyId
+          );
         }
       }
     );
@@ -2384,14 +1866,9 @@ function setupClickableRecords() {
 
     requisitionsBody.addEventListener(
       "click",
-      function(event) {
+      event => {
 
-        if (
-          event.target.closest("button") ||
-          event.target.closest("a") ||
-          event.target.closest("input") ||
-          event.target.closest("select")
-        ) {
+        if (event.target.closest("button")) {
           return;
         }
 
@@ -2400,13 +1877,10 @@ function setupClickableRecords() {
             "tr[data-requisition-id]"
           );
 
-        if (!row) return;
-
-        const id =
-          row.dataset.requisitionId;
-
-        if (id) {
-          editRequisition(id);
+        if (row) {
+          editRequisition(
+            row.dataset.requisitionId
+          );
         }
       }
     );
@@ -2414,13 +1888,384 @@ function setupClickableRecords() {
 }
 
 // ======================================================
-// CLOSE MODALS BY CLICKING OUTSIDE
+// PRINT
+// ======================================================
+
+window.printSection = function(title, elementId) {
+
+  const element =
+    document.getElementById(elementId);
+
+  if (!element) {
+    showToast(
+      "Nothing available to print.",
+      true
+    );
+    return;
+  }
+
+  const printWindow =
+    window.open("", "_blank");
+
+  if (!printWindow) {
+
+    showToast(
+      "Please allow pop-ups to print.",
+      true
+    );
+
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${escapeHtml(title)}</title>
+
+      <meta name="viewport"
+            content="width=device-width, initial-scale=1">
+
+      <style>
+
+        body {
+          font-family: Arial, sans-serif;
+          padding: 25px;
+          color: #111827;
+        }
+
+        h1 {
+          text-align: center;
+          margin-bottom: 5px;
+        }
+
+        .date {
+          text-align: center;
+          margin-bottom: 20px;
+          color: #6b7280;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 12px;
+        }
+
+        th,
+        td {
+          border: 1px solid #d1d5db;
+          padding: 8px;
+          text-align: left;
+        }
+
+        th {
+          background: #f3f4f6;
+        }
+
+        button,
+        .actions {
+          display: none !important;
+        }
+
+        @media print {
+
+          body {
+            padding: 10px;
+          }
+
+        }
+
+      </style>
+    </head>
+
+    <body>
+
+      <h1>${escapeHtml(title)}</h1>
+
+      <div class="date">
+        Printed: ${new Date().toLocaleString("en-KE")}
+      </div>
+
+      ${element.outerHTML}
+
+    </body>
+
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  setTimeout(() => {
+
+    printWindow.focus();
+
+    printWindow.print();
+
+    printWindow.close();
+
+  }, 500);
+};
+
+// ======================================================
+// SHARE
+// ======================================================
+
+window.shareText = async function(title, text) {
+
+  const shareData = {
+    title: title,
+    text: text
+  };
+
+  try {
+
+    if (
+      navigator.share &&
+      typeof navigator.share === "function"
+    ) {
+
+      await navigator.share(
+        shareData
+      );
+
+      showToast(
+        "Shared successfully."
+      );
+
+      return;
+    }
+
+    if (
+      navigator.clipboard &&
+      navigator.clipboard.writeText
+    ) {
+
+      await navigator.clipboard.writeText(
+        text
+      );
+
+      showToast(
+        "Details copied. You can paste them anywhere."
+      );
+
+      return;
+    }
+
+    showToast(
+      "Sharing is not available on this browser.",
+      true
+    );
+
+  } catch (error) {
+
+    if (error?.name === "AbortError") {
+      return;
+    }
+
+    console.error(
+      "Share error:",
+      error
+    );
+
+    showToast(
+      "Unable to share.",
+      true
+    );
+  }
+};
+
+// ======================================================
+// DASHBOARD SHARE
+// ======================================================
+
+window.shareDashboard = function() {
+
+  const billed =
+    vehicles.reduce(
+      (sum, v) => sum + number(v.billed),
+      0
+    );
+
+  const paid =
+    vehicles.reduce(
+      (sum, v) => sum + number(v.paid),
+      0
+    );
+
+  const expensesTotal =
+    expenses.reduce(
+      (sum, e) => sum + number(e.amount),
+      0
+    );
+
+  const pettyTotal =
+    pettyCash.reduce(
+      (sum, p) => sum + number(p.amount),
+      0
+    );
+
+  const text =
+`GARAGE OPERATIONS PRO
+Dashboard Summary
+
+Total Vehicles: ${vehicles.length}
+Under Repair: ${
+    vehicles.filter(
+      v =>
+        String(v.status || "")
+          .toLowerCase() === "under repair"
+    ).length
+  }
+
+Total Billed: ${money(billed)}
+Total Paid: ${money(paid)}
+Outstanding: ${money(billed - paid)}
+Total Expenses: ${money(expensesTotal)}
+Petty Cash: ${money(pettyTotal)}
+Requisitions: ${requisitions.length}
+
+Date: ${today()}`;
+
+  shareText(
+    "Garage Operations Pro - Dashboard",
+    text
+  );
+};
+
+// ======================================================
+// TABLE SHARING
+// ======================================================
+
+window.shareVehicles = function() {
+
+  let text =
+`GARAGE OPERATIONS PRO
+VEHICLES
+
+`;
+
+  vehicles.forEach((v, i) => {
+
+    text +=
+`${i + 1}. ${v.registration}
+Customer: ${v.customer || ""}
+Status: ${v.status || ""}
+Job: ${v.job_type || ""}
+Billed: ${money(v.billed)}
+Paid: ${money(v.paid)}
+Outstanding: ${money(
+      number(v.billed) -
+      number(v.paid)
+    )}
+
+`;
+  });
+
+  shareText(
+    "Garage Vehicles",
+    text
+  );
+};
+
+window.shareExpenses = function() {
+
+  let text =
+`GARAGE OPERATIONS PRO
+EXPENSES
+
+`;
+
+  expenses.forEach((e, i) => {
+
+    text +=
+`${i + 1}. ${e.description || ""}
+Date: ${e.expense_date || ""}
+Vehicle: ${
+      e.vehicle_id
+        ? vehicleName(e.vehicle_id)
+        : "General"
+    }
+Category: ${e.category || ""}
+Amount: ${money(e.amount)}
+
+`;
+  });
+
+  shareText(
+    "Garage Expenses",
+    text
+  );
+};
+
+window.sharePettyCash = function() {
+
+  let text =
+`GARAGE OPERATIONS PRO
+PETTY CASH
+
+`;
+
+  pettyCash.forEach((p, i) => {
+
+    text +=
+`${i + 1}. ${p.description || ""}
+Date: ${p.cash_date || ""}
+Paid To: ${p.paid_to || ""}
+Category: ${p.category || ""}
+Amount: ${money(p.amount)}
+Notes: ${p.notes || ""}
+
+`;
+  });
+
+  shareText(
+    "Garage Petty Cash",
+    text
+  );
+};
+
+window.shareRequisitions = function() {
+
+  let text =
+`GARAGE OPERATIONS PRO
+REQUISITIONS
+
+`;
+
+  requisitions.forEach((r, i) => {
+
+    text +=
+`${i + 1}. ${r.req_no || ""}
+Date: ${r.req_date || ""}
+Requested By: ${r.requested_by || ""}
+Vehicle: ${
+      r.vehicle_id
+        ? vehicleName(r.vehicle_id)
+        : "General"
+    }
+Item: ${r.item_description || ""}
+Quantity: ${number(r.quantity)}
+Unit Cost: ${money(r.unit_cost)}
+Total: ${money(r.total_amount)}
+Expense Type: ${r.expense_type || ""}
+Status: ${r.status || ""}
+
+`;
+  });
+
+  shareText(
+    "Garage Requisitions",
+    text
+  );
+};
+
+// ======================================================
+// MODAL HANDLERS
 // ======================================================
 
 function setupModalHandlers() {
 
-  document
-    .querySelectorAll(".modal")
+  document.querySelectorAll(".modal")
     .forEach(modal => {
 
       modal.addEventListener(
@@ -2430,9 +2275,7 @@ function setupModalHandlers() {
           if (
             event.target === modal
           ) {
-            modal.classList.remove(
-              "show"
-            );
+            modal.classList.remove("show");
           }
 
         }
@@ -2440,10 +2283,6 @@ function setupModalHandlers() {
 
     });
 }
-
-// ======================================================
-// ESC KEY CLOSES MODAL
-// ======================================================
 
 function setupEscapeKey() {
 
@@ -2458,16 +2297,14 @@ function setupEscapeKey() {
       document
         .querySelectorAll(".modal.show")
         .forEach(modal => {
-          modal.classList.remove(
-            "show"
-          );
+          modal.classList.remove("show");
         });
     }
   );
 }
 
 // ======================================================
-// AUTO REQUISITION CALCULATION
+// REQUISITION AUTO TOTAL
 // ======================================================
 
 function setupRequisitionCalculation() {
@@ -2483,31 +2320,29 @@ function setupRequisitionCalculation() {
     );
 
   if (quantity) {
-
     quantity.addEventListener(
       "input",
-      window.calculateReqTotal
+      calculateReqTotal
     );
   }
 
   if (unitCost) {
-
     unitCost.addEventListener(
       "input",
-      window.calculateReqTotal
+      calculateReqTotal
     );
   }
 }
 
 // ======================================================
-// START APP
+// START
 // ======================================================
 
 document.addEventListener(
   "DOMContentLoaded",
   async () => {
 
-    setupClickableRecords();
+    setupClickableRows();
 
     setupModalHandlers();
 
@@ -2516,5 +2351,6 @@ document.addEventListener(
     setupRequisitionCalculation();
 
     await loadAllData();
+
   }
 );
