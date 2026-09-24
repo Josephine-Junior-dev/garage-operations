@@ -2,21 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#172033">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f172a"
+  >
+
   <title>Garage Operations Pro</title>
 
   <style>
+
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
     }
 
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      color: #172033;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
     }
 
     button,
@@ -30,52 +43,90 @@
       cursor: pointer;
     }
 
+    /* ==================================================
+       HEADER
+       ================================================== */
+
     .topbar {
-      background: #172033;
+      background: #0f172a;
       color: white;
-      padding: 18px 20px;
+      padding: 16px 20px;
       position: sticky;
       top: 0;
-      z-index: 20;
-      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
     }
 
-    .topbar h1 {
-      font-size: 21px;
-    }
-
-    .topbar p {
-      font-size: 12px;
-      color: #cbd5e1;
-      margin-top: 4px;
-    }
-
-    .container {
-      max-width: 1250px;
+    .topbar-inner {
+      max-width: 1500px;
       margin: auto;
-      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
     }
+
+    .brand {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .brand small {
+      display: block;
+      font-size: 12px;
+      opacity: .75;
+      margin-top: 3px;
+      font-weight: 400;
+    }
+
+    /* ==================================================
+       NAVIGATION
+       ================================================== */
 
     .nav {
-      display: flex;
-      gap: 8px;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 68px;
+      z-index: 90;
       overflow-x: auto;
-      padding-bottom: 15px;
+    }
+
+    .nav-inner {
+      max-width: 1500px;
+      margin: auto;
+      display: flex;
+      gap: 4px;
+      padding: 8px 12px;
     }
 
     .nav button {
       border: 0;
-      background: white;
-      color: #475569;
+      background: transparent;
       padding: 11px 15px;
-      border-radius: 9px;
+      border-radius: 8px;
+      color: #475569;
       white-space: nowrap;
       font-weight: 600;
     }
 
+    .nav button:hover {
+      background: #f1f5f9;
+    }
+
     .nav button.active {
-      background: #334155;
+      background: #0f172a;
       color: white;
+    }
+
+    /* ==================================================
+       MAIN
+       ================================================== */
+
+    main {
+      max-width: 1500px;
+      margin: auto;
+      padding: 20px;
     }
 
     .section {
@@ -86,33 +137,43 @@
       display: block;
     }
 
-    .page-header {
+    .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 15px;
+      gap: 15px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
     }
 
-    .page-header h2 {
-      font-size: 20px;
+    .section-header h1,
+    .section-header h2 {
+      margin: 0;
     }
 
-    .page-header p {
+    .section-header p {
+      margin: 5px 0 0;
       color: #64748b;
-      font-size: 13px;
-      margin-top: 4px;
+      font-size: 14px;
     }
+
+    /* ==================================================
+       BUTTONS
+       ================================================== */
 
     .btn {
       border: 0;
       border-radius: 8px;
-      padding: 11px 15px;
-      font-weight: 700;
+      padding: 10px 15px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .btn-primary {
-      background: #334155;
+      background: #0f172a;
       color: white;
     }
 
@@ -122,79 +183,169 @@
 
     .btn-secondary {
       background: #e2e8f0;
-      color: #334155;
+      color: #0f172a;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e1;
     }
 
     .btn-danger {
-      background: #fee2e2;
-      color: #b91c1c;
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
     }
 
     .btn-small {
-      padding: 7px 9px;
+      padding: 7px 10px;
       font-size: 12px;
     }
 
-    .cards {
+    /* ==================================================
+       DASHBOARD CARDS
+       ================================================== */
+
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 18px;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 15px;
     }
 
-    .card {
+    .stat-card {
       background: white;
+      border: 1px solid #e2e8f0;
       border-radius: 12px;
-      padding: 17px;
-      box-shadow: 0 2px 8px rgba(15,23,42,.06);
-      border: 1px solid #e5e7eb;
+      padding: 18px;
+      min-height: 120px;
+      box-shadow: 0 2px 5px rgba(0,0,0,.04);
     }
 
-    .card-label {
+    .clickable-card {
+      cursor: pointer;
+      transition:
+        transform .15s ease,
+        box-shadow .15s ease;
+    }
+
+    .clickable-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 18px rgba(0,0,0,.10);
+    }
+
+    .clickable-card:active {
+      transform: scale(.98);
+    }
+
+    .stat-title {
       color: #64748b;
-      font-size: 12px;
-      margin-bottom: 7px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
     }
 
-    .card-value {
-      font-size: 22px;
+    .stat-value {
+      font-size: 27px;
       font-weight: 800;
+      color: #0f172a;
+      word-break: break-word;
     }
 
-    .toolbar {
+    .dashboard-actions {
+      margin-top: 20px;
       background: white;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 14px;
+      border: 1px solid #e2e8f0;
+      padding: 15px;
+      border-radius: 12px;
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
     }
 
-    .toolbar input,
-    .toolbar select {
-      flex: 1;
-      min-width: 180px;
+    /* ==================================================
+       TOOLBAR
+       ================================================== */
+
+    .toolbar {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
-    .table-wrap {
+    .toolbar input,
+    .toolbar select {
+      min-width: 180px;
+      flex: 1;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    /* ==================================================
+       FORM ELEMENTS
+       ================================================== */
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 12px;
       background: white;
+      color: #0f172a;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #64748b;
+      box-shadow: 0 0 0 2px rgba(100,116,139,.15);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    /* ==================================================
+       TABLE
+       ================================================== */
+
+    .table-container {
+      background: white;
+      border: 1px solid #e2e8f0;
       border-radius: 12px;
       overflow-x: auto;
-      border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 5px rgba(0,0,0,.04);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 850px;
+      min-width: 900px;
     }
 
     th,
     td {
       padding: 12px;
-      border-bottom: 1px solid #edf0f3;
+      border-bottom: 1px solid #e2e8f0;
       text-align: left;
+      vertical-align: middle;
       font-size: 13px;
     }
 
@@ -202,18 +353,46 @@
       background: #f8fafc;
       color: #475569;
       font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      white-space: nowrap;
     }
 
-    tr:hover td {
-      background: #fafafa;
+    tr:last-child td {
+      border-bottom: 0;
     }
+
+    .clickable-row {
+      cursor: pointer;
+    }
+
+    .clickable-row:hover {
+      background: #f8fafc;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 30px !important;
+      color: #64748b;
+    }
+
+    /* ==================================================
+       STATUS
+       ================================================== */
 
     .status {
       display: inline-block;
-      padding: 5px 8px;
-      border-radius: 20px;
+      padding: 5px 9px;
+      border-radius: 999px;
       font-size: 11px;
       font-weight: 700;
+      white-space: nowrap;
     }
 
     .status-repair {
@@ -226,834 +405,1948 @@
       color: #166534;
     }
 
-    .status-pending {
-      background: #e0e7ff;
-      color: #3730a3;
-    }
-
-    .status-approved {
-      background: #dcfce7;
-      color: #166534;
-    }
-
     .status-rejected {
       background: #fee2e2;
       color: #991b1b;
     }
 
-    .empty {
-      padding: 35px;
-      text-align: center;
-      color: #64748b;
+    .status-pending {
+      background: #e2e8f0;
+      color: #334155;
     }
 
+    /* ==================================================
+       MODAL
+       ================================================== */
+
     .modal {
-      display: none;
       position: fixed;
       inset: 0;
-      background: rgba(15,23,42,.55);
-      z-index: 100;
+      background: rgba(15,23,42,.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
       padding: 15px;
-      overflow-y: auto;
+      z-index: 1000;
     }
 
     .modal.show {
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
     }
 
-    .modal-box {
-      width: 100%;
-      max-width: 650px;
+    .modal-content {
       background: white;
+      width: 100%;
+      max-width: 700px;
+      max-height: 92vh;
+      overflow-y: auto;
       border-radius: 14px;
-      margin: 25px auto;
-      box-shadow: 0 15px 40px rgba(0,0,0,.2);
+      box-shadow: 0 20px 50px rgba(0,0,0,.25);
     }
 
     .modal-header {
-      padding: 17px 18px;
-      border-bottom: 1px solid #e5e7eb;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e2e8f0;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 2;
     }
 
-    .modal-header h3 {
-      font-size: 18px;
+    .modal-header h2 {
+      margin: 0;
+      font-size: 19px;
     }
 
-    .close {
+    .modal-close {
       border: 0;
-      background: transparent;
-      font-size: 26px;
-      color: #64748b;
+      background: #f1f5f9;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      font-size: 20px;
     }
 
-    .form {
+    .modal-body {
       padding: 18px;
+    }
+
+    .modal-footer {
+      padding: 15px 18px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      position: sticky;
+      bottom: 0;
+      background: white;
     }
 
     .form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 13px;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    .field {
+    .form-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .field.full {
+    .form-group.full {
       grid-column: 1 / -1;
     }
 
-    .field label {
-      font-size: 12px;
+    .form-group label {
+      font-size: 13px;
       font-weight: 700;
-      color: #475569;
+      color: #334155;
     }
 
-    .field input,
-    .field select,
-    .field textarea {
-      width: 100%;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 11px;
-      background: white;
-      color: #172033;
-      outline: none;
-    }
-
-    .field textarea {
-      min-height: 85px;
-      resize: vertical;
-    }
-
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-      border-color: #64748b;
-    }
-
-    .total-box {
-      background: #f1f5f9;
-      border-radius: 9px;
-      padding: 13px;
-      font-weight: 800;
-      margin-top: 4px;
-    }
-
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 9px;
-      margin-top: 18px;
-    }
+    /* ==================================================
+       TOAST
+       ================================================== */
 
     .toast {
       position: fixed;
-      right: 18px;
-      bottom: 18px;
-      max-width: 380px;
-      background: #172033;
+      bottom: 20px;
+      left: 50%;
+      transform:
+        translate(-50%, 120px);
+      background: #0f172a;
       color: white;
-      padding: 13px 16px;
+      padding: 12px 18px;
       border-radius: 9px;
-      z-index: 300;
-      display: none;
+      z-index: 2000;
+      opacity: 0;
+      transition:
+        transform .25s ease,
+        opacity .25s ease;
+      max-width: 90%;
+      text-align: center;
       font-size: 13px;
-      box-shadow: 0 5px 20px rgba(0,0,0,.2);
     }
 
     .toast.show {
-      display: block;
+      transform:
+        translate(-50%, 0);
+      opacity: 1;
     }
 
     .toast.error {
-      background: #991b1b;
+      background: #b91c1c;
     }
 
-    .loading {
-      text-align: center;
-      padding: 30px;
-      color: #64748b;
-    }
+    /* ==================================================
+       MOBILE
+       ================================================== */
 
-    .actions {
-      display: flex;
-      gap: 6px;
-      white-space: nowrap;
-    }
+    @media (max-width: 900px) {
 
-    @media (max-width: 800px) {
-      .cards {
-        grid-template-columns: repeat(2, 1fr);
+      .dashboard-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
       }
+
     }
 
     @media (max-width: 600px) {
-      .container {
+
+      .topbar {
+        padding: 13px;
+      }
+
+      .brand {
+        font-size: 18px;
+      }
+
+      .nav {
+        top: 61px;
+      }
+
+      main {
         padding: 12px;
       }
 
-      .page-header {
-        align-items: flex-start;
+      .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 14px;
+        min-height: 105px;
+      }
+
+      .stat-value {
+        font-size: 21px;
+      }
+
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .toolbar input,
+      .toolbar select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .toolbar-actions {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .toolbar-actions .btn {
+        flex: 1;
+        min-width: 100px;
       }
 
       .form-grid {
         grid-template-columns: 1fr;
       }
 
-      .field.full {
+      .form-group.full {
         grid-column: auto;
       }
 
-      .cards {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+      .modal-content {
+        max-height: 95vh;
       }
 
-      .card {
-        padding: 13px;
-      }
-
-      .card-value {
-        font-size: 18px;
-      }
-
-      .page-header h2 {
-        font-size: 18px;
-      }
-
-      .btn {
-        padding: 10px 12px;
-      }
     }
+
   </style>
 </head>
 
 <body>
 
-<header class="topbar">
-  <h1>Garage Operations Pro</h1>
-  <p>Vehicle • Expenses • Petty Cash • Requisitions</p>
-</header>
+  <!-- ==================================================
+       HEADER
+       ================================================== -->
 
-<div class="container">
+  <header class="topbar">
+
+    <div class="topbar-inner">
+
+      <div class="brand">
+        Garage Operations Pro
+        <small>Vehicle • Expense • Petty Cash • Requisition Management</small>
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- ==================================================
+       NAVIGATION
+       ================================================== -->
 
   <nav class="nav">
-    <button class="active" onclick="showSection('dashboard', this)">Dashboard</button>
-    <button onclick="showSection('vehicles', this)">Vehicles</button>
-    <button onclick="showSection('expenses', this)">Expenses</button>
-    <button onclick="showSection('petty', this)">Petty Cash</button>
-    <button onclick="showSection('requisitions', this)">Requisitions</button>
+
+    <div class="nav-inner">
+
+      <button
+        class="active"
+        data-section="dashboardSection"
+        onclick="showSection('dashboardSection', this)">
+        🏠 Dashboard
+      </button>
+
+      <button
+        data-section="vehiclesSection"
+        onclick="showSection('vehiclesSection', this)">
+        🚗 Vehicles
+      </button>
+
+      <button
+        data-section="expensesSection"
+        onclick="showSection('expensesSection', this)">
+        💰 Expenses
+      </button>
+
+      <button
+        data-section="pettySection"
+        onclick="showSection('pettySection', this)">
+        💵 Petty Cash
+      </button>
+
+      <button
+        data-section="requisitionsSection"
+        onclick="showSection('requisitionsSection', this)">
+        📋 Requisitions
+      </button>
+
+    </div>
+
   </nav>
 
-  <!-- DASHBOARD -->
-  <section id="dashboard" class="section active">
 
-    <div class="page-header">
-      <div>
-        <h2>Dashboard</h2>
-        <p>Garage operations summary</p>
-      </div>
-      <button class="btn btn-primary" onclick="loadAllData()">↻ Refresh</button>
-    </div>
+  <!-- ==================================================
+       MAIN
+       ================================================== -->
 
-    <div class="cards">
-      <div class="card">
-        <div class="card-label">Total Vehicles</div>
-        <div class="card-value" id="dashVehicles">0</div>
-      </div>
+  <main>
 
-      <div class="card">
-        <div class="card-label">Under Repair</div>
-        <div class="card-value" id="dashRepair">0</div>
-      </div>
 
-      <div class="card">
-        <div class="card-label">Total Billed</div>
-        <div class="card-value" id="dashBilled">KSh 0</div>
-      </div>
+    <!-- ==================================================
+         DASHBOARD
+         ================================================== -->
 
-      <div class="card">
-        <div class="card-label">Total Paid</div>
-        <div class="card-value" id="dashPaid">KSh 0</div>
-      </div>
+    <section
+      id="dashboardSection"
+      class="section active">
 
-      <div class="card">
-        <div class="card-label">Outstanding</div>
-        <div class="card-value" id="dashOutstanding">KSh 0</div>
-      </div>
+      <div class="section-header">
 
-      <div class="card">
-        <div class="card-label">Expenses</div>
-        <div class="card-value" id="dashExpenses">KSh 0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-label">Petty Cash</div>
-        <div class="card-value" id="dashPetty">KSh 0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-label">Requisitions</div>
-        <div class="card-value" id="dashReq">0</div>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- VEHICLES -->
-  <section id="vehicles" class="section">
-
-    <div class="page-header">
-      <div>
-        <h2>Vehicles</h2>
-        <p>Manage vehicles and repair jobs</p>
-      </div>
-
-      <button class="btn btn-primary" onclick="openVehicleModal()">
-        + Add Vehicle
-      </button>
-    </div>
-
-    <div class="toolbar">
-      <input id="vehicleSearch"
-             placeholder="Search registration or customer..."
-             oninput="renderVehicles()">
-
-      <select id="vehicleStatusFilter" onchange="renderVehicles()">
-        <option value="">All Status</option>
-        <option value="Under Repair">Under Repair</option>
-        <option value="Completed">Completed</option>
-        <option value="Released">Released</option>
-      </select>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Registration</th>
-            <th>Customer</th>
-            <th>Date In</th>
-            <th>Job Type</th>
-            <th>Status</th>
-            <th>Billed</th>
-            <th>Paid</th>
-            <th>Outstanding</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="vehiclesBody"></tbody>
-      </table>
-    </div>
-
-  </section>
-
-  <!-- EXPENSES -->
-  <section id="expenses" class="section">
-
-    <div class="page-header">
-      <div>
-        <h2>Expenses</h2>
-        <p>Track vehicle-related expenses</p>
-      </div>
-
-      <button class="btn btn-primary" onclick="openExpenseModal()">
-        + Add Expense
-      </button>
-    </div>
-
-    <div class="toolbar">
-      <input id="expenseSearch"
-             placeholder="Search expense..."
-             oninput="renderExpenses()">
-
-      <select id="expenseCategoryFilter" onchange="renderExpenses()">
-        <option value="">All Categories</option>
-        <option value="Parts">Parts</option>
-        <option value="Labour">Labour</option>
-        <option value="Transport">Transport</option>
-        <option value="Fuel">Fuel</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Amount</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="expensesBody"></tbody>
-      </table>
-    </div>
-
-  </section>
-
-  <!-- PETTY CASH -->
-  <section id="petty" class="section">
-
-    <div class="page-header">
-      <div>
-        <h2>Petty Cash</h2>
-        <p>Daily cash payments and small expenses</p>
-      </div>
-
-      <button class="btn btn-primary" onclick="openPettyModal()">
-        + Add Petty Cash
-      </button>
-    </div>
-
-    <div class="toolbar">
-      <input id="pettySearch"
-             placeholder="Search description or paid to..."
-             oninput="renderPettyCash()">
-
-      <select id="pettyCategoryFilter" onchange="renderPettyCash()">
-        <option value="">All Categories</option>
-        <option value="Transport">Transport</option>
-        <option value="Food">Food</option>
-        <option value="Materials">Materials</option>
-        <option value="Labour">Labour</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Paid To</th>
-            <th>Category</th>
-            <th>Amount</th>
-            <th>Notes</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="pettyBody"></tbody>
-      </table>
-    </div>
-
-  </section>
-
-  <!-- REQUISITIONS -->
-  <section id="requisitions" class="section">
-
-    <div class="page-header">
-      <div>
-        <h2>Requisitions</h2>
-        <p>Manage material and expense requests</p>
-      </div>
-
-      <button class="btn btn-primary" onclick="openRequisitionModal()">
-        + Add Requisition
-      </button>
-    </div>
-
-    <div class="toolbar">
-      <input id="reqSearch"
-             placeholder="Search requisition or item..."
-             oninput="renderRequisitions()">
-
-      <select id="reqStatusFilter" onchange="renderRequisitions()">
-        <option value="">All Status</option>
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-        <option value="Completed">Completed</option>
-      </select>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Req No.</th>
-            <th>Date</th>
-            <th>Requested By</th>
-            <th>Vehicle</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Unit Cost</th>
-            <th>Total</th>
-            <th>Expense Type</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="requisitionsBody"></tbody>
-      </table>
-    </div>
-
-  </section>
-
-</div>
-
-<!-- VEHICLE MODAL -->
-<div id="vehicleModal" class="modal">
-  <div class="modal-box">
-
-    <div class="modal-header">
-      <h3 id="vehicleModalTitle">Add Vehicle</h3>
-      <button class="close" onclick="closeModal('vehicleModal')">×</button>
-    </div>
-
-    <form class="form" onsubmit="saveVehicle(event)">
-
-      <input type="hidden" id="vehicleId">
-
-      <div class="form-grid">
-
-        <div class="field">
-          <label>Registration No. *</label>
-          <input id="vehicleRegistration" required placeholder="e.g. KDC 173L">
+        <div>
+          <h1>Dashboard</h1>
+          <p>
+            Garage operations overview
+          </p>
         </div>
 
-        <div class="field">
-          <label>Customer *</label>
-          <input id="vehicleCustomer" required placeholder="Customer name">
-        </div>
+        <div class="toolbar-actions">
 
-        <div class="field">
-          <label>Date In *</label>
-          <input type="date" id="vehicleDateIn" required>
-        </div>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="printSection('Garage Operations Pro - Dashboard', 'dashboardPrintArea')">
+            🖨️ Print Dashboard
+          </button>
 
-        <div class="field">
-          <label>Date Out</label>
-          <input type="date" id="vehicleDateOut">
-        </div>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="shareDashboard()">
+            📤 Share Dashboard
+          </button>
 
-        <div class="field">
-          <label>Job Type</label>
-          <select id="vehicleJobType">
-            <option value="Repair">Repair</option>
-            <option value="Service">Service</option>
-            <option value="Body Work">Body Work</option>
-            <option value="Mechanical">Mechanical</option>
-            <option value="Electrical">Electrical</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Status</label>
-          <select id="vehicleStatus">
-            <option value="Under Repair">Under Repair</option>
-            <option value="Completed">Completed</option>
-            <option value="Released">Released</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Billed Amount</label>
-          <input type="number" step="0.01" min="0" id="vehicleBilled" value="0">
-        </div>
-
-        <div class="field">
-          <label>Paid Amount</label>
-          <input type="number" step="0.01" min="0" id="vehiclePaid" value="0">
-        </div>
-
-        <div class="field">
-          <label>Released To</label>
-          <input id="vehicleReleasedTo" placeholder="Optional">
-        </div>
-
-        <div class="field">
-          <label>Released Contact</label>
-          <input id="vehicleReleasedContact" placeholder="Optional">
-        </div>
-
-        <div class="field full">
-          <label>Job Description</label>
-          <textarea id="vehicleDescription"
-                    placeholder="Describe the work required..."></textarea>
         </div>
 
       </div>
 
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary"
-                onclick="closeModal('vehicleModal')">
-          Cancel
-        </button>
 
-        <button type="submit" class="btn btn-primary">
-          Save Vehicle
-        </button>
-      </div>
+      <div id="dashboardPrintArea">
 
-    </form>
-  </div>
-</div>
+        <div class="dashboard-grid">
 
-<!-- EXPENSE MODAL -->
-<div id="expenseModal" class="modal">
-  <div class="modal-box">
+          <!-- TOTAL VEHICLES -->
 
-    <div class="modal-header">
-      <h3 id="expenseModalTitle">Add Expense</h3>
-      <button class="close" onclick="closeModal('expenseModal')">×</button>
-    </div>
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('vehiclesSection')"
+            role="button"
+            tabindex="0">
 
-    <form class="form" onsubmit="saveExpense(event)">
+            <div class="stat-title">
+              Total Vehicles
+            </div>
 
-      <input type="hidden" id="expenseId">
+            <div
+              class="stat-value"
+              id="dashVehicles">
+              0
+            </div>
 
-      <div class="form-grid">
-
-        <div class="field">
-          <label>Vehicle</label>
-          <select id="expenseVehicle">
-            <option value="">General / No Vehicle</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Expense Date *</label>
-          <input type="date" id="expenseDate" required>
-        </div>
-
-        <div class="field full">
-          <label>Description *</label>
-          <input id="expenseDescription" required
-                 placeholder="e.g. Windscreen, filler, transport">
-        </div>
-
-        <div class="field">
-          <label>Category *</label>
-          <select id="expenseCategory" required>
-            <option value="Parts">Parts</option>
-            <option value="Labour">Labour</option>
-            <option value="Transport">Transport</option>
-            <option value="Fuel">Fuel</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Amount *</label>
-          <input type="number" step="0.01" min="0"
-                 id="expenseAmount" required value="0">
-        </div>
-
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary"
-                onclick="closeModal('expenseModal')">
-          Cancel
-        </button>
-
-        <button type="submit" class="btn btn-primary">
-          Save Expense
-        </button>
-      </div>
-
-    </form>
-  </div>
-</div>
-
-<!-- PETTY CASH MODAL -->
-<div id="pettyModal" class="modal">
-  <div class="modal-box">
-
-    <div class="modal-header">
-      <h3 id="pettyModalTitle">Add Petty Cash</h3>
-      <button class="close" onclick="closeModal('pettyModal')">×</button>
-    </div>
-
-    <form class="form" onsubmit="savePettyCash(event)">
-
-      <input type="hidden" id="pettyId">
-
-      <div class="form-grid">
-
-        <div class="field">
-          <label>Date *</label>
-          <input type="date" id="pettyDate" required>
-        </div>
-
-        <div class="field">
-          <label>Paid To</label>
-          <input id="pettyPaidTo" placeholder="Name">
-        </div>
-
-        <div class="field full">
-          <label>Description *</label>
-          <input id="pettyDescription" required
-                 placeholder="e.g. Bike to town">
-        </div>
-
-        <div class="field">
-          <label>Category</label>
-          <select id="pettyCategory">
-            <option value="Transport">Transport</option>
-            <option value="Food">Food</option>
-            <option value="Materials">Materials</option>
-            <option value="Labour">Labour</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Amount *</label>
-          <input type="number" step="0.01" min="0"
-                 id="pettyAmount" required value="0">
-        </div>
-
-        <div class="field full">
-          <label>Notes</label>
-          <textarea id="pettyNotes"
-                    placeholder="Optional notes"></textarea>
-        </div>
-
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary"
-                onclick="closeModal('pettyModal')">
-          Cancel
-        </button>
-
-        <button type="submit" class="btn btn-primary">
-          Save Petty Cash
-        </button>
-      </div>
-
-    </form>
-  </div>
-</div>
-
-<!-- REQUISITION MODAL -->
-<div id="requisitionModal" class="modal">
-  <div class="modal-box">
-
-    <div class="modal-header">
-      <h3 id="requisitionModalTitle">Add Requisition</h3>
-      <button class="close" onclick="closeModal('requisitionModal')">×</button>
-    </div>
-
-    <form class="form" onsubmit="saveRequisition(event)">
-
-      <input type="hidden" id="reqId">
-
-      <div class="form-grid">
-
-        <div class="field">
-          <label>Requisition No. *</label>
-          <input id="reqNo" required placeholder="REQ-001">
-        </div>
-
-        <div class="field">
-          <label>Date *</label>
-          <input type="date" id="reqDate" required>
-        </div>
-
-        <div class="field">
-          <label>Requested By *</label>
-          <input id="reqRequestedBy" required placeholder="Name">
-        </div>
-
-        <div class="field">
-          <label>Vehicle</label>
-          <select id="reqVehicle">
-            <option value="">General / No Vehicle</option>
-          </select>
-        </div>
-
-        <div class="field full">
-          <label>Item Description *</label>
-          <input id="reqItemDescription" required
-                 placeholder="e.g. Body filler 5kg">
-        </div>
-
-        <div class="field">
-          <label>Quantity *</label>
-          <input type="number" step="0.01" min="0"
-                 id="reqQuantity" value="1" required
-                 oninput="calculateReqTotal()">
-        </div>
-
-        <div class="field">
-          <label>Unit Cost *</label>
-          <input type="number" step="0.01" min="0"
-                 id="reqUnitCost" value="0" required
-                 oninput="calculateReqTotal()">
-        </div>
-
-        <div class="field full">
-          <label>Total Amount</label>
-          <div class="total-box">
-            KSh <span id="reqTotalDisplay">0.00</span>
           </div>
-        </div>
 
-        <div class="field">
-          <label>Expense Type *</label>
-          <select id="reqExpenseType" required>
-            <option value="Materials">Materials</option>
-            <option value="Parts">Parts</option>
-            <option value="Labour">Labour</option>
-            <option value="Transport">Transport</option>
-            <option value="Fuel">Fuel</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
 
-        <div class="field">
-          <label>Status</label>
-          <select id="reqStatus">
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
+          <!-- UNDER REPAIR -->
 
-        <div class="field full">
-          <label>Notes</label>
-          <textarea id="reqNotes"
-                    placeholder="Optional notes"></textarea>
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('vehiclesSection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Under Repair
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashRepair">
+              0
+            </div>
+
+          </div>
+
+
+          <!-- BILLED -->
+
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('vehiclesSection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Total Billed
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashBilled">
+              KSh 0
+            </div>
+
+          </div>
+
+
+          <!-- PAID -->
+
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('vehiclesSection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Total Paid
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashPaid">
+              KSh 0
+            </div>
+
+          </div>
+
+
+          <!-- OUTSTANDING -->
+
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('vehiclesSection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Outstanding
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashOutstanding">
+              KSh 0
+            </div>
+
+          </div>
+
+
+          <!-- EXPENSES -->
+
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('expensesSection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Expenses
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashExpenses">
+              KSh 0
+            </div>
+
+          </div>
+
+
+          <!-- PETTY CASH -->
+
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('pettySection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Petty Cash
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashPetty">
+              KSh 0
+            </div>
+
+          </div>
+
+
+          <!-- REQUISITIONS -->
+
+          <div
+            class="stat-card clickable-card"
+            onclick="goToDashboardSection('requisitionsSection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Requisitions
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashReq">
+              0
+            </div>
+
+          </div>
+
         </div>
 
       </div>
 
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary"
-                onclick="closeModal('requisitionModal')">
-          Cancel
+
+      <div class="dashboard-actions">
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="openVehicleModal()">
+          + Add Vehicle
         </button>
 
-        <button type="submit" class="btn btn-primary">
-          Save Requisition
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="openExpenseModal()">
+          + Add Expense
         </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="openPettyModal()">
+          + Add Petty Cash
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="openRequisitionModal()">
+          + Add Requisition
+        </button>
+
       </div>
 
-    </form>
+    </section>
+
+
+    <!-- ==================================================
+         VEHICLES
+         ================================================== -->
+
+    <section
+      id="vehiclesSection"
+      class="section">
+
+      <div class="section-header">
+
+        <div>
+
+          <h1>Vehicles</h1>
+
+          <p>
+            Manage vehicles, billing and repair status
+          </p>
+
+        </div>
+
+        <div class="toolbar-actions">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="printSection('Garage Vehicles', 'vehiclesPrintArea')">
+            🖨️ Print
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="shareVehicles()">
+            📤 Share
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openVehicleModal()">
+            + Add Vehicle
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="toolbar">
+
+        <input
+          id="vehicleSearch"
+          type="search"
+          placeholder="Search registration or customer..."
+          oninput="renderVehicles()">
+
+        <select
+          id="vehicleStatusFilter"
+          onchange="renderVehicles()">
+
+          <option value="">
+            All Statuses
+          </option>
+
+          <option value="Under Repair">
+            Under Repair
+          </option>
+
+          <option value="Completed">
+            Completed
+          </option>
+
+          <option value="Released">
+            Released
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div
+        id="vehiclesPrintArea"
+        class="table-container">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Registration</th>
+              <th>Customer</th>
+              <th>Date In</th>
+              <th>Job Type</th>
+              <th>Status</th>
+              <th>Billed</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="vehiclesBody">
+
+            <tr>
+              <td
+                colspan="9"
+                class="empty">
+                Loading vehicles...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         EXPENSES
+         ================================================== -->
+
+    <section
+      id="expensesSection"
+      class="section">
+
+      <div class="section-header">
+
+        <div>
+
+          <h1>Expenses</h1>
+
+          <p>
+            Track vehicle and general garage expenses
+          </p>
+
+        </div>
+
+        <div class="toolbar-actions">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="printSection('Garage Expenses', 'expensesPrintArea')">
+            🖨️ Print
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="shareExpenses()">
+            📤 Share
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openExpenseModal()">
+            + Add Expense
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="toolbar">
+
+        <input
+          id="expenseSearch"
+          type="search"
+          placeholder="Search expense or vehicle..."
+          oninput="renderExpenses()">
+
+        <select
+          id="expenseCategoryFilter"
+          onchange="renderExpenses()">
+
+          <option value="">
+            All Categories
+          </option>
+
+          <option value="Parts">
+            Parts
+          </option>
+
+          <option value="Labour">
+            Labour
+          </option>
+
+          <option value="Transport">
+            Transport
+          </option>
+
+          <option value="Fuel">
+            Fuel
+          </option>
+
+          <option value="Materials">
+            Materials
+          </option>
+
+          <option value="Other">
+            Other
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div
+        id="expensesPrintArea"
+        class="table-container">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Date</th>
+              <th>Vehicle</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="expensesBody">
+
+            <tr>
+              <td
+                colspan="6"
+                class="empty">
+                Loading expenses...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         PETTY CASH
+         ================================================== -->
+
+    <section
+      id="pettySection"
+      class="section">
+
+      <div class="section-header">
+
+        <div>
+
+          <h1>Petty Cash</h1>
+
+          <p>
+            Record and manage petty cash payments
+          </p>
+
+        </div>
+
+        <div class="toolbar-actions">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="printSection('Garage Petty Cash', 'pettyPrintArea')">
+            🖨️ Print
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="sharePettyCash()">
+            📤 Share
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openPettyModal()">
+            + Add Petty Cash
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="toolbar">
+
+        <input
+          id="pettySearch"
+          type="search"
+          placeholder="Search description or paid to..."
+          oninput="renderPettyCash()">
+
+        <select
+          id="pettyCategoryFilter"
+          onchange="renderPettyCash()">
+
+          <option value="">
+            All Categories
+          </option>
+
+          <option value="Transport">
+            Transport
+          </option>
+
+          <option value="Food">
+            Food
+          </option>
+
+          <option value="Materials">
+            Materials
+          </option>
+
+          <option value="Fuel">
+            Fuel
+          </option>
+
+          <option value="Labour">
+            Labour
+          </option>
+
+          <option value="Other">
+            Other
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div
+        id="pettyPrintArea"
+        class="table-container">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Date</th>
+              <th>Description</th>
+              <th>Paid To</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Notes</th>
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="pettyBody">
+
+            <tr>
+              <td
+                colspan="7"
+                class="empty">
+                Loading petty cash...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         REQUISITIONS
+         ================================================== -->
+
+    <section
+      id="requisitionsSection"
+      class="section">
+
+      <div class="section-header">
+
+        <div>
+
+          <h1>Requisitions</h1>
+
+          <p>
+            Manage garage material and expense requests
+          </p>
+
+        </div>
+
+        <div class="toolbar-actions">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="printSection('Garage Requisitions', 'requisitionsPrintArea')">
+            🖨️ Print
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="shareRequisitions()">
+            📤 Share
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openRequisitionModal()">
+            + Add Requisition
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="toolbar">
+
+        <input
+          id="reqSearch"
+          type="search"
+          placeholder="Search requisition, item or requester..."
+          oninput="renderRequisitions()">
+
+        <select
+          id="reqStatusFilter"
+          onchange="renderRequisitions()">
+
+          <option value="">
+            All Statuses
+          </option>
+
+          <option value="Pending">
+            Pending
+          </option>
+
+          <option value="Approved">
+            Approved
+          </option>
+
+          <option value="Rejected">
+            Rejected
+          </option>
+
+          <option value="Completed">
+            Completed
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div
+        id="requisitionsPrintArea"
+        class="table-container">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Req No.</th>
+              <th>Date</th>
+              <th>Requested By</th>
+              <th>Vehicle</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Unit Cost</th>
+              <th>Total</th>
+              <th>Expense Type</th>
+              <th>Status</th>
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="requisitionsBody">
+
+            <tr>
+              <td
+                colspan="11"
+                class="empty">
+                Loading requisitions...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ==================================================
+       VEHICLE MODAL
+       ================================================== -->
+
+  <div
+    id="vehicleModal"
+    class="modal">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h2 id="vehicleModalTitle">
+          Add Vehicle
+        </h2>
+
+        <button
+          type="button"
+          class="modal-close"
+          onclick="closeModal('vehicleModal')">
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        onsubmit="saveVehicle(event)">
+
+        <div class="modal-body">
+
+          <input
+            type="hidden"
+            id="vehicleId">
+
+
+          <div class="form-grid">
+
+            <div class="form-group">
+
+              <label>
+                Registration *
+              </label>
+
+              <input
+                id="vehicleRegistration"
+                required
+                placeholder="e.g. KDC 173L">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Customer *
+              </label>
+
+              <input
+                id="vehicleCustomer"
+                required
+                placeholder="Customer name">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Date In
+              </label>
+
+              <input
+                type="date"
+                id="vehicleDateIn">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Date Out
+              </label>
+
+              <input
+                type="date"
+                id="vehicleDateOut">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Job Type
+              </label>
+
+              <select id="vehicleJobType">
+
+                <option value="Repair">
+                  Repair
+                </option>
+
+                <option value="Service">
+                  Service
+                </option>
+
+                <option value="Body Work">
+                  Body Work
+                </option>
+
+                <option value="Mechanical">
+                  Mechanical
+                </option>
+
+                <option value="Electrical">
+                  Electrical
+                </option>
+
+                <option value="Other">
+                  Other
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Status
+              </label>
+
+              <select id="vehicleStatus">
+
+                <option value="Under Repair">
+                  Under Repair
+                </option>
+
+                <option value="Completed">
+                  Completed
+                </option>
+
+                <option value="Released">
+                  Released
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Billed (KSh)
+              </label>
+
+              <input
+                type="number"
+                id="vehicleBilled"
+                min="0"
+                step="0.01"
+                value="0">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Paid (KSh)
+              </label>
+
+              <input
+                type="number"
+                id="vehiclePaid"
+                min="0"
+                step="0.01"
+                value="0">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Released To
+              </label>
+
+              <input
+                id="vehicleReleasedTo"
+                placeholder="Name">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Released Contact
+              </label>
+
+              <input
+                id="vehicleReleasedContact"
+                placeholder="Phone">
+
+            </div>
+
+
+            <div class="form-group full">
+
+              <label>
+                Description
+              </label>
+
+              <textarea
+                id="vehicleDescription"
+                placeholder="Job description..."></textarea>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('vehicleModal')">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary">
+            Save Vehicle
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
   </div>
-</div>
 
-<div id="toast" class="toast"></div>
 
-<script type="module" src="./app.js"></script>
+  <!-- ==================================================
+       EXPENSE MODAL
+       ================================================== -->
+
+  <div
+    id="expenseModal"
+    class="modal">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h2 id="expenseModalTitle">
+          Add Expense
+        </h2>
+
+        <button
+          type="button"
+          class="modal-close"
+          onclick="closeModal('expenseModal')">
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        onsubmit="saveExpense(event)">
+
+        <div class="modal-body">
+
+          <input
+            type="hidden"
+            id="expenseId">
+
+
+          <div class="form-grid">
+
+            <div class="form-group">
+
+              <label>
+                Vehicle
+              </label>
+
+              <select id="expenseVehicle">
+
+                <option value="">
+                  General / No Vehicle
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Date
+              </label>
+
+              <input
+                type="date"
+                id="expenseDate">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Category
+              </label>
+
+              <select id="expenseCategory">
+
+                <option value="Parts">
+                  Parts
+                </option>
+
+                <option value="Labour">
+                  Labour
+                </option>
+
+                <option value="Transport">
+                  Transport
+                </option>
+
+                <option value="Fuel">
+                  Fuel
+                </option>
+
+                <option value="Materials">
+                  Materials
+                </option>
+
+                <option value="Other">
+                  Other
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Amount (KSh)
+              </label>
+
+              <input
+                type="number"
+                id="expenseAmount"
+                min="0"
+                step="0.01"
+                value="0"
+                required>
+
+            </div>
+
+
+            <div class="form-group full">
+
+              <label>
+                Description *
+              </label>
+
+              <textarea
+                id="expenseDescription"
+                required
+                placeholder="Expense description..."></textarea>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('expenseModal')">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary">
+            Save Expense
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==================================================
+       PETTY CASH MODAL
+       ================================================== -->
+
+  <div
+    id="pettyModal"
+    class="modal">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h2 id="pettyModalTitle">
+          Add Petty Cash
+        </h2>
+
+        <button
+          type="button"
+          class="modal-close"
+          onclick="closeModal('pettyModal')">
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        onsubmit="savePettyCash(event)">
+
+        <div class="modal-body">
+
+          <input
+            type="hidden"
+            id="pettyId">
+
+
+          <div class="form-grid">
+
+            <div class="form-group">
+
+              <label>
+                Date
+              </label>
+
+              <input
+                type="date"
+                id="pettyDate">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Paid To
+              </label>
+
+              <input
+                id="pettyPaidTo"
+                placeholder="Person / Supplier">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Category
+              </label>
+
+              <select id="pettyCategory">
+
+                <option value="Transport">
+                  Transport
+                </option>
+
+                <option value="Food">
+                  Food
+                </option>
+
+                <option value="Materials">
+                  Materials
+                </option>
+
+                <option value="Fuel">
+                  Fuel
+                </option>
+
+                <option value="Labour">
+                  Labour
+                </option>
+
+                <option value="Other">
+                  Other
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Amount (KSh)
+              </label>
+
+              <input
+                type="number"
+                id="pettyAmount"
+                min="0"
+                step="0.01"
+                value="0"
+                required>
+
+            </div>
+
+
+            <div class="form-group full">
+
+              <label>
+                Description *
+              </label>
+
+              <textarea
+                id="pettyDescription"
+                required
+                placeholder="Payment description..."></textarea>
+
+            </div>
+
+
+            <div class="form-group full">
+
+              <label>
+                Notes
+              </label>
+
+              <textarea
+                id="pettyNotes"
+                placeholder="Additional notes..."></textarea>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('pettyModal')">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary">
+            Save Petty Cash
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==================================================
+       REQUISITION MODAL
+       ================================================== -->
+
+  <div
+    id="requisitionModal"
+    class="modal">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h2 id="requisitionModalTitle">
+          Add Requisition
+        </h2>
+
+        <button
+          type="button"
+          class="modal-close"
+          onclick="closeModal('requisitionModal')">
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        onsubmit="saveRequisition(event)">
+
+        <div class="modal-body">
+
+          <input
+            type="hidden"
+            id="reqId">
+
+
+          <div class="form-grid">
+
+            <div class="form-group">
+
+              <label>
+                Requisition No. *
+              </label>
+
+              <input
+                id="reqNo"
+                required
+                placeholder="REQ-001">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Date
+              </label>
+
+              <input
+                type="date"
+                id="reqDate">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Requested By *
+              </label>
+
+              <input
+                id="reqRequestedBy"
+                required
+                placeholder="Name">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Vehicle
+              </label>
+
+              <select id="reqVehicle">
+
+                <option value="">
+                  General / No Vehicle
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group full">
+
+              <label>
+                Item Description *
+              </label>
+
+              <textarea
+                id="reqItemDescription"
+                required
+                placeholder="Item or service required..."></textarea>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Quantity
+              </label>
+
+              <input
+                type="number"
+                id="reqQuantity"
+                min="0"
+                step="0.01"
+                value="1">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Unit Cost (KSh)
+              </label>
+
+              <input
+                type="number"
+                id="reqUnitCost"
+                min="0"
+                step="0.01"
+                value="0">
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Total Amount
+              </label>
+
+              <div
+                style="
+                  border:1px solid #cbd5e1;
+                  border-radius:8px;
+                  padding:10px 12px;
+                  background:#f8fafc;
+                  font-weight:700;
+                ">
+
+                KSh
+                <span id="reqTotalDisplay">
+                  0.00
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Expense Type
+              </label>
+
+              <select id="reqExpenseType">
+
+                <option value="Materials">
+                  Materials
+                </option>
+
+                <option value="Labour">
+                  Labour
+                </option>
+
+                <option value="Transport">
+                  Transport
+                </option>
+
+                <option value="Parts">
+                  Parts
+                </option>
+
+                <option value="Other">
+                  Other
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label>
+                Status
+              </label>
+
+              <select id="reqStatus">
+
+                <option value="Pending">
+                  Pending
+                </option>
+
+                <option value="Approved">
+                  Approved
+                </option>
+
+                <option value="Rejected">
+                  Rejected
+                </option>
+
+                <option value="Completed">
+                  Completed
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-group full">
+
+              <label>
+                Notes
+              </label>
+
+              <textarea
+                id="reqNotes"
+                placeholder="Additional notes..."></textarea>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('requisitionModal')">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary">
+            Save Requisition
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==================================================
+       TOAST
+       ================================================== -->
+
+  <div
+    id="toast"
+    class="toast">
+  </div>
+
+
+  <!-- ==================================================
+       APP JS
+       ================================================== -->
+
+  <script
+    type="module"
+    src="./app.js">
+  </script>
 
 </body>
 </html>
