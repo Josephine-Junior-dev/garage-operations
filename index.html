@@ -416,6 +416,33 @@
     }
 
     /* ==================================================
+       REQUISITION SUMMARY
+       ================================================== */
+
+    .print-summary {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 15px 18px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .print-summary span {
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .print-summary strong {
+      font-size: 22px;
+      color: #0f172a;
+    }
+
+    /* ==================================================
        MODAL
        ================================================== */
 
@@ -621,6 +648,11 @@
         max-height: 95vh;
       }
 
+      .print-summary {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
     }
 
   </style>
@@ -657,31 +689,31 @@
       <button
         class="active"
         data-section="dashboardSection"
-        onclick="showSection('dashboardSection', this)">
+        onclick="window.showSection('dashboardSection', this)">
         🏠 Dashboard
       </button>
 
       <button
         data-section="vehiclesSection"
-        onclick="showSection('vehiclesSection', this)">
+        onclick="window.showSection('vehiclesSection', this)">
         🚗 Vehicles
       </button>
 
       <button
         data-section="expensesSection"
-        onclick="showSection('expensesSection', this)">
+        onclick="window.showSection('expensesSection', this)">
         💰 Expenses
       </button>
 
       <button
         data-section="pettySection"
-        onclick="showSection('pettySection', this)">
+        onclick="window.showSection('pettySection', this)">
         💵 Petty Cash
       </button>
 
       <button
         data-section="requisitionsSection"
-        onclick="showSection('requisitionsSection', this)">
+        onclick="window.showSection('requisitionsSection', this)">
         📋 Requisitions
       </button>
 
@@ -714,24 +746,6 @@
           </p>
         </div>
 
-        <div class="toolbar-actions">
-
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="printSection('Garage Operations Pro - Dashboard', 'dashboardPrintArea')">
-            🖨️ Print Dashboard
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick="shareDashboard()">
-            📤 Share Dashboard
-          </button>
-
-        </div>
-
       </div>
 
 
@@ -739,11 +753,9 @@
 
         <div class="dashboard-grid">
 
-          <!-- TOTAL VEHICLES -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('vehiclesSection')"
+            onclick="window.goToDashboardSection('vehiclesSection')"
             role="button"
             tabindex="0">
 
@@ -760,11 +772,9 @@
           </div>
 
 
-          <!-- UNDER REPAIR -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('vehiclesSection')"
+            onclick="window.goToDashboardSection('vehiclesSection')"
             role="button"
             tabindex="0">
 
@@ -781,11 +791,9 @@
           </div>
 
 
-          <!-- BILLED -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('vehiclesSection')"
+            onclick="window.goToDashboardSection('vehiclesSection')"
             role="button"
             tabindex="0">
 
@@ -802,11 +810,9 @@
           </div>
 
 
-          <!-- PAID -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('vehiclesSection')"
+            onclick="window.goToDashboardSection('vehiclesSection')"
             role="button"
             tabindex="0">
 
@@ -823,11 +829,9 @@
           </div>
 
 
-          <!-- OUTSTANDING -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('vehiclesSection')"
+            onclick="window.goToDashboardSection('vehiclesSection')"
             role="button"
             tabindex="0">
 
@@ -844,11 +848,9 @@
           </div>
 
 
-          <!-- EXPENSES -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('expensesSection')"
+            onclick="window.goToDashboardSection('expensesSection')"
             role="button"
             tabindex="0">
 
@@ -865,11 +867,9 @@
           </div>
 
 
-          <!-- PETTY CASH -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('pettySection')"
+            onclick="window.goToDashboardSection('pettySection')"
             role="button"
             tabindex="0">
 
@@ -886,11 +886,9 @@
           </div>
 
 
-          <!-- REQUISITIONS -->
-
           <div
             class="stat-card clickable-card"
-            onclick="goToDashboardSection('requisitionsSection')"
+            onclick="window.goToDashboardSection('requisitionsSection')"
             role="button"
             tabindex="0">
 
@@ -906,6 +904,27 @@
 
           </div>
 
+
+          <!-- NEW: REQUISITION TOTAL -->
+
+          <div
+            class="stat-card clickable-card"
+            onclick="window.goToDashboardSection('requisitionsSection')"
+            role="button"
+            tabindex="0">
+
+            <div class="stat-title">
+              Requisition Total
+            </div>
+
+            <div
+              class="stat-value"
+              id="dashReqTotal">
+              KSh 0.00
+            </div>
+
+          </div>
+
         </div>
 
       </div>
@@ -916,28 +935,28 @@
         <button
           type="button"
           class="btn btn-primary"
-          onclick="openVehicleModal()">
+          onclick="window.openVehicleModal()">
           + Add Vehicle
         </button>
 
         <button
           type="button"
           class="btn btn-primary"
-          onclick="openExpenseModal()">
+          onclick="window.openExpenseModal()">
           + Add Expense
         </button>
 
         <button
           type="button"
           class="btn btn-primary"
-          onclick="openPettyModal()">
+          onclick="window.openPettyModal()">
           + Add Petty Cash
         </button>
 
         <button
           type="button"
           class="btn btn-primary"
-          onclick="openRequisitionModal()">
+          onclick="window.openRequisitionModal()">
           + Add Requisition
         </button>
 
@@ -971,21 +990,21 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="printSection('Garage Vehicles', 'vehiclesPrintArea')">
+            onclick="window.printSection('Garage Vehicles', 'vehiclesPrintArea')">
             🖨️ Print
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="shareVehicles()">
+            onclick="window.shareVehicles()">
             📤 Share
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="openVehicleModal()">
+            onclick="window.openVehicleModal()">
             + Add Vehicle
           </button>
 
@@ -1000,11 +1019,11 @@
           id="vehicleSearch"
           type="search"
           placeholder="Search registration or customer..."
-          oninput="renderVehicles()">
+          oninput="window.renderVehicles()">
 
         <select
           id="vehicleStatusFilter"
-          onchange="renderVehicles()">
+          onchange="window.renderVehicles()">
 
           <option value="">
             All Statuses
@@ -1095,21 +1114,21 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="printSection('Garage Expenses', 'expensesPrintArea')">
+            onclick="window.printSection('Garage Expenses', 'expensesPrintArea')">
             🖨️ Print
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="shareExpenses()">
+            onclick="window.shareExpenses()">
             📤 Share
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="openExpenseModal()">
+            onclick="window.openExpenseModal()">
             + Add Expense
           </button>
 
@@ -1124,11 +1143,11 @@
           id="expenseSearch"
           type="search"
           placeholder="Search expense or vehicle..."
-          oninput="renderExpenses()">
+          oninput="window.renderExpenses()">
 
         <select
           id="expenseCategoryFilter"
-          onchange="renderExpenses()">
+          onchange="window.renderExpenses()">
 
           <option value="">
             All Categories
@@ -1228,21 +1247,21 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="printSection('Garage Petty Cash', 'pettyPrintArea')">
+            onclick="window.printSection('Garage Petty Cash', 'pettyPrintArea')">
             🖨️ Print
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="sharePettyCash()">
+            onclick="window.sharePettyCash()">
             📤 Share
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="openPettyModal()">
+            onclick="window.openPettyModal()">
             + Add Petty Cash
           </button>
 
@@ -1257,11 +1276,11 @@
           id="pettySearch"
           type="search"
           placeholder="Search description or paid to..."
-          oninput="renderPettyCash()">
+          oninput="window.renderPettyCash()">
 
         <select
           id="pettyCategoryFilter"
-          onchange="renderPettyCash()">
+          onchange="window.renderPettyCash()">
 
           <option value="">
             All Categories
@@ -1362,21 +1381,21 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="printSection('Garage Requisitions', 'requisitionsPrintArea')">
+            onclick="window.printSection('Garage Requisitions', 'requisitionsPrintArea')">
             🖨️ Print
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="shareRequisitions()">
+            onclick="window.shareRequisitions()">
             📤 Share
           </button>
 
           <button
             type="button"
             class="btn btn-primary"
-            onclick="openRequisitionModal()">
+            onclick="window.openRequisitionModal()">
             + Add Requisition
           </button>
 
@@ -1391,11 +1410,11 @@
           id="reqSearch"
           type="search"
           placeholder="Search requisition, item or requester..."
-          oninput="renderRequisitions()">
+          oninput="window.renderRequisitions()">
 
         <select
           id="reqStatusFilter"
-          onchange="renderRequisitions()">
+          onchange="window.renderRequisitions()">
 
           <option value="">
             All Statuses
@@ -1425,6 +1444,23 @@
       <div
         id="requisitionsPrintArea"
         class="table-container">
+
+        <!-- OVERALL TOTAL -->
+
+        <div
+          id="reqOverallSummary"
+          class="print-summary">
+
+          <span>
+            Overall Total Amount
+          </span>
+
+          <strong id="reqOverallTotal">
+            KSh 0.00
+          </strong>
+
+        </div>
+
 
         <table>
 
@@ -1488,7 +1524,7 @@
         <button
           type="button"
           class="modal-close"
-          onclick="closeModal('vehicleModal')">
+          onclick="window.closeModal('vehicleModal')">
           ×
         </button>
 
@@ -1496,7 +1532,7 @@
 
 
       <form
-        onsubmit="saveVehicle(event)">
+        onsubmit="window.saveVehicle(event)">
 
         <div class="modal-body">
 
@@ -1569,29 +1605,12 @@
 
               <select id="vehicleJobType">
 
-                <option value="Repair">
-                  Repair
-                </option>
-
-                <option value="Service">
-                  Service
-                </option>
-
-                <option value="Body Work">
-                  Body Work
-                </option>
-
-                <option value="Mechanical">
-                  Mechanical
-                </option>
-
-                <option value="Electrical">
-                  Electrical
-                </option>
-
-                <option value="Other">
-                  Other
-                </option>
+                <option value="Repair">Repair</option>
+                <option value="Service">Service</option>
+                <option value="Body Work">Body Work</option>
+                <option value="Mechanical">Mechanical</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Other">Other</option>
 
               </select>
 
@@ -1606,17 +1625,9 @@
 
               <select id="vehicleStatus">
 
-                <option value="Under Repair">
-                  Under Repair
-                </option>
-
-                <option value="Completed">
-                  Completed
-                </option>
-
-                <option value="Released">
-                  Released
-                </option>
+                <option value="Under Repair">Under Repair</option>
+                <option value="Completed">Completed</option>
+                <option value="Released">Released</option>
 
               </select>
 
@@ -1703,7 +1714,7 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="closeModal('vehicleModal')">
+            onclick="window.closeModal('vehicleModal')">
             Cancel
           </button>
 
@@ -1741,7 +1752,7 @@
         <button
           type="button"
           class="modal-close"
-          onclick="closeModal('expenseModal')">
+          onclick="window.closeModal('expenseModal')">
           ×
         </button>
 
@@ -1749,7 +1760,7 @@
 
 
       <form
-        onsubmit="saveExpense(event)">
+        onsubmit="window.saveExpense(event)">
 
         <div class="modal-body">
 
@@ -1762,9 +1773,7 @@
 
             <div class="form-group">
 
-              <label>
-                Vehicle
-              </label>
+              <label>Vehicle</label>
 
               <select id="expenseVehicle">
 
@@ -1779,9 +1788,7 @@
 
             <div class="form-group">
 
-              <label>
-                Date
-              </label>
+              <label>Date</label>
 
               <input
                 type="date"
@@ -1792,35 +1799,16 @@
 
             <div class="form-group">
 
-              <label>
-                Category
-              </label>
+              <label>Category</label>
 
               <select id="expenseCategory">
 
-                <option value="Parts">
-                  Parts
-                </option>
-
-                <option value="Labour">
-                  Labour
-                </option>
-
-                <option value="Transport">
-                  Transport
-                </option>
-
-                <option value="Fuel">
-                  Fuel
-                </option>
-
-                <option value="Materials">
-                  Materials
-                </option>
-
-                <option value="Other">
-                  Other
-                </option>
+                <option value="Parts">Parts</option>
+                <option value="Labour">Labour</option>
+                <option value="Transport">Transport</option>
+                <option value="Fuel">Fuel</option>
+                <option value="Materials">Materials</option>
+                <option value="Other">Other</option>
 
               </select>
 
@@ -1829,9 +1817,7 @@
 
             <div class="form-group">
 
-              <label>
-                Amount (KSh)
-              </label>
+              <label>Amount (KSh)</label>
 
               <input
                 type="number"
@@ -1846,9 +1832,7 @@
 
             <div class="form-group full">
 
-              <label>
-                Description *
-              </label>
+              <label>Description *</label>
 
               <textarea
                 id="expenseDescription"
@@ -1867,7 +1851,7 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="closeModal('expenseModal')">
+            onclick="window.closeModal('expenseModal')">
             Cancel
           </button>
 
@@ -1905,7 +1889,7 @@
         <button
           type="button"
           class="modal-close"
-          onclick="closeModal('pettyModal')">
+          onclick="window.closeModal('pettyModal')">
           ×
         </button>
 
@@ -1913,7 +1897,7 @@
 
 
       <form
-        onsubmit="savePettyCash(event)">
+        onsubmit="window.savePettyCash(event)">
 
         <div class="modal-body">
 
@@ -1926,9 +1910,7 @@
 
             <div class="form-group">
 
-              <label>
-                Date
-              </label>
+              <label>Date</label>
 
               <input
                 type="date"
@@ -1939,9 +1921,7 @@
 
             <div class="form-group">
 
-              <label>
-                Paid To
-              </label>
+              <label>Paid To</label>
 
               <input
                 id="pettyPaidTo"
@@ -1952,35 +1932,16 @@
 
             <div class="form-group">
 
-              <label>
-                Category
-              </label>
+              <label>Category</label>
 
               <select id="pettyCategory">
 
-                <option value="Transport">
-                  Transport
-                </option>
-
-                <option value="Food">
-                  Food
-                </option>
-
-                <option value="Materials">
-                  Materials
-                </option>
-
-                <option value="Fuel">
-                  Fuel
-                </option>
-
-                <option value="Labour">
-                  Labour
-                </option>
-
-                <option value="Other">
-                  Other
-                </option>
+                <option value="Transport">Transport</option>
+                <option value="Food">Food</option>
+                <option value="Materials">Materials</option>
+                <option value="Fuel">Fuel</option>
+                <option value="Labour">Labour</option>
+                <option value="Other">Other</option>
 
               </select>
 
@@ -1989,9 +1950,7 @@
 
             <div class="form-group">
 
-              <label>
-                Amount (KSh)
-              </label>
+              <label>Amount (KSh)</label>
 
               <input
                 type="number"
@@ -2006,9 +1965,7 @@
 
             <div class="form-group full">
 
-              <label>
-                Description *
-              </label>
+              <label>Description *</label>
 
               <textarea
                 id="pettyDescription"
@@ -2020,9 +1977,7 @@
 
             <div class="form-group full">
 
-              <label>
-                Notes
-              </label>
+              <label>Notes</label>
 
               <textarea
                 id="pettyNotes"
@@ -2040,7 +1995,7 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="closeModal('pettyModal')">
+            onclick="window.closeModal('pettyModal')">
             Cancel
           </button>
 
@@ -2078,7 +2033,7 @@
         <button
           type="button"
           class="modal-close"
-          onclick="closeModal('requisitionModal')">
+          onclick="window.closeModal('requisitionModal')">
           ×
         </button>
 
@@ -2086,7 +2041,7 @@
 
 
       <form
-        onsubmit="saveRequisition(event)">
+        onsubmit="window.saveRequisition(event)">
 
         <div class="modal-body">
 
@@ -2113,9 +2068,7 @@
 
             <div class="form-group">
 
-              <label>
-                Date
-              </label>
+              <label>Date</label>
 
               <input
                 type="date"
@@ -2140,9 +2093,7 @@
 
             <div class="form-group">
 
-              <label>
-                Vehicle
-              </label>
+              <label>Vehicle</label>
 
               <select id="reqVehicle">
 
@@ -2171,9 +2122,7 @@
 
             <div class="form-group">
 
-              <label>
-                Quantity
-              </label>
+              <label>Quantity</label>
 
               <input
                 type="number"
@@ -2203,9 +2152,7 @@
 
             <div class="form-group">
 
-              <label>
-                Total Amount
-              </label>
+              <label>Total Amount</label>
 
               <div
                 style="
@@ -2228,31 +2175,15 @@
 
             <div class="form-group">
 
-              <label>
-                Expense Type
-              </label>
+              <label>Expense Type</label>
 
               <select id="reqExpenseType">
 
-                <option value="Materials">
-                  Materials
-                </option>
-
-                <option value="Labour">
-                  Labour
-                </option>
-
-                <option value="Transport">
-                  Transport
-                </option>
-
-                <option value="Parts">
-                  Parts
-                </option>
-
-                <option value="Other">
-                  Other
-                </option>
+                <option value="Materials">Materials</option>
+                <option value="Labour">Labour</option>
+                <option value="Transport">Transport</option>
+                <option value="Parts">Parts</option>
+                <option value="Other">Other</option>
 
               </select>
 
@@ -2261,27 +2192,14 @@
 
             <div class="form-group">
 
-              <label>
-                Status
-              </label>
+              <label>Status</label>
 
               <select id="reqStatus">
 
-                <option value="Pending">
-                  Pending
-                </option>
-
-                <option value="Approved">
-                  Approved
-                </option>
-
-                <option value="Rejected">
-                  Rejected
-                </option>
-
-                <option value="Completed">
-                  Completed
-                </option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Completed">Completed</option>
 
               </select>
 
@@ -2290,9 +2208,7 @@
 
             <div class="form-group full">
 
-              <label>
-                Notes
-              </label>
+              <label>Notes</label>
 
               <textarea
                 id="reqNotes"
@@ -2310,7 +2226,7 @@
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="closeModal('requisitionModal')">
+            onclick="window.closeModal('requisitionModal')">
             Cancel
           </button>
 
@@ -2338,10 +2254,6 @@
     class="toast">
   </div>
 
-
-  <!-- ==================================================
-       APP JS
-       ================================================== -->
 
   <script
     type="module"
