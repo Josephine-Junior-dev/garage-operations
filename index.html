@@ -23,6 +23,116 @@ button{
   border:0;
 }
 
+/* ======================================================
+   LANDING / LOGIN PAGE
+   ====================================================== */
+
+#landingPage{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:
+    linear-gradient(135deg,#020617ee,#0f172aef),
+    url("https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1600&q=80")
+    center/cover no-repeat;
+}
+
+.login-card{
+  width:min(420px,100%);
+  background:#fff;
+  border-radius:18px;
+  padding:28px;
+  box-shadow:0 20px 60px #0008;
+  text-align:center;
+}
+
+.login-logo{
+  width:90px;
+  height:90px;
+  margin:0 auto 15px;
+  border-radius:50%;
+  object-fit:cover;
+  border:4px solid #1769aa;
+}
+
+.login-card h1{
+  margin:0;
+  color:#0f172a;
+  font-size:25px;
+}
+
+.login-card p{
+  margin:7px 0 22px;
+  color:#64748b;
+  font-size:14px;
+}
+
+.login-form{
+  text-align:left;
+}
+
+.login-form label{
+  display:block;
+  margin-bottom:6px;
+  font-size:13px;
+  font-weight:700;
+  color:#334155;
+}
+
+.login-form input{
+  width:100%;
+  padding:13px;
+  margin-bottom:15px;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  font-size:16px;
+}
+
+.login-form input:focus{
+  outline:none;
+  border-color:#1769aa;
+  box-shadow:0 0 0 3px #1769aa22;
+}
+
+.login-button{
+  width:100%;
+  padding:13px;
+  border-radius:8px;
+  background:#1769aa;
+  color:#fff;
+  font-weight:700;
+  font-size:16px;
+}
+
+.login-button:hover{
+  background:#12588f;
+}
+
+.login-error{
+  display:none;
+  margin-top:12px;
+  padding:10px;
+  border-radius:7px;
+  background:#fee2e2;
+  color:#991b1b;
+  font-size:13px;
+  text-align:center;
+}
+
+.login-footer{
+  margin-top:20px;
+  color:#94a3b8;
+  font-size:12px;
+}
+
+/* ======================================================
+   EXISTING GARAGE STYLES
+   ====================================================== */
+
 .topbar{
   background:#0f172a;
   color:#fff;
@@ -496,125 +606,396 @@ textarea{
 
 <body>
 
-<header class="topbar">
-  <div>
+<!-- ======================================================
+     LANDING PAGE / LOGIN
+     ====================================================== -->
+
+<div id="landingPage">
+
+  <div class="login-card">
+
+    <img
+      class="login-logo"
+      src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=300&q=80"
+      alt="Garage Vehicle">
+
     <h1>Garage Operations Pro</h1>
-    <small>Vehicle, Expenses, Petty Cash & Requisitions</small>
+
+    <p>
+      Vehicle, Expenses, Petty Cash & Requisitions
+    </p>
+
+    <form
+      class="login-form"
+      onsubmit="return garageLogin(event)"
+    >
+
+      <label for="loginUsername">
+        Username
+      </label>
+
+      <input
+        id="loginUsername"
+        type="text"
+        placeholder="Enter username"
+        autocomplete="username"
+        required
+      >
+
+      <label for="loginPassword">
+        Password
+      </label>
+
+      <input
+        id="loginPassword"
+        type="password"
+        placeholder="Enter password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button
+        type="submit"
+        class="login-button">
+        LOGIN
+      </button>
+
+      <div
+        id="loginError"
+        class="login-error">
+        Invalid username or password.
+      </div>
+
+    </form>
+
+    <div class="login-footer">
+      Garage Operations Pro
+    </div>
+
   </div>
+
+</div>
+
+
+<!-- ======================================================
+     EXISTING GARAGE SYSTEM
+     ====================================================== -->
+
+<header class="topbar">
+
+  <div>
+
+    <h1>Garage Operations Pro</h1>
+
+    <small>
+      Vehicle, Expenses, Petty Cash & Requisitions
+    </small>
+
+  </div>
+
 </header>
 
+
 <nav class="nav">
-  <button class="active" data-section="dashboardSection" onclick="showSection('dashboardSection',this)">Dashboard</button>
-  <button data-section="vehiclesSection" onclick="showSection('vehiclesSection',this)">Vehicles</button>
-  <button data-section="expensesSection" onclick="showSection('expensesSection',this)">Expenses</button>
-  <button data-section="pettySection" onclick="showSection('pettySection',this)">Petty Cash</button>
-  <button data-section="requisitionsSection" onclick="showSection('requisitionsSection',this)">Requisitions</button>
+
+  <button
+    class="active"
+    data-section="dashboardSection"
+    onclick="showSection('dashboardSection',this)">
+    Dashboard
+  </button>
+
+  <button
+    data-section="vehiclesSection"
+    onclick="showSection('vehiclesSection',this)">
+    Vehicles
+  </button>
+
+  <button
+    data-section="expensesSection"
+    onclick="showSection('expensesSection',this)">
+    Expenses
+  </button>
+
+  <button
+    data-section="pettySection"
+    onclick="showSection('pettySection',this)">
+    Petty Cash
+  </button>
+
+  <button
+    data-section="requisitionsSection"
+    onclick="showSection('requisitionsSection',this)">
+    Requisitions
+  </button>
+
 </nav>
 
+
 <main>
+
+<!-- ======================================================
+     DASHBOARD
+     ====================================================== -->
 
 <section id="dashboardSection" class="section active">
 
   <div class="section-header">
+
     <h2>Dashboard</h2>
+
   </div>
 
   <div class="dashboard-grid">
 
-    <div class="dashboard-card" onclick="goToDashboardSection('vehiclesSection')">
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('vehiclesSection')">
+
       <span>Total Vehicles</span>
-      <strong id="dashVehicles">0</strong>
+
+      <strong id="dashVehicles">
+        0
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('vehiclesSection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('vehiclesSection')">
+
       <span>Under Repair</span>
-      <strong id="dashRepair">0</strong>
+
+      <strong id="dashRepair">
+        0
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('vehiclesSection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('vehiclesSection')">
+
       <span>Total Billed</span>
-      <strong id="dashBilled">KSh 0.00</strong>
+
+      <strong id="dashBilled">
+        KSh 0.00
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('vehiclesSection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('vehiclesSection')">
+
       <span>Total Paid</span>
-      <strong id="dashPaid">KSh 0.00</strong>
+
+      <strong id="dashPaid">
+        KSh 0.00
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('vehiclesSection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('vehiclesSection')">
+
       <span>Outstanding</span>
-      <strong id="dashOutstanding">KSh 0.00</strong>
+
+      <strong id="dashOutstanding">
+        KSh 0.00
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('expensesSection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('expensesSection')">
+
       <span>Expenses</span>
-      <strong id="dashExpenses">KSh 0.00</strong>
+
+      <strong id="dashExpenses">
+        KSh 0.00
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('pettySection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('pettySection')">
+
       <span>Petty Cash</span>
-      <strong id="dashPetty">KSh 0.00</strong>
+
+      <strong id="dashPetty">
+        KSh 0.00
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('requisitionsSection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('requisitionsSection')">
+
       <span>Requisitions</span>
-      <strong id="dashReq">0</strong>
+
+      <strong id="dashReq">
+        0
+      </strong>
+
     </div>
 
-    <div class="dashboard-card" onclick="goToDashboardSection('requisitionsSection')">
+
+    <div
+      class="dashboard-card"
+      onclick="goToDashboardSection('requisitionsSection')">
+
       <span>Requisition Total</span>
-      <strong id="dashReqTotal">KSh 0.00</strong>
+
+      <strong id="dashReqTotal">
+        KSh 0.00
+      </strong>
+
     </div>
 
   </div>
 
+
   <div class="panel">
+
     <div class="panel-header">
-      <h3>Quick Actions</h3>
+
+      <h3>
+        Quick Actions
+      </h3>
+
     </div>
 
-    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn" onclick="openVehicleModal()">+ Add Vehicle</button>
-      <button class="btn" onclick="openExpenseModal()">+ Add Expense</button>
-      <button class="btn" onclick="openPettyModal()">+ Add Petty Cash</button>
-      <button class="btn" onclick="openRequisitionModal()">+ Add Requisition</button>
+    <div
+      style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;">
+
+      <button
+        class="btn"
+        onclick="openVehicleModal()">
+        + Add Vehicle
+      </button>
+
+      <button
+        class="btn"
+        onclick="openExpenseModal()">
+        + Add Expense
+      </button>
+
+      <button
+        class="btn"
+        onclick="openPettyModal()">
+        + Add Petty Cash
+      </button>
+
+      <button
+        class="btn"
+        onclick="openRequisitionModal()">
+        + Add Requisition
+      </button>
+
     </div>
+
   </div>
 
 </section>
 
 
+<!-- ======================================================
+     VEHICLES
+     ====================================================== -->
+
 <section id="vehiclesSection" class="section">
 
   <div class="section-header">
+
     <h2>Vehicles</h2>
 
     <div class="actions">
-      <button class="btn" onclick="openVehicleModal()">+ Add Vehicle</button>
-      <button class="btn secondary" onclick="printSection('Garage Vehicles','vehiclesPrintArea')">Print</button>
-      <button class="btn secondary" onclick="shareVehicles()">Share</button>
+
+      <button
+        class="btn"
+        onclick="openVehicleModal()">
+        + Add Vehicle
+      </button>
+
+      <button
+        class="btn secondary"
+        onclick="printSection('Garage Vehicles','vehiclesPrintArea')">
+        Print
+      </button>
+
+      <button
+        class="btn secondary"
+        onclick="shareVehicles()">
+        Share
+      </button>
+
     </div>
+
   </div>
+
 
   <div class="panel">
 
     <div class="filters">
-      <input id="vehicleSearch" type="search" placeholder="Search registration or customer">
+
+      <input
+        id="vehicleSearch"
+        type="search"
+        placeholder="Search registration or customer">
 
       <select id="vehicleStatusFilter">
-        <option value="">All Statuses</option>
-        <option value="Under Repair">Under Repair</option>
-        <option value="Completed">Completed</option>
-        <option value="Rejected">Rejected</option>
-        <option value="Pending">Pending</option>
-        <option value="Released">Released</option>
+
+        <option value="">
+          All Statuses
+        </option>
+
+        <option value="Under Repair">
+          Under Repair
+        </option>
+
+        <option value="Completed">
+          Completed
+        </option>
+
+        <option value="Rejected">
+          Rejected
+        </option>
+
+        <option value="Pending">
+          Pending
+        </option>
+
+        <option value="Released">
+          Released
+        </option>
+
       </select>
+
     </div>
 
-    <div id="vehiclesPrintArea" class="table-container">
+
+    <div
+      id="vehiclesPrintArea"
+      class="table-container">
+
       <table>
+
         <thead>
+
           <tr>
+
             <th>Registration</th>
             <th>Customer</th>
             <th>Date In</th>
@@ -623,159 +1004,356 @@ textarea{
             <th>Billed</th>
             <th>Paid</th>
             <th>Outstanding</th>
-            <th class="no-print">Actions</th>
+            <th class="no-print">
+              Actions
+            </th>
+
           </tr>
+
         </thead>
-        <tbody id="vehiclesTableBody"></tbody>
+
+        <tbody
+          id="vehiclesTableBody">
+        </tbody>
+
       </table>
+
     </div>
 
   </div>
+
 </section>
 
+
+<!-- ======================================================
+     EXPENSES
+     ====================================================== -->
 
 <section id="expensesSection" class="section">
 
   <div class="section-header">
+
     <h2>Expenses</h2>
 
     <div class="actions">
-      <button class="btn" onclick="openExpenseModal()">+ Add Expense</button>
-      <button class="btn secondary" onclick="printSection('Garage Expenses','expensesPrintArea')">Print</button>
-      <button class="btn secondary" onclick="shareExpenses()">Share</button>
+
+      <button
+        class="btn"
+        onclick="openExpenseModal()">
+        + Add Expense
+      </button>
+
+      <button
+        class="btn secondary"
+        onclick="printSection('Garage Expenses','expensesPrintArea')">
+        Print
+      </button>
+
+      <button
+        class="btn secondary"
+        onclick="shareExpenses()">
+        Share
+      </button>
+
     </div>
+
   </div>
+
 
   <div class="panel">
 
     <div class="filters">
-      <input id="expenseSearch" type="search" placeholder="Search expense, vehicle or description">
+
+      <input
+        id="expenseSearch"
+        type="search"
+        placeholder="Search expense, vehicle or description">
 
       <select id="expenseCategoryFilter">
-        <option value="">All Categories</option>
-        <option value="Parts">Parts</option>
-        <option value="Labour">Labour</option>
-        <option value="Transport">Transport</option>
-        <option value="Fuel">Fuel</option>
-        <option value="Materials">Materials</option>
-        <option value="Other">Other</option>
+
+        <option value="">
+          All Categories
+        </option>
+
+        <option value="Parts">
+          Parts
+        </option>
+
+        <option value="Labour">
+          Labour
+        </option>
+
+        <option value="Transport">
+          Transport
+        </option>
+
+        <option value="Fuel">
+          Fuel
+        </option>
+
+        <option value="Materials">
+          Materials
+        </option>
+
+        <option value="Other">
+          Other
+        </option>
+
       </select>
+
     </div>
 
-    <div id="expensesPrintArea" class="table-container">
+
+    <div
+      id="expensesPrintArea"
+      class="table-container">
+
       <table>
+
         <thead>
+
           <tr>
+
             <th>Date</th>
             <th>Vehicle</th>
             <th>Description</th>
             <th>Category</th>
             <th>Amount</th>
-            <th class="no-print">Actions</th>
+
+            <th class="no-print">
+              Actions
+            </th>
+
           </tr>
+
         </thead>
-        <tbody id="expensesTableBody"></tbody>
+
+        <tbody
+          id="expensesTableBody">
+        </tbody>
+
       </table>
+
     </div>
 
   </div>
+
 </section>
 
+
+<!-- ======================================================
+     PETTY CASH
+     ====================================================== -->
 
 <section id="pettySection" class="section">
 
   <div class="section-header">
+
     <h2>Petty Cash</h2>
 
     <div class="actions">
-      <button class="btn" onclick="openPettyModal()">+ Add Petty Cash</button>
-      <button class="btn secondary" onclick="printSection('Petty Cash','pettyPrintArea')">Print</button>
-      <button class="btn secondary" onclick="sharePettyCash()">Share</button>
+
+      <button
+        class="btn"
+        onclick="openPettyModal()">
+        + Add Petty Cash
+      </button>
+
+      <button
+        class="btn secondary"
+        onclick="printSection('Petty Cash','pettyPrintArea')">
+        Print
+      </button>
+
+      <button
+        class="btn secondary"
+        onclick="sharePettyCash()">
+        Share
+      </button>
+
     </div>
+
   </div>
+
 
   <div class="panel">
 
     <div class="filters">
-      <input id="pettySearch" type="search" placeholder="Search description, paid to or category">
+
+      <input
+        id="pettySearch"
+        type="search"
+        placeholder="Search description, paid to or category">
 
       <select id="pettyCategoryFilter">
-        <option value="">All Categories</option>
-        <option value="Transport">Transport</option>
-        <option value="Food">Food</option>
-        <option value="Materials">Materials</option>
-        <option value="Labour">Labour</option>
-        <option value="Other">Other</option>
+
+        <option value="">
+          All Categories
+        </option>
+
+        <option value="Transport">
+          Transport
+        </option>
+
+        <option value="Food">
+          Food
+        </option>
+
+        <option value="Materials">
+          Materials
+        </option>
+
+        <option value="Labour">
+          Labour
+        </option>
+
+        <option value="Other">
+          Other
+        </option>
+
       </select>
+
     </div>
 
-    <div id="pettyPrintArea" class="table-container">
+
+    <div
+      id="pettyPrintArea"
+      class="table-container">
+
       <table>
+
         <thead>
+
           <tr>
+
             <th>Date</th>
             <th>Description</th>
             <th>Paid To</th>
             <th>Category</th>
             <th>Amount</th>
             <th>Notes</th>
-            <th class="no-print">Actions</th>
+
+            <th class="no-print">
+              Actions
+            </th>
+
           </tr>
+
         </thead>
-        <tbody id="pettyTableBody"></tbody>
+
+        <tbody
+          id="pettyTableBody">
+        </tbody>
+
       </table>
+
     </div>
 
   </div>
+
 </section>
 
+
+<!-- ======================================================
+     REQUISITIONS
+     ====================================================== -->
 
 <section id="requisitionsSection" class="section">
 
   <div class="section-header">
+
     <h2>Requisitions</h2>
 
     <div class="actions">
-      <button class="btn" onclick="openRequisitionModal()">+ Add Requisition</button>
 
-      <button class="btn secondary" onclick="previewRequisitions()">
+      <button
+        class="btn"
+        onclick="openRequisitionModal()">
+        + Add Requisition
+      </button>
+
+      <button
+        class="btn secondary"
+        onclick="previewRequisitions()">
         Preview
       </button>
 
-      <button class="btn secondary" onclick="printSection('Requisitions','requisitionsPrintArea')">
+      <button
+        class="btn secondary"
+        onclick="printSection('Requisitions','requisitionsPrintArea')">
         Print
       </button>
 
-      <button class="btn secondary" onclick="shareRequisitions()">
+      <button
+        class="btn secondary"
+        onclick="shareRequisitions()">
         Share
       </button>
+
     </div>
+
   </div>
+
 
   <div class="panel">
 
     <div class="filters">
-      <input id="reqSearch" type="search" placeholder="Search requisition, requester, vehicle or item">
+
+      <input
+        id="reqSearch"
+        type="search"
+        placeholder="Search requisition, requester, vehicle or item">
 
       <select id="reqStatusFilter">
-        <option value="">All Statuses</option>
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-        <option value="Paid">Paid</option>
+
+        <option value="">
+          All Statuses
+        </option>
+
+        <option value="Pending">
+          Pending
+        </option>
+
+        <option value="Approved">
+          Approved
+        </option>
+
+        <option value="Rejected">
+          Rejected
+        </option>
+
+        <option value="Paid">
+          Paid
+        </option>
+
       </select>
+
     </div>
 
-    <div id="requisitionsPrintArea" class="table-container">
+
+    <div
+      id="requisitionsPrintArea"
+      class="table-container">
 
       <div class="print-summary">
-        <span>Overall Total Amount</span>
-        <strong id="reqOverallTotal">KSh 0.00</strong>
+
+        <span>
+          Overall Total Amount
+        </span>
+
+        <strong id="reqOverallTotal">
+          KSh 0.00
+        </strong>
+
       </div>
 
+
       <table>
+
         <thead>
+
           <tr>
+
             <th>Req No.</th>
             <th>Date</th>
             <th>Requested By</th>
@@ -786,381 +1364,922 @@ textarea{
             <th>Total</th>
             <th>Expense Type</th>
             <th>Status</th>
-            <th class="no-print">Actions</th>
+
+            <th class="no-print">
+              Actions
+            </th>
+
           </tr>
+
         </thead>
-        <tbody id="requisitionsTableBody"></tbody>
+
+        <tbody
+          id="requisitionsTableBody">
+        </tbody>
+
       </table>
 
     </div>
 
   </div>
+
 </section>
 
 </main>
 
 
-<!-- VEHICLE MODAL -->
+<!-- ======================================================
+     VEHICLE MODAL
+     ====================================================== -->
+
 <div id="vehicleModal" class="modal">
 
   <div class="modal-card">
 
     <div class="modal-header">
-      <h3 id="vehicleModalTitle">Add Vehicle</h3>
-      <button class="modal-close" onclick="closeModal('vehicleModal')">×</button>
+
+      <h3 id="vehicleModalTitle">
+        Add Vehicle
+      </h3>
+
+      <button
+        class="modal-close"
+        onclick="closeModal('vehicleModal')">
+        ×
+      </button>
+
     </div>
+
 
     <form id="vehicleForm">
 
       <div class="modal-body">
 
-        <input type="hidden" id="vehicleId">
+        <input
+          type="hidden"
+          id="vehicleId">
+
 
         <div class="form-grid">
 
           <div class="form-group">
-            <label>Registration</label>
-            <input id="vehicleRegistration" required>
+
+            <label>
+              Registration
+            </label>
+
+            <input
+              id="vehicleRegistration"
+              required>
+
           </div>
 
-          <div class="form-group">
-            <label>Customer</label>
-            <input id="vehicleCustomer" required>
-          </div>
 
           <div class="form-group">
-            <label>Date In</label>
-            <input id="vehicleDateIn" type="date" required>
+
+            <label>
+              Customer
+            </label>
+
+            <input
+              id="vehicleCustomer"
+              required>
+
           </div>
 
-          <div class="form-group">
-            <label>Date Out</label>
-            <input id="vehicleDateOut" type="date">
-          </div>
 
           <div class="form-group">
-            <label>Job Type</label>
+
+            <label>
+              Date In
+            </label>
+
+            <input
+              id="vehicleDateIn"
+              type="date"
+              required>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Date Out
+            </label>
+
+            <input
+              id="vehicleDateOut"
+              type="date">
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Job Type
+            </label>
+
             <select id="vehicleJobType">
-              <option>Repair</option>
-              <option>Service</option>
-              <option>Storage</option>
-              <option>Assessment</option>
-              <option>Other</option>
+
+              <option>
+                Repair
+              </option>
+
+              <option>
+                Service
+              </option>
+
+              <option>
+                Storage
+              </option>
+
+              <option>
+                Assessment
+              </option>
+
+              <option>
+                Other
+              </option>
+
             </select>
+
           </div>
 
+
           <div class="form-group">
-            <label>Status</label>
+
+            <label>
+              Status
+            </label>
+
             <select id="vehicleStatus">
-              <option>Under Repair</option>
-              <option>Pending</option>
-              <option>Completed</option>
-              <option>Rejected</option>
-              <option>Released</option>
+
+              <option>
+                Under Repair
+              </option>
+
+              <option>
+                Pending
+              </option>
+
+              <option>
+                Completed
+              </option>
+
+              <option>
+                Rejected
+              </option>
+
+              <option>
+                Released
+              </option>
+
             </select>
+
           </div>
 
-          <div class="form-group">
-            <label>Released To</label>
-            <input id="vehicleReleasedTo">
-          </div>
 
           <div class="form-group">
-            <label>Released Contact</label>
-            <input id="vehicleReleasedContact">
+
+            <label>
+              Released To
+            </label>
+
+            <input
+              id="vehicleReleasedTo">
+
           </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Released Contact
+            </label>
+
+            <input
+              id="vehicleReleasedContact">
+
+          </div>
+
 
           <div class="form-group full">
-            <label>Description</label>
-            <textarea id="vehicleDescription" rows="3"></textarea>
+
+            <label>
+              Description
+            </label>
+
+            <textarea
+              id="vehicleDescription"
+              rows="3">
+            </textarea>
+
           </div>
 
-          <div class="form-group">
-            <label>Billed</label>
-            <input id="vehicleBilled" type="number" min="0" step="0.01" value="0">
-          </div>
 
           <div class="form-group">
-            <label>Paid</label>
-            <input id="vehiclePaid" type="number" min="0" step="0.01" value="0">
+
+            <label>
+              Billed
+            </label>
+
+            <input
+              id="vehicleBilled"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0">
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Paid
+            </label>
+
+            <input
+              id="vehiclePaid"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0">
+
           </div>
 
         </div>
 
       </div>
 
+
       <div class="modal-footer">
-        <button type="button" class="btn secondary" onclick="closeModal('vehicleModal')">Cancel</button>
-        <button type="submit" class="btn">Save Vehicle</button>
+
+        <button
+          type="button"
+          class="btn secondary"
+          onclick="closeModal('vehicleModal')">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn">
+          Save Vehicle
+        </button>
+
       </div>
 
     </form>
+
   </div>
+
 </div>
 
 
-<!-- EXPENSE MODAL -->
+<!-- ======================================================
+     EXPENSE MODAL
+     ====================================================== -->
+
 <div id="expenseModal" class="modal">
 
   <div class="modal-card">
 
     <div class="modal-header">
-      <h3 id="expenseModalTitle">Add Expense</h3>
-      <button class="modal-close" onclick="closeModal('expenseModal')">×</button>
+
+      <h3 id="expenseModalTitle">
+        Add Expense
+      </h3>
+
+      <button
+        class="modal-close"
+        onclick="closeModal('expenseModal')">
+        ×
+      </button>
+
     </div>
+
 
     <form id="expenseForm">
 
       <div class="modal-body">
 
-        <input type="hidden" id="expenseId">
+        <input
+          type="hidden"
+          id="expenseId">
+
 
         <div class="form-grid">
 
           <div class="form-group">
-            <label>Vehicle</label>
+
+            <label>
+              Vehicle
+            </label>
+
             <select id="expenseVehicle"></select>
+
           </div>
 
+
           <div class="form-group">
-            <label>Expense Date</label>
-            <input id="expenseDate" type="date" required>
+
+            <label>
+              Expense Date
+            </label>
+
+            <input
+              id="expenseDate"
+              type="date"
+              required>
+
           </div>
+
 
           <div class="form-group full">
-            <label>Description</label>
-            <input id="expenseDescription" required>
+
+            <label>
+              Description
+            </label>
+
+            <input
+              id="expenseDescription"
+              required>
+
           </div>
 
+
           <div class="form-group">
-            <label>Category</label>
+
+            <label>
+              Category
+            </label>
+
             <select id="expenseCategory">
-              <option>Parts</option>
-              <option>Labour</option>
-              <option>Transport</option>
-              <option>Fuel</option>
-              <option>Materials</option>
-              <option>Other</option>
+
+              <option>
+                Parts
+              </option>
+
+              <option>
+                Labour
+              </option>
+
+              <option>
+                Transport
+              </option>
+
+              <option>
+                Fuel
+              </option>
+
+              <option>
+                Materials
+              </option>
+
+              <option>
+                Other
+              </option>
+
             </select>
+
           </div>
 
+
           <div class="form-group">
-            <label>Amount</label>
-            <input id="expenseAmount" type="number" min="0" step="0.01" value="0" required>
+
+            <label>
+              Amount
+            </label>
+
+            <input
+              id="expenseAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0"
+              required>
+
           </div>
 
         </div>
 
       </div>
 
+
       <div class="modal-footer">
-        <button type="button" class="btn secondary" onclick="closeModal('expenseModal')">Cancel</button>
-        <button type="submit" class="btn">Save Expense</button>
+
+        <button
+          type="button"
+          class="btn secondary"
+          onclick="closeModal('expenseModal')">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn">
+          Save Expense
+        </button>
+
       </div>
 
     </form>
+
   </div>
+
 </div>
 
 
-<!-- PETTY CASH MODAL -->
+<!-- ======================================================
+     PETTY CASH MODAL
+     ====================================================== -->
+
 <div id="pettyModal" class="modal">
 
   <div class="modal-card">
 
     <div class="modal-header">
-      <h3 id="pettyModalTitle">Add Petty Cash</h3>
-      <button class="modal-close" onclick="closeModal('pettyModal')">×</button>
+
+      <h3 id="pettyModalTitle">
+        Add Petty Cash
+      </h3>
+
+      <button
+        class="modal-close"
+        onclick="closeModal('pettyModal')">
+        ×
+      </button>
+
     </div>
+
 
     <form id="pettyForm">
 
       <div class="modal-body">
 
-        <input type="hidden" id="pettyId">
+        <input
+          type="hidden"
+          id="pettyId">
+
 
         <div class="form-grid">
 
           <div class="form-group">
-            <label>Date</label>
-            <input id="pettyDate" type="date" required>
+
+            <label>
+              Date
+            </label>
+
+            <input
+              id="pettyDate"
+              type="date"
+              required>
+
           </div>
 
+
           <div class="form-group">
-            <label>Paid To</label>
-            <input id="pettyPaidTo">
+
+            <label>
+              Paid To
+            </label>
+
+            <input
+              id="pettyPaidTo">
+
           </div>
+
 
           <div class="form-group full">
-            <label>Description</label>
-            <input id="pettyDescription" required>
+
+            <label>
+              Description
+            </label>
+
+            <input
+              id="pettyDescription"
+              required>
+
           </div>
 
+
           <div class="form-group">
-            <label>Category</label>
+
+            <label>
+              Category
+            </label>
+
             <select id="pettyCategory">
-              <option>Transport</option>
-              <option>Food</option>
-              <option>Materials</option>
-              <option>Labour</option>
-              <option>Other</option>
+
+              <option>
+                Transport
+              </option>
+
+              <option>
+                Food
+              </option>
+
+              <option>
+                Materials
+              </option>
+
+              <option>
+                Labour
+              </option>
+
+              <option>
+                Other
+              </option>
+
             </select>
+
           </div>
+
 
           <div class="form-group">
-            <label>Amount</label>
-            <input id="pettyAmount" type="number" min="0" step="0.01" value="0" required>
+
+            <label>
+              Amount
+            </label>
+
+            <input
+              id="pettyAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0"
+              required>
+
           </div>
 
+
           <div class="form-group full">
-            <label>Notes</label>
-            <textarea id="pettyNotes" rows="3"></textarea>
+
+            <label>
+              Notes
+            </label>
+
+            <textarea
+              id="pettyNotes"
+              rows="3">
+            </textarea>
+
           </div>
 
         </div>
 
       </div>
 
+
       <div class="modal-footer">
-        <button type="button" class="btn secondary" onclick="closeModal('pettyModal')">Cancel</button>
-        <button type="submit" class="btn">Save Petty Cash</button>
+
+        <button
+          type="button"
+          class="btn secondary"
+          onclick="closeModal('pettyModal')">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn">
+          Save Petty Cash
+        </button>
+
       </div>
 
     </form>
+
   </div>
+
 </div>
 
 
-<!-- REQUISITION MODAL -->
+<!-- ======================================================
+     REQUISITION MODAL
+     ====================================================== -->
+
 <div id="requisitionModal" class="modal">
 
   <div class="modal-card">
 
     <div class="modal-header">
-      <h3 id="requisitionModalTitle">Add Requisition</h3>
-      <button class="modal-close" onclick="closeModal('requisitionModal')">×</button>
+
+      <h3 id="requisitionModalTitle">
+        Add Requisition
+      </h3>
+
+      <button
+        class="modal-close"
+        onclick="closeModal('requisitionModal')">
+        ×
+      </button>
+
     </div>
+
 
     <form id="requisitionForm">
 
       <div class="modal-body">
 
-        <input type="hidden" id="requisitionId">
+        <input
+          type="hidden"
+          id="requisitionId">
+
 
         <div class="form-grid">
 
           <div class="form-group">
-            <label>Req No.</label>
-            <input id="reqNo" required>
+
+            <label>
+              Req No.
+            </label>
+
+            <input
+              id="reqNo"
+              required>
+
           </div>
 
-          <div class="form-group">
-            <label>Req Date</label>
-            <input id="reqDate" type="date" required>
-          </div>
 
           <div class="form-group">
-            <label>Requested By</label>
-            <input id="reqRequestedBy" required>
+
+            <label>
+              Req Date
+            </label>
+
+            <input
+              id="reqDate"
+              type="date"
+              required>
+
           </div>
 
+
           <div class="form-group">
-            <label>Vehicle</label>
+
+            <label>
+              Requested By
+            </label>
+
+            <input
+              id="reqRequestedBy"
+              required>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Vehicle
+            </label>
+
             <select id="reqVehicle"></select>
+
           </div>
+
 
           <div class="form-group full">
-            <label>Item Description</label>
-            <input id="reqItemDescription" required>
+
+            <label>
+              Item Description
+            </label>
+
+            <input
+              id="reqItemDescription"
+              required>
+
           </div>
 
-          <div class="form-group">
-            <label>Quantity</label>
-            <input id="reqQuantity" type="number" min="0" step="0.01" value="1" required oninput="calculateReqTotal()">
-          </div>
 
           <div class="form-group">
-            <label>Unit Cost</label>
-            <input id="reqUnitCost" type="number" min="0" step="0.01" value="0" required oninput="calculateReqTotal()">
+
+            <label>
+              Quantity
+            </label>
+
+            <input
+              id="reqQuantity"
+              type="number"
+              min="0"
+              step="0.01"
+              value="1"
+              required
+              oninput="calculateReqTotal()">
+
           </div>
 
-          <div class="form-group">
-            <label>Total Amount</label>
-            <input id="reqTotalDisplay" value="KSh 0.00" readonly>
-          </div>
 
           <div class="form-group">
-            <label>Expense Type</label>
+
+            <label>
+              Unit Cost
+            </label>
+
+            <input
+              id="reqUnitCost"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0"
+              required
+              oninput="calculateReqTotal()">
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Total Amount
+            </label>
+
+            <input
+              id="reqTotalDisplay"
+              value="KSh 0.00"
+              readonly>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Expense Type
+            </label>
+
             <select id="reqExpenseType">
-              <option>Materials</option>
-              <option>Labour</option>
-              <option>Transport</option>
-              <option>Parts</option>
-              <option>Fuel</option>
-              <option>Other</option>
+
+              <option>
+                Materials
+              </option>
+
+              <option>
+                Labour
+              </option>
+
+              <option>
+                Transport
+              </option>
+
+              <option>
+                Parts
+              </option>
+
+              <option>
+                Fuel
+              </option>
+
+              <option>
+                Other
+              </option>
+
             </select>
+
           </div>
+
 
           <div class="form-group">
-            <label>Status</label>
+
+            <label>
+              Status
+            </label>
+
             <select id="reqStatus">
-              <option>Pending</option>
-              <option>Approved</option>
-              <option>Rejected</option>
-              <option>Paid</option>
+
+              <option>
+                Pending
+              </option>
+
+              <option>
+                Approved
+              </option>
+
+              <option>
+                Rejected
+              </option>
+
+              <option>
+                Paid
+              </option>
+
             </select>
+
           </div>
 
+
           <div class="form-group full">
-            <label>Notes</label>
-            <textarea id="reqNotes" rows="3"></textarea>
+
+            <label>
+              Notes
+            </label>
+
+            <textarea
+              id="reqNotes"
+              rows="3">
+            </textarea>
+
           </div>
 
         </div>
 
       </div>
 
+
       <div class="modal-footer">
-        <button type="button" class="btn secondary" onclick="closeModal('requisitionModal')">Cancel</button>
-        <button type="submit" class="btn">Save Requisition</button>
+
+        <button
+          type="button"
+          class="btn secondary"
+          onclick="closeModal('requisitionModal')">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn">
+          Save Requisition
+        </button>
+
       </div>
 
     </form>
+
   </div>
+
 </div>
 
 
-<!-- REQUISITION PREVIEW -->
-<div id="requisitionPreviewModal" class="modal">
+<!-- ======================================================
+     REQUISITION PREVIEW
+     ====================================================== -->
+
+<div
+  id="requisitionPreviewModal"
+  class="modal">
 
   <div class="preview-window">
 
     <div class="preview-header">
 
-      <h2>Requisitions Preview</h2>
+      <h2>
+        Requisitions Preview
+      </h2>
 
       <div class="actions">
-        <button class="btn secondary" onclick="printRequisitionPreview()">Print</button>
-        <button class="btn" onclick="shareRequisitionPreview()">Share</button>
-        <button class="modal-close" onclick="closeModal('requisitionPreviewModal')">×</button>
+
+        <button
+          class="btn secondary"
+          onclick="printRequisitionPreview()">
+          Print
+        </button>
+
+        <button
+          class="btn"
+          onclick="shareRequisitionPreview()">
+          Share
+        </button>
+
+        <button
+          class="modal-close"
+          onclick="closeModal('requisitionPreviewModal')">
+          ×
+        </button>
+
       </div>
 
     </div>
 
-    <div id="requisitionPreviewContent" class="preview-body"></div>
+
+    <div
+      id="requisitionPreviewContent"
+      class="preview-body">
+    </div>
 
   </div>
+
 </div>
 
 
-<!-- VEHICLE EXPENSE PREVIEW -->
-<div id="vehicleExpensePreviewModal" class="modal">
+<!-- ======================================================
+     VEHICLE EXPENSE PREVIEW
+     ====================================================== -->
+
+<div
+  id="vehicleExpensePreviewModal"
+  class="modal">
 
   <div class="preview-window">
 
     <div class="preview-header">
 
-      <h2>Vehicle Expense Preview</h2>
+      <h2>
+        Vehicle Expense Preview
+      </h2>
 
       <div class="actions">
 
@@ -1186,18 +2305,123 @@ textarea{
 
     </div>
 
+
     <div
       id="vehicleExpensePreviewContent"
       class="preview-body">
     </div>
 
   </div>
+
 </div>
 
 
-<div id="toast" class="toast"></div>
+<div
+  id="toast"
+  class="toast">
+</div>
 
-<script type="module" src="./app.js"></script>
+
+<!-- ======================================================
+     LANDING PAGE LOGIN SCRIPT
+     This is the only new functionality.
+     ====================================================== -->
+
+<script>
+
+function garageLogin(event){
+
+  event.preventDefault();
+
+  const username =
+    document
+      .getElementById("loginUsername")
+      .value
+      .trim()
+      .toLowerCase();
+
+  const password =
+    document
+      .getElementById("loginPassword")
+      .value;
+
+  const validUsers = {
+
+    "josephine":"1234",
+
+    "boss":"1234",
+
+    "staff":"1234"
+
+  };
+
+  const error =
+    document.getElementById("loginError");
+
+  if(
+    validUsers[username] &&
+    validUsers[username] === password
+  ){
+
+    error.style.display = "none";
+
+    document
+      .getElementById("landingPage")
+      .style.display = "none";
+
+    sessionStorage.setItem(
+      "garageLoggedIn",
+      "true"
+    );
+
+    sessionStorage.setItem(
+      "garageUser",
+      username
+    );
+
+    return false;
+  }
+
+  error.style.display = "block";
+
+  return false;
+}
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function(){
+
+    if(
+      sessionStorage.getItem(
+        "garageLoggedIn"
+      ) === "true"
+    ){
+
+      const landing =
+        document.getElementById(
+          "landingPage"
+        );
+
+      if(landing){
+
+        landing.style.display =
+          "none";
+
+      }
+
+    }
+
+  }
+);
+
+</script>
+
+
+<script
+  type="module"
+  src="./app.js">
+</script>
 
 </body>
 </html>
