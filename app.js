@@ -27,7 +27,7 @@ const TABLES = {
 };
 
 // ======================================================
-// DATA
+// LOCAL DATA
 // ======================================================
 
 let vehicles = [];
@@ -40,9 +40,10 @@ let requisitions = [];
 // ======================================================
 
 function money(value) {
-  return "KSh " + Number(value || 0).toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+  return Number(value || 0).toLocaleString("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 2
   });
 }
 
@@ -52,112 +53,73 @@ function number(value) {
 }
 
 function today() {
-  const d = new Date();
-
-  d.setMinutes(
-    d.getMinutes() - d.getTimezoneOffset()
-  );
-
-  return d.toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
 }
 
 function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function vehicleName(id) {
+  if (!id) return "General / No Vehicle";
 
-  if (!id) {
-    return "General";
-  }
+  const vehicle = vehicles.find(v => v.id === id);
 
-  const vehicle =
-    vehicles.find(v => v.id === id);
+  if (!vehicle) return "Unknown Vehicle";
 
-  return vehicle
-    ? escapeHtml(vehicle.registration)
-    : "Unknown";
+  return vehicle.registration || "Vehicle";
 }
 
 function statusClass(status) {
+  const value = String(status || "").toLowerCase();
 
-  const s =
-    String(status || "").toLowerCase();
-
-  if (s.includes("repair")) {
-    return "status-repair";
-  }
-
-  if (
-    s.includes("completed") ||
-    s.includes("released") ||
-    s.includes("approved")
-  ) {
-    return "status-completed";
-  }
-
-  if (s.includes("rejected")) {
-    return "status-rejected";
-  }
+  if (value.includes("repair")) return "status-repair";
+  if (value.includes("completed")) return "status-completed";
+  if (value.includes("rejected")) return "status-rejected";
+  if (value.includes("pending")) return "status-pending";
+  if (value.includes("approved")) return "status-completed";
+  if (value.includes("paid")) return "status-completed";
 
   return "status-pending";
 }
 
 function showToast(message, error = false) {
+  const toast = document.getElementById("toast");
 
-  const toast =
-    document.getElementById("toast");
-
-  if (!toast) {
-    console.log(message);
-    return;
-  }
+  if (!toast) return;
 
   toast.textContent = message;
+  toast.className = "toast show" + (error ? " error" : "");
 
-  toast.className =
-    "toast show" +
-    (error ? " error" : "");
+  clearTimeout(window.toastTimer);
 
-  setTimeout(() => {
+  window.toastTimer = setTimeout(() => {
     toast.className = "toast";
-  }, 4500);
+  }, 3500);
 }
 
-function supabaseError(prefix, error) {
+function supabaseError(result, action = "Operation") {
+  console.error(action, result);
 
-  console.error(prefix, error);
+  const message =
+    result?.error?.message ||
+    result?.message ||
+    "Unknown Supabase error";
 
-  const details = [
-    error?.message,
-    error?.details,
-    error?.hint,
-    error?.code
-  ]
-    .filter(Boolean)
-    .join(" | ");
-
-  showToast(
-    prefix +
-    (details ? ": " + details : ""),
-    true
-  );
+  showToast(`${action} failed: ${message}`, true);
 }
 
 // ======================================================
-// MODAL FUNCTIONS
-// IMPORTANT: attached to window because app.js is module
+// MODALS
 // ======================================================
 
 window.openModal = function(id) {
-
-  const modal =
-    document.getElementById(id);
+  const modal = document.getElementById(id);
 
   if (modal) {
     modal.classList.add("show");
@@ -165,9 +127,7 @@ window.openModal = function(id) {
 };
 
 window.closeModal = function(id) {
-
-  const modal =
-    document.getElementById(id);
+  const modal = document.getElementById(id);
 
   if (modal) {
     modal.classList.remove("show");
@@ -178,108 +138,52 @@ window.closeModal = function(id) {
 // NAVIGATION
 // ======================================================
 
-window.showSection =
-  function(sectionId, button) {
+window.showSection = function(sectionId, button) {
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.remove("active");
+  });
 
-    document
-      .querySelectorAll(".section")
-      .forEach(section => {
-        section.classList.remove("active");
-      });
+  const section = document.getElementById(sectionId);
 
-    document
-      .querySelectorAll(".nav button")
-      .forEach(btn => {
-        btn.classList.remove("active");
-      });
+  if (section) {
+    section.classList.add("active");
+  }
 
-    const section =
-      document.getElementById(sectionId);
+  document.querySelectorAll(".nav button").forEach(btn => {
+    btn.classList.remove("active");
+  });
 
-    if (section) {
-      section.classList.add("active");
-    }
-
-    if (button) {
-      button.classList.add("active");
-    }
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-  };
-
-// ======================================================
-// DASHBOARD NAVIGATION
-// ======================================================
-
-window.goToDashboardSection =
-  function(sectionId) {
-
-    const buttons =
-      document.querySelectorAll(
-        ".nav button"
-      );
-
-    let matchingButton = null;
-
-    buttons.forEach(btn => {
-
-      const onclick =
-        btn.getAttribute("onclick") || "";
-
-      if (
-        onclick.includes(
-          `'${sectionId}'`
-        ) ||
-        onclick.includes(
-          `"${sectionId}"`
-        )
-      ) {
-        matchingButton = btn;
-      }
-    });
-
-    window.showSection(
-      sectionId,
-      matchingButton
+  if (button) {
+    button.classList.add("active");
+  } else {
+    const navButton = document.querySelector(
+      `.nav button[data-section="${sectionId}"]`
     );
 
-    if (sectionId === "vehiclesSection") {
-      window.renderVehicles();
+    if (navButton) {
+      navButton.classList.add("active");
     }
+  }
 
-    if (sectionId === "expensesSection") {
-      window.renderExpenses();
-    }
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+};
 
-    if (sectionId === "pettySection") {
-      window.renderPettyCash();
-    }
-
-    if (
-      sectionId ===
-      "requisitionsSection"
-    ) {
-      window.renderRequisitions();
-    }
-  };
+window.goToDashboardSection = function(sectionId) {
+  window.showSection(sectionId);
+};
 
 // ======================================================
 // LOAD VEHICLES
 // ======================================================
 
 async function loadVehicles() {
-
-  const { data, error } =
-    await supabase
-      .from(TABLES.vehicles)
-      .select("*")
-      .order(
-        "created_at",
-        { ascending: false }
-      );
+  const { data, error } = await supabase
+    .from(TABLES.vehicles)
+    .select("*")
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw {
@@ -296,15 +200,10 @@ async function loadVehicles() {
 // ======================================================
 
 async function loadExpenses() {
-
-  const { data, error } =
-    await supabase
-      .from(TABLES.expenses)
-      .select("*")
-      .order(
-        "expense_date",
-        { ascending: false }
-      );
+  const { data, error } = await supabase
+    .from(TABLES.expenses)
+    .select("*")
+    .order("expense_date", { ascending: false });
 
   if (error) {
     throw {
@@ -321,15 +220,10 @@ async function loadExpenses() {
 // ======================================================
 
 async function loadPettyCash() {
-
-  const { data, error } =
-    await supabase
-      .from(TABLES.petty)
-      .select("*")
-      .order(
-        "cash_date",
-        { ascending: false }
-      );
+  const { data, error } = await supabase
+    .from(TABLES.petty)
+    .select("*")
+    .order("cash_date", { ascending: false });
 
   if (error) {
     throw {
@@ -346,15 +240,10 @@ async function loadPettyCash() {
 // ======================================================
 
 async function loadRequisitions() {
-
-  const { data, error } =
-    await supabase
-      .from(TABLES.requisitions)
-      .select("*")
-      .order(
-        "req_date",
-        { ascending: false }
-      );
+  const { data, error } = await supabase
+    .from(TABLES.requisitions)
+    .select("*")
+    .order("req_date", { ascending: false });
 
   if (error) {
     throw {
@@ -370,99 +259,67 @@ async function loadRequisitions() {
 // LOAD EVERYTHING
 // ======================================================
 
-window.loadAllData =
-  async function() {
+window.loadAllData = async function() {
+  try {
+    await loadVehicles();
+    await loadExpenses();
+    await loadPettyCash();
+    await loadRequisitions();
 
-    showToast(
-      "Loading garage data..."
+    populateVehicleSelects();
+
+    renderDashboard();
+    renderVehicles();
+    renderExpenses();
+    renderPettyCash();
+    renderRequisitions();
+
+  } catch (error) {
+    console.error(error);
+
+    supabaseError(
+      error,
+      `Loading ${error?.table || "application data"}`
     );
-
-    try {
-
-      await loadVehicles();
-      await loadExpenses();
-      await loadPettyCash();
-      await loadRequisitions();
-
-      populateVehicleSelects();
-
-      renderDashboard();
-
-      window.renderVehicles();
-      window.renderExpenses();
-      window.renderPettyCash();
-      window.renderRequisitions();
-
-      showToast(
-        "Garage data loaded successfully."
-      );
-
-    } catch (result) {
-
-      const table =
-        result?.table || "unknown table";
-
-      const error =
-        result?.error || result;
-
-      supabaseError(
-        "Could not load " + table,
-        error
-      );
-    }
-  };
+  }
+};
 
 // ======================================================
 // VEHICLE SELECTS
 // ======================================================
 
 function populateVehicleSelects() {
-
   const selects = [
-    document.getElementById(
-      "expenseVehicle"
-    ),
-    document.getElementById(
-      "reqVehicle"
-    )
+    document.getElementById("expenseVehicle"),
+    document.getElementById("reqVehicle")
   ];
 
   selects.forEach(select => {
-
     if (!select) return;
 
-    const currentValue =
-      select.value;
+    const currentValue = select.value;
 
-    select.innerHTML =
-      `<option value="">
-        General / No Vehicle
-      </option>`;
+    select.innerHTML = `
+      <option value="">General / No Vehicle</option>
+    `;
 
     vehicles.forEach(vehicle => {
+      const option = document.createElement("option");
 
-      const option =
-        document.createElement(
-          "option"
-        );
-
-      option.value =
-        vehicle.id;
+      option.value = vehicle.id;
 
       option.textContent =
-        vehicle.registration +
-        (
-          vehicle.customer
-            ? " — " +
-              vehicle.customer
-            : ""
-        );
+        `${vehicle.registration || ""} - ${vehicle.customer || ""}`;
 
       select.appendChild(option);
     });
 
-    select.value =
-      currentValue;
+    if (
+      currentValue &&
+      vehicles.some(vehicle => vehicle.id === currentValue)
+    ) {
+      select.value = currentValue;
+    }
   });
 }
 
@@ -471,2759 +328,2130 @@ function populateVehicleSelects() {
 // ======================================================
 
 function renderDashboard() {
+  const totalVehicles = vehicles.length;
 
-  const totalVehicles =
-    vehicles.length;
+  const underRepair = vehicles.filter(
+    v => String(v.status || "").toLowerCase() === "under repair"
+  ).length;
 
-  const underRepair =
-    vehicles.filter(v =>
-      String(v.status || "")
-        .toLowerCase() ===
-      "under repair"
-    ).length;
-
-  const billed =
-    vehicles.reduce(
-      (sum, v) =>
-        sum + number(v.billed),
-      0
-    );
-
-  const paid =
-    vehicles.reduce(
-      (sum, v) =>
-        sum + number(v.paid),
-      0
-    );
-
-  const outstanding =
-    billed - paid;
-
-  const expenseTotal =
-    expenses.reduce(
-      (sum, e) =>
-        sum + number(e.amount),
-      0
-    );
-
-  const pettyTotal =
-    pettyCash.reduce(
-      (sum, p) =>
-        sum + number(p.amount),
-      0
-    );
-
-  // NEW REQUISITION TOTAL
-
-  const requisitionTotal =
-    requisitions.reduce(
-      (sum, r) =>
-        sum + number(r.total_amount),
-      0
-    );
-
-  const set = (
-    id,
-    value
-  ) => {
-
-    const el =
-      document.getElementById(id);
-
-    if (el) {
-      el.textContent = value;
-    }
-  };
-
-  set(
-    "dashVehicles",
-    totalVehicles
+  const totalBilled = vehicles.reduce(
+    (sum, v) => sum + number(v.billed),
+    0
   );
 
-  set(
-    "dashRepair",
-    underRepair
+  const totalPaid = vehicles.reduce(
+    (sum, v) => sum + number(v.paid),
+    0
   );
 
-  set(
-    "dashBilled",
-    money(billed)
+  const outstanding = totalBilled - totalPaid;
+
+  const totalExpenses = expenses.reduce(
+    (sum, e) => sum + number(e.amount),
+    0
   );
 
-  set(
-    "dashPaid",
-    money(paid)
+  const totalPetty = pettyCash.reduce(
+    (sum, p) => sum + number(p.amount),
+    0
   );
 
-  set(
-    "dashOutstanding",
-    money(outstanding)
+  const totalReq = requisitions.length;
+
+  const totalReqAmount = requisitions.reduce(
+    (sum, r) => sum + number(r.total_amount),
+    0
   );
 
-  set(
-    "dashExpenses",
-    money(expenseTotal)
-  );
+  setText("dashVehicles", totalVehicles);
+  setText("dashRepair", underRepair);
+  setText("dashBilled", money(totalBilled));
+  setText("dashPaid", money(totalPaid));
+  setText("dashOutstanding", money(outstanding));
+  setText("dashExpenses", money(totalExpenses));
+  setText("dashPetty", money(totalPetty));
+  setText("dashReq", totalReq);
+  setText("dashReqTotal", money(totalReqAmount));
+}
 
-  set(
-    "dashPetty",
-    money(pettyTotal)
-  );
+function setText(id, value) {
+  const element = document.getElementById(id);
 
-  set(
-    "dashReq",
-    requisitions.length
-  );
-
-  // NEW
-  set(
-    "dashReqTotal",
-    money(requisitionTotal)
-  );
+  if (element) {
+    element.textContent = value;
+  }
 }
 
 // ======================================================
 // VEHICLES
 // ======================================================
 
-window.renderVehicles =
-  function() {
+function renderVehicles() {
+  const tbody = document.getElementById("vehiclesTableBody");
 
-    const body =
-      document.getElementById(
-        "vehiclesBody"
-      );
+  if (!tbody) return;
 
-    if (!body) return;
+  const search =
+    document.getElementById("vehicleSearch")?.value
+      .trim()
+      .toLowerCase() || "";
 
-    const search =
-      String(
-        document.getElementById(
-          "vehicleSearch"
-        )?.value || ""
-      ).toLowerCase();
+  const status =
+    document.getElementById("vehicleStatusFilter")?.value || "";
 
-    const status =
-      document.getElementById(
-        "vehicleStatusFilter"
-      )?.value || "";
+  const filtered = vehicles.filter(vehicle => {
+    const searchable = [
+      vehicle.registration,
+      vehicle.customer,
+      vehicle.job_type,
+      vehicle.status,
+      vehicle.description
+    ]
+      .join(" ")
+      .toLowerCase();
 
-    const filtered =
-      vehicles.filter(vehicle => {
+    const matchesSearch =
+      !search || searchable.includes(search);
 
-        const matchesSearch =
-          !search ||
-          String(
-            vehicle.registration || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            vehicle.customer || ""
-          )
-            .toLowerCase()
-            .includes(search);
+    const matchesStatus =
+      !status || vehicle.status === status;
 
-        const matchesStatus =
-          !status ||
-          vehicle.status === status;
+    return matchesSearch && matchesStatus;
+  });
 
-        return (
-          matchesSearch &&
-          matchesStatus
-        );
-      });
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="empty">
+          No vehicles found.
+        </td>
+      </tr>
+    `;
 
-    if (!filtered.length) {
+    return;
+  }
 
-      body.innerHTML = `
-        <tr>
-          <td colspan="9" class="empty">
-            No vehicles found.
-          </td>
-        </tr>
-      `;
+  tbody.innerHTML = filtered.map(vehicle => {
+    const billed = number(vehicle.billed);
+    const paid = number(vehicle.paid);
+    const outstanding = billed - paid;
 
+    return `
+      <tr onclick="editVehicle('${vehicle.id}')" style="cursor:pointer">
+
+        <td>
+          <strong>${escapeHtml(vehicle.registration)}</strong>
+        </td>
+
+        <td>${escapeHtml(vehicle.customer)}</td>
+
+        <td>${escapeHtml(vehicle.date_in || "")}</td>
+
+        <td>${escapeHtml(vehicle.job_type || "")}</td>
+
+        <td>
+          <span class="status ${statusClass(vehicle.status)}">
+            ${escapeHtml(vehicle.status || "")}
+          </span>
+        </td>
+
+        <td>${money(billed)}</td>
+
+        <td>${money(paid)}</td>
+
+        <td>${money(outstanding)}</td>
+
+        <td class="no-print">
+          <div class="actions">
+
+            <button
+              class="btn secondary"
+              onclick="event.stopPropagation(); editVehicle('${vehicle.id}')">
+              Edit
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="event.stopPropagation(); deleteVehicle('${vehicle.id}')">
+              Delete
+            </button>
+
+          </div>
+        </td>
+
+      </tr>
+    `;
+  }).join("");
+}
+
+window.openVehicleModal = function(id = null) {
+  const form = document.getElementById("vehicleForm");
+
+  if (form) form.reset();
+
+  document.getElementById("vehicleId").value = "";
+
+  document.getElementById("vehicleModalTitle").textContent =
+    "Add Vehicle";
+
+  document.getElementById("vehicleDateIn").value = today();
+  document.getElementById("vehicleBilled").value = "0";
+  document.getElementById("vehiclePaid").value = "0";
+
+  if (id) {
+    editVehicle(id);
+    return;
+  }
+
+  openModal("vehicleModal");
+};
+
+window.editVehicle = function(id) {
+  const vehicle = vehicles.find(v => v.id === id);
+
+  if (!vehicle) return;
+
+  document.getElementById("vehicleId").value = vehicle.id;
+  document.getElementById("vehicleRegistration").value =
+    vehicle.registration || "";
+  document.getElementById("vehicleCustomer").value =
+    vehicle.customer || "";
+  document.getElementById("vehicleDateIn").value =
+    vehicle.date_in || today();
+  document.getElementById("vehicleDateOut").value =
+    vehicle.date_out || "";
+  document.getElementById("vehicleJobType").value =
+    vehicle.job_type || "Repair";
+  document.getElementById("vehicleStatus").value =
+    vehicle.status || "Under Repair";
+  document.getElementById("vehicleReleasedTo").value =
+    vehicle.released_to || "";
+  document.getElementById("vehicleReleasedContact").value =
+    vehicle.released_contact || "";
+  document.getElementById("vehicleDescription").value =
+    vehicle.description || "";
+  document.getElementById("vehicleBilled").value =
+    number(vehicle.billed);
+  document.getElementById("vehiclePaid").value =
+    number(vehicle.paid);
+
+  document.getElementById("vehicleModalTitle").textContent =
+    "Edit Vehicle";
+
+  openModal("vehicleModal");
+};
+
+async function saveVehicle() {
+  const id =
+    document.getElementById("vehicleId").value || null;
+
+  const payload = {
+    registration:
+      document.getElementById("vehicleRegistration").value.trim(),
+
+    customer:
+      document.getElementById("vehicleCustomer").value.trim(),
+
+    date_in:
+      document.getElementById("vehicleDateIn").value || today(),
+
+    date_out:
+      document.getElementById("vehicleDateOut").value || null,
+
+    job_type:
+      document.getElementById("vehicleJobType").value,
+
+    status:
+      document.getElementById("vehicleStatus").value,
+
+    released_to:
+      document.getElementById("vehicleReleasedTo").value.trim() || null,
+
+    released_contact:
+      document.getElementById("vehicleReleasedContact").value.trim() || null,
+
+    description:
+      document.getElementById("vehicleDescription").value.trim() || null,
+
+    billed:
+      number(document.getElementById("vehicleBilled").value),
+
+    paid:
+      number(document.getElementById("vehiclePaid").value)
+  };
+
+  try {
+    let result;
+
+    if (id) {
+      result = await supabase
+        .from(TABLES.vehicles)
+        .update(payload)
+        .eq("id", id);
+    } else {
+      result = await supabase
+        .from(TABLES.vehicles)
+        .insert(payload);
+    }
+
+    if (result.error) {
+      supabaseError(result, "Saving vehicle");
       return;
     }
 
-    body.innerHTML =
-      filtered
-        .map(vehicle => {
-
-          const billed =
-            number(vehicle.billed);
-
-          const paid =
-            number(vehicle.paid);
-
-          const outstanding =
-            billed - paid;
-
-          return `
-            <tr
-              class="clickable-row"
-              data-vehicle-id="${escapeHtml(vehicle.id)}">
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    vehicle.registration
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  vehicle.customer
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  vehicle.date_in || ""
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  vehicle.job_type || ""
-                )}
-              </td>
-
-              <td>
-                <span
-                  class="status ${statusClass(
-                    vehicle.status
-                  )}">
-                  ${escapeHtml(
-                    vehicle.status || ""
-                  )}
-                </span>
-              </td>
-
-              <td>
-                ${money(billed)}
-              </td>
-
-              <td>
-                ${money(paid)}
-              </td>
-
-              <td>
-                ${money(outstanding)}
-              </td>
-
-              <td>
-                <div class="actions">
-
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-small"
-                    onclick="event.stopPropagation(); window.editVehicle('${vehicle.id}')">
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    class="btn btn-danger btn-small"
-                    onclick="event.stopPropagation(); window.deleteVehicle('${vehicle.id}')">
-                    Delete
-                  </button>
-
-                </div>
-              </td>
-
-            </tr>
-          `;
-        })
-        .join("");
-  };
-
-// ======================================================
-// VEHICLE MODAL
-// ======================================================
-
-window.openVehicleModal =
-  function(id = null) {
-
-    document.getElementById(
-      "vehicleId"
-    ).value = id || "";
-
-    document.getElementById(
-      "vehicleModalTitle"
-    ).textContent =
+    showToast(
       id
-        ? "Edit Vehicle"
-        : "Add Vehicle";
-
-    if (!id) {
-
-      document.getElementById(
-        "vehicleRegistration"
-      ).value = "";
-
-      document.getElementById(
-        "vehicleCustomer"
-      ).value = "";
-
-      document.getElementById(
-        "vehicleDateIn"
-      ).value = today();
-
-      document.getElementById(
-        "vehicleDateOut"
-      ).value = "";
-
-      document.getElementById(
-        "vehicleJobType"
-      ).value = "Repair";
-
-      document.getElementById(
-        "vehicleStatus"
-      ).value = "Under Repair";
-
-      document.getElementById(
-        "vehicleBilled"
-      ).value = "0";
-
-      document.getElementById(
-        "vehiclePaid"
-      ).value = "0";
-
-      document.getElementById(
-        "vehicleReleasedTo"
-      ).value = "";
-
-      document.getElementById(
-        "vehicleReleasedContact"
-      ).value = "";
-
-      document.getElementById(
-        "vehicleDescription"
-      ).value = "";
-    }
-
-    window.openModal(
-      "vehicleModal"
+        ? "Vehicle updated successfully."
+        : "Vehicle added successfully."
     );
-  };
 
-window.editVehicle =
-  function(id) {
+    closeModal("vehicleModal");
 
-    const vehicle =
-      vehicles.find(
-        v => v.id === id
-      );
+    await loadAllData();
 
-    if (!vehicle) {
-      showToast(
-        "Vehicle not found.",
-        true
-      );
-      return;
-    }
-
-    document.getElementById(
-      "vehicleId"
-    ).value = vehicle.id;
-
-    document.getElementById(
-      "vehicleRegistration"
-    ).value =
-      vehicle.registration || "";
-
-    document.getElementById(
-      "vehicleCustomer"
-    ).value =
-      vehicle.customer || "";
-
-    document.getElementById(
-      "vehicleDateIn"
-    ).value =
-      vehicle.date_in || today();
-
-    document.getElementById(
-      "vehicleDateOut"
-    ).value =
-      vehicle.date_out || "";
-
-    document.getElementById(
-      "vehicleJobType"
-    ).value =
-      vehicle.job_type || "Repair";
-
-    document.getElementById(
-      "vehicleStatus"
-    ).value =
-      vehicle.status ||
-      "Under Repair";
-
-    document.getElementById(
-      "vehicleBilled"
-    ).value =
-      vehicle.billed || 0;
-
-    document.getElementById(
-      "vehiclePaid"
-    ).value =
-      vehicle.paid || 0;
-
-    document.getElementById(
-      "vehicleReleasedTo"
-    ).value =
-      vehicle.released_to || "";
-
-    document.getElementById(
-      "vehicleReleasedContact"
-    ).value =
-      vehicle.released_contact || "";
-
-    document.getElementById(
-      "vehicleDescription"
-    ).value =
-      vehicle.description || "";
-
-    document.getElementById(
-      "vehicleModalTitle"
-    ).textContent =
-      "Edit Vehicle";
-
-    window.openModal(
-      "vehicleModal"
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Saving vehicle"
     );
-  };
+  }
+}
 
-window.saveVehicle =
-  async function(event) {
+async function deleteVehicle(id) {
+  const vehicle = vehicles.find(v => v.id === id);
 
-    event.preventDefault();
+  if (!vehicle) return;
 
-    const id =
-      document.getElementById(
-        "vehicleId"
-      ).value;
+  const confirmed = confirm(
+    `Delete vehicle ${vehicle.registration}?\n\n` +
+    `This will remove the vehicle record.`
+  );
 
-    const payload = {
+  if (!confirmed) return;
 
-      registration:
-        document.getElementById(
-          "vehicleRegistration"
-        ).value.trim(),
+  try {
+    const result = await supabase
+      .from(TABLES.vehicles)
+      .delete()
+      .eq("id", id);
 
-      customer:
-        document.getElementById(
-          "vehicleCustomer"
-        ).value.trim(),
-
-      date_in:
-        document.getElementById(
-          "vehicleDateIn"
-        ).value || today(),
-
-      date_out:
-        document.getElementById(
-          "vehicleDateOut"
-        ).value || null,
-
-      job_type:
-        document.getElementById(
-          "vehicleJobType"
-        ).value,
-
-      status:
-        document.getElementById(
-          "vehicleStatus"
-        ).value,
-
-      released_to:
-        document.getElementById(
-          "vehicleReleasedTo"
-        ).value.trim() || null,
-
-      released_contact:
-        document.getElementById(
-          "vehicleReleasedContact"
-        ).value.trim() || null,
-
-      description:
-        document.getElementById(
-          "vehicleDescription"
-        ).value.trim() || null,
-
-      billed:
-        number(
-          document.getElementById(
-            "vehicleBilled"
-          ).value
-        ),
-
-      paid:
-        number(
-          document.getElementById(
-            "vehiclePaid"
-          ).value
-        )
-    };
-
-    if (
-      !payload.registration ||
-      !payload.customer
-    ) {
-
-      showToast(
-        "Registration and customer are required.",
-        true
-      );
-
+    if (result.error) {
+      supabaseError(result, "Deleting vehicle");
       return;
     }
 
-    try {
+    showToast("Vehicle deleted.");
 
-      let result;
+    await loadAllData();
 
-      if (id) {
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Deleting vehicle"
+    );
+  }
+}
 
-        result =
-          await supabase
-            .from(TABLES.vehicles)
-            .update(payload)
-            .eq("id", id);
-
-      } else {
-
-        result =
-          await supabase
-            .from(TABLES.vehicles)
-            .insert(payload);
-      }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      window.closeModal(
-        "vehicleModal"
-      );
-
-      await window.loadAllData();
-
-      showToast(
-        id
-          ? "Vehicle updated successfully."
-          : "Vehicle added successfully."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to save vehicle",
-        error
-      );
-    }
-  };
-
-window.deleteVehicle =
-  async function(id) {
-
-    const vehicle =
-      vehicles.find(
-        v => v.id === id
-      );
-
-    if (!vehicle) return;
-
-    if (
-      !confirm(
-        `Delete vehicle ${vehicle.registration}?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-
-      const { error } =
-        await supabase
-          .from(TABLES.vehicles)
-          .delete()
-          .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
-      await window.loadAllData();
-
-      showToast(
-        "Vehicle deleted."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to delete vehicle",
-        error
-      );
-    }
-  };
+window.deleteVehicle = deleteVehicle;
 
 // ======================================================
 // EXPENSES
 // ======================================================
 
-window.renderExpenses =
-  function() {
+function renderExpenses() {
+  const tbody =
+    document.getElementById("expensesTableBody");
 
-    const body =
-      document.getElementById(
-        "expensesBody"
-      );
+  if (!tbody) return;
 
-    if (!body) return;
+  const search =
+    document.getElementById("expenseSearch")?.value
+      .trim()
+      .toLowerCase() || "";
 
-    const search =
-      String(
-        document.getElementById(
-          "expenseSearch"
-        )?.value || ""
-      ).toLowerCase();
+  const category =
+    document.getElementById("expenseCategoryFilter")?.value || "";
 
-    const category =
-      document.getElementById(
-        "expenseCategoryFilter"
-      )?.value || "";
+  const filtered = expenses.filter(expense => {
+    const searchable = [
+      expense.description,
+      expense.category,
+      vehicleName(expense.vehicle_id)
+    ]
+      .join(" ")
+      .toLowerCase();
 
-    const filtered =
-      expenses.filter(expense => {
+    const matchesSearch =
+      !search || searchable.includes(search);
 
-        const vehicle =
-          vehicles.find(
-            v =>
-              v.id ===
-              expense.vehicle_id
-          );
+    const matchesCategory =
+      !category || expense.category === category;
 
-        const matchesSearch =
-          !search ||
-          String(
-            expense.description || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            vehicle?.registration || ""
-          )
-            .toLowerCase()
-            .includes(search);
+    return matchesSearch && matchesCategory;
+  });
 
-        const matchesCategory =
-          !category ||
-          expense.category ===
-          category;
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">
+          No expenses found.
+        </td>
+      </tr>
+    `;
 
-        return (
-          matchesSearch &&
-          matchesCategory
-        );
-      });
+    return;
+  }
 
-    if (!filtered.length) {
+  tbody.innerHTML = filtered.map(expense => {
+    return `
+      <tr onclick="editExpense('${expense.id}')"
+          style="cursor:pointer">
 
-      body.innerHTML = `
-        <tr>
-          <td colspan="6" class="empty">
-            No expenses found.
-          </td>
-        </tr>
-      `;
+        <td>${escapeHtml(expense.expense_date || "")}</td>
 
+        <td>${escapeHtml(vehicleName(expense.vehicle_id))}</td>
+
+        <td>${escapeHtml(expense.description)}</td>
+
+        <td>${escapeHtml(expense.category || "")}</td>
+
+        <td>${money(expense.amount)}</td>
+
+        <td class="no-print">
+          <div class="actions">
+
+            <button
+              class="btn secondary"
+              onclick="event.stopPropagation(); previewVehicleExpense('${expense.vehicle_id || ""}')">
+              Preview
+            </button>
+
+            <button
+              class="btn secondary"
+              onclick="event.stopPropagation(); editExpense('${expense.id}')">
+              Edit
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="event.stopPropagation(); deleteExpense('${expense.id}')">
+              Delete
+            </button>
+
+          </div>
+        </td>
+
+      </tr>
+    `;
+  }).join("");
+}
+
+window.openExpenseModal = function(id = null) {
+  const form = document.getElementById("expenseForm");
+
+  if (form) form.reset();
+
+  document.getElementById("expenseId").value = "";
+
+  populateVehicleSelects();
+
+  document.getElementById("expenseDate").value = today();
+  document.getElementById("expenseAmount").value = "0";
+
+  document.getElementById("expenseModalTitle").textContent =
+    "Add Expense";
+
+  if (id) {
+    editExpense(id);
+    return;
+  }
+
+  openModal("expenseModal");
+};
+
+window.editExpense = function(id) {
+  const expense = expenses.find(e => e.id === id);
+
+  if (!expense) return;
+
+  populateVehicleSelects();
+
+  document.getElementById("expenseId").value =
+    expense.id;
+
+  document.getElementById("expenseVehicle").value =
+    expense.vehicle_id || "";
+
+  document.getElementById("expenseDate").value =
+    expense.expense_date || today();
+
+  document.getElementById("expenseDescription").value =
+    expense.description || "";
+
+  document.getElementById("expenseCategory").value =
+    expense.category || "Parts";
+
+  document.getElementById("expenseAmount").value =
+    number(expense.amount);
+
+  document.getElementById("expenseModalTitle").textContent =
+    "Edit Expense";
+
+  openModal("expenseModal");
+};
+
+async function saveExpense() {
+  const id =
+    document.getElementById("expenseId").value || null;
+
+  const payload = {
+    vehicle_id:
+      document.getElementById("expenseVehicle").value || null,
+
+    expense_date:
+      document.getElementById("expenseDate").value || today(),
+
+    description:
+      document.getElementById("expenseDescription").value.trim(),
+
+    category:
+      document.getElementById("expenseCategory").value,
+
+    amount:
+      number(document.getElementById("expenseAmount").value)
+  };
+
+  try {
+    let result;
+
+    if (id) {
+      result = await supabase
+        .from(TABLES.expenses)
+        .update(payload)
+        .eq("id", id);
+    } else {
+      result = await supabase
+        .from(TABLES.expenses)
+        .insert(payload);
+    }
+
+    if (result.error) {
+      supabaseError(result, "Saving expense");
       return;
     }
 
-    body.innerHTML =
-      filtered
-        .map(expense => {
-
-          return `
-            <tr
-              class="clickable-row"
-              data-expense-id="${escapeHtml(expense.id)}">
-
-              <td>
-                ${escapeHtml(
-                  expense.expense_date || ""
-                )}
-              </td>
-
-              <td>
-                ${vehicleName(
-                  expense.vehicle_id
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.description
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.category || ""
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  expense.amount
-                )}
-              </td>
-
-              <td>
-                <div class="actions">
-
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-small"
-                    onclick="event.stopPropagation(); window.editExpense('${expense.id}')">
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    class="btn btn-danger btn-small"
-                    onclick="event.stopPropagation(); window.deleteExpense('${expense.id}')">
-                    Delete
-                  </button>
-
-                </div>
-              </td>
-
-            </tr>
-          `;
-        })
-        .join("");
-  };
-
-window.openExpenseModal =
-  function(id = null) {
-
-    document.getElementById(
-      "expenseId"
-    ).value = id || "";
-
-    document.getElementById(
-      "expenseModalTitle"
-    ).textContent =
+    showToast(
       id
-        ? "Edit Expense"
-        : "Add Expense";
-
-    populateVehicleSelects();
-
-    if (!id) {
-
-      document.getElementById(
-        "expenseVehicle"
-      ).value = "";
-
-      document.getElementById(
-        "expenseDate"
-      ).value = today();
-
-      document.getElementById(
-        "expenseDescription"
-      ).value = "";
-
-      document.getElementById(
-        "expenseCategory"
-      ).value = "Parts";
-
-      document.getElementById(
-        "expenseAmount"
-      ).value = "0";
-    }
-
-    window.openModal(
-      "expenseModal"
+        ? "Expense updated successfully."
+        : "Expense added successfully."
     );
-  };
 
-window.editExpense =
-  function(id) {
+    closeModal("expenseModal");
 
-    const expense =
-      expenses.find(
-        e => e.id === id
-      );
+    await loadAllData();
 
-    if (!expense) {
-
-      showToast(
-        "Expense not found.",
-        true
-      );
-
-      return;
-    }
-
-    populateVehicleSelects();
-
-    document.getElementById(
-      "expenseId"
-    ).value = expense.id;
-
-    document.getElementById(
-      "expenseVehicle"
-    ).value =
-      expense.vehicle_id || "";
-
-    document.getElementById(
-      "expenseDate"
-    ).value =
-      expense.expense_date ||
-      today();
-
-    document.getElementById(
-      "expenseDescription"
-    ).value =
-      expense.description || "";
-
-    document.getElementById(
-      "expenseCategory"
-    ).value =
-      expense.category || "Other";
-
-    document.getElementById(
-      "expenseAmount"
-    ).value =
-      expense.amount || 0;
-
-    document.getElementById(
-      "expenseModalTitle"
-    ).textContent =
-      "Edit Expense";
-
-    window.openModal(
-      "expenseModal"
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Saving expense"
     );
-  };
+  }
+}
 
-window.saveExpense =
-  async function(event) {
+async function deleteExpense(id) {
+  if (!confirm("Delete this expense?")) return;
 
-    event.preventDefault();
+  try {
+    const result = await supabase
+      .from(TABLES.expenses)
+      .delete()
+      .eq("id", id);
 
-    const id =
-      document.getElementById(
-        "expenseId"
-      ).value;
-
-    const payload = {
-
-      vehicle_id:
-        document.getElementById(
-          "expenseVehicle"
-        ).value || null,
-
-      expense_date:
-        document.getElementById(
-          "expenseDate"
-        ).value || today(),
-
-      description:
-        document.getElementById(
-          "expenseDescription"
-        ).value.trim(),
-
-      category:
-        document.getElementById(
-          "expenseCategory"
-        ).value || "Parts",
-
-      amount:
-        number(
-          document.getElementById(
-            "expenseAmount"
-          ).value
-        )
-    };
-
-    if (!payload.description) {
-
-      showToast(
-        "Expense description is required.",
-        true
-      );
-
+    if (result.error) {
+      supabaseError(result, "Deleting expense");
       return;
     }
 
-    try {
+    showToast("Expense deleted.");
 
-      let result;
+    await loadAllData();
 
-      if (id) {
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Deleting expense"
+    );
+  }
+}
 
-        result =
-          await supabase
-            .from(TABLES.expenses)
-            .update(payload)
-            .eq("id", id);
-
-      } else {
-
-        result =
-          await supabase
-            .from(TABLES.expenses)
-            .insert(payload);
-      }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      window.closeModal(
-        "expenseModal"
-      );
-
-      await window.loadAllData();
-
-      showToast(
-        id
-          ? "Expense updated successfully."
-          : "Expense added successfully."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to save expense",
-        error
-      );
-    }
-  };
-
-window.deleteExpense =
-  async function(id) {
-
-    if (
-      !confirm(
-        "Delete this expense?"
-      )
-    ) {
-      return;
-    }
-
-    try {
-
-      const { error } =
-        await supabase
-          .from(TABLES.expenses)
-          .delete()
-          .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
-      await window.loadAllData();
-
-      showToast(
-        "Expense deleted."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to delete expense",
-        error
-      );
-    }
-  };
+window.deleteExpense = deleteExpense;
 
 // ======================================================
 // PETTY CASH
 // ======================================================
 
-window.renderPettyCash =
-  function() {
+function renderPettyCash() {
+  const tbody =
+    document.getElementById("pettyTableBody");
 
-    const body =
-      document.getElementById(
-        "pettyBody"
-      );
+  if (!tbody) return;
 
-    if (!body) return;
+  const search =
+    document.getElementById("pettySearch")?.value
+      .trim()
+      .toLowerCase() || "";
 
-    const search =
-      String(
-        document.getElementById(
-          "pettySearch"
-        )?.value || ""
-      ).toLowerCase();
+  const category =
+    document.getElementById("pettyCategoryFilter")?.value || "";
 
-    const category =
-      document.getElementById(
-        "pettyCategoryFilter"
-      )?.value || "";
+  const filtered = pettyCash.filter(item => {
+    const searchable = [
+      item.description,
+      item.paid_to,
+      item.category,
+      item.notes
+    ]
+      .join(" ")
+      .toLowerCase();
 
-    const filtered =
-      pettyCash.filter(item => {
+    const matchesSearch =
+      !search || searchable.includes(search);
 
-        const matchesSearch =
-          !search ||
-          String(
-            item.description || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            item.paid_to || ""
-          )
-            .toLowerCase()
-            .includes(search);
+    const matchesCategory =
+      !category || item.category === category;
 
-        const matchesCategory =
-          !category ||
-          item.category === category;
+    return matchesSearch && matchesCategory;
+  });
 
-        return (
-          matchesSearch &&
-          matchesCategory
-        );
-      });
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="empty">
+          No petty cash records found.
+        </td>
+      </tr>
+    `;
 
-    if (!filtered.length) {
+    return;
+  }
 
-      body.innerHTML = `
-        <tr>
-          <td colspan="7" class="empty">
-            No petty cash records found.
-          </td>
-        </tr>
-      `;
+  tbody.innerHTML = filtered.map(item => {
+    return `
+      <tr onclick="editPettyCash('${item.id}')"
+          style="cursor:pointer">
 
+        <td>${escapeHtml(item.cash_date || "")}</td>
+
+        <td>${escapeHtml(item.description)}</td>
+
+        <td>${escapeHtml(item.paid_to || "")}</td>
+
+        <td>${escapeHtml(item.category || "")}</td>
+
+        <td>${money(item.amount)}</td>
+
+        <td>${escapeHtml(item.notes || "")}</td>
+
+        <td class="no-print">
+          <div class="actions">
+
+            <button
+              class="btn secondary"
+              onclick="event.stopPropagation(); editPettyCash('${item.id}')">
+              Edit
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="event.stopPropagation(); deletePettyCash('${item.id}')">
+              Delete
+            </button>
+
+          </div>
+        </td>
+
+      </tr>
+    `;
+  }).join("");
+}
+
+window.openPettyModal = function(id = null) {
+  const form = document.getElementById("pettyForm");
+
+  if (form) form.reset();
+
+  document.getElementById("pettyId").value = "";
+
+  document.getElementById("pettyDate").value = today();
+  document.getElementById("pettyAmount").value = "0";
+
+  document.getElementById("pettyModalTitle").textContent =
+    "Add Petty Cash";
+
+  if (id) {
+    editPettyCash(id);
+    return;
+  }
+
+  openModal("pettyModal");
+};
+
+window.editPettyCash = function(id) {
+  const item = pettyCash.find(p => p.id === id);
+
+  if (!item) return;
+
+  document.getElementById("pettyId").value =
+    item.id;
+
+  document.getElementById("pettyDate").value =
+    item.cash_date || today();
+
+  document.getElementById("pettyPaidTo").value =
+    item.paid_to || "";
+
+  document.getElementById("pettyDescription").value =
+    item.description || "";
+
+  document.getElementById("pettyCategory").value =
+    item.category || "Other";
+
+  document.getElementById("pettyAmount").value =
+    number(item.amount);
+
+  document.getElementById("pettyNotes").value =
+    item.notes || "";
+
+  document.getElementById("pettyModalTitle").textContent =
+    "Edit Petty Cash";
+
+  openModal("pettyModal");
+};
+
+async function savePettyCash() {
+  const id =
+    document.getElementById("pettyId").value || null;
+
+  const payload = {
+    cash_date:
+      document.getElementById("pettyDate").value || today(),
+
+    description:
+      document.getElementById("pettyDescription").value.trim(),
+
+    paid_to:
+      document.getElementById("pettyPaidTo").value.trim() || null,
+
+    category:
+      document.getElementById("pettyCategory").value,
+
+    amount:
+      number(document.getElementById("pettyAmount").value),
+
+    notes:
+      document.getElementById("pettyNotes").value.trim() || null
+  };
+
+  try {
+    let result;
+
+    if (id) {
+      result = await supabase
+        .from(TABLES.petty)
+        .update(payload)
+        .eq("id", id);
+    } else {
+      result = await supabase
+        .from(TABLES.petty)
+        .insert(payload);
+    }
+
+    if (result.error) {
+      supabaseError(result, "Saving petty cash");
       return;
     }
 
-    body.innerHTML =
-      filtered
-        .map(item => {
-
-          return `
-            <tr
-              class="clickable-row"
-              data-petty-id="${escapeHtml(item.id)}">
-
-              <td>
-                ${escapeHtml(
-                  item.cash_date || ""
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.description
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.paid_to || ""
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.category || ""
-                )}
-              </td>
-
-              <td>
-                ${money(item.amount)}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.notes || ""
-                )}
-              </td>
-
-              <td>
-                <div class="actions">
-
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-small"
-                    onclick="event.stopPropagation(); window.editPettyCash('${item.id}')">
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    class="btn btn-danger btn-small"
-                    onclick="event.stopPropagation(); window.deletePettyCash('${item.id}')">
-                    Delete
-                  </button>
-
-                </div>
-              </td>
-
-            </tr>
-          `;
-        })
-        .join("");
-  };
-
-window.openPettyModal =
-  function(id = null) {
-
-    document.getElementById(
-      "pettyId"
-    ).value = id || "";
-
-    document.getElementById(
-      "pettyModalTitle"
-    ).textContent =
+    showToast(
       id
-        ? "Edit Petty Cash"
-        : "Add Petty Cash";
-
-    if (!id) {
-
-      document.getElementById(
-        "pettyDate"
-      ).value = today();
-
-      document.getElementById(
-        "pettyDescription"
-      ).value = "";
-
-      document.getElementById(
-        "pettyPaidTo"
-      ).value = "";
-
-      document.getElementById(
-        "pettyCategory"
-      ).value = "Transport";
-
-      document.getElementById(
-        "pettyAmount"
-      ).value = "0";
-
-      document.getElementById(
-        "pettyNotes"
-      ).value = "";
-    }
-
-    window.openModal(
-      "pettyModal"
+        ? "Petty cash updated successfully."
+        : "Petty cash added successfully."
     );
-  };
 
-window.editPettyCash =
-  function(id) {
+    closeModal("pettyModal");
 
-    const item =
-      pettyCash.find(
-        p => p.id === id
-      );
+    await loadAllData();
 
-    if (!item) {
-
-      showToast(
-        "Petty cash record not found.",
-        true
-      );
-
-      return;
-    }
-
-    document.getElementById(
-      "pettyId"
-    ).value = item.id;
-
-    document.getElementById(
-      "pettyDate"
-    ).value =
-      item.cash_date || today();
-
-    document.getElementById(
-      "pettyDescription"
-    ).value =
-      item.description || "";
-
-    document.getElementById(
-      "pettyPaidTo"
-    ).value =
-      item.paid_to || "";
-
-    document.getElementById(
-      "pettyCategory"
-    ).value =
-      item.category || "Other";
-
-    document.getElementById(
-      "pettyAmount"
-    ).value =
-      item.amount || 0;
-
-    document.getElementById(
-      "pettyNotes"
-    ).value =
-      item.notes || "";
-
-    document.getElementById(
-      "pettyModalTitle"
-    ).textContent =
-      "Edit Petty Cash";
-
-    window.openModal(
-      "pettyModal"
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Saving petty cash"
     );
-  };
+  }
+}
 
-window.savePettyCash =
-  async function(event) {
+async function deletePettyCash(id) {
+  if (!confirm("Delete this petty cash record?")) return;
 
-    event.preventDefault();
+  try {
+    const result = await supabase
+      .from(TABLES.petty)
+      .delete()
+      .eq("id", id);
 
-    const id =
-      document.getElementById(
-        "pettyId"
-      ).value;
-
-    const payload = {
-
-      cash_date:
-        document.getElementById(
-          "pettyDate"
-        ).value || today(),
-
-      description:
-        document.getElementById(
-          "pettyDescription"
-        ).value.trim(),
-
-      paid_to:
-        document.getElementById(
-          "pettyPaidTo"
-        ).value.trim() || null,
-
-      category:
-        document.getElementById(
-          "pettyCategory"
-        ).value || null,
-
-      amount:
-        number(
-          document.getElementById(
-            "pettyAmount"
-          ).value
-        ),
-
-      notes:
-        document.getElementById(
-          "pettyNotes"
-        ).value.trim() || null
-    };
-
-    if (!payload.description) {
-
-      showToast(
-        "Petty cash description is required.",
-        true
-      );
-
+    if (result.error) {
+      supabaseError(result, "Deleting petty cash");
       return;
     }
 
-    try {
+    showToast("Petty cash deleted.");
 
-      let result;
+    await loadAllData();
 
-      if (id) {
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Deleting petty cash"
+    );
+  }
+}
 
-        result =
-          await supabase
-            .from(TABLES.petty)
-            .update(payload)
-            .eq("id", id);
-
-      } else {
-
-        result =
-          await supabase
-            .from(TABLES.petty)
-            .insert(payload);
-      }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      window.closeModal(
-        "pettyModal"
-      );
-
-      await window.loadAllData();
-
-      showToast(
-        id
-          ? "Petty cash updated successfully."
-          : "Petty cash added successfully."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to save petty cash",
-        error
-      );
-    }
-  };
-
-window.deletePettyCash =
-  async function(id) {
-
-    if (
-      !confirm(
-        "Delete this petty cash record?"
-      )
-    ) {
-      return;
-    }
-
-    try {
-
-      const { error } =
-        await supabase
-          .from(TABLES.petty)
-          .delete()
-          .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
-      await window.loadAllData();
-
-      showToast(
-        "Petty cash record deleted."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to delete petty cash",
-        error
-      );
-    }
-  };
+window.deletePettyCash = deletePettyCash;
 
 // ======================================================
 // REQUISITIONS
 // ======================================================
 
-window.renderRequisitions =
-  function() {
+function renderRequisitions() {
+  const tbody =
+    document.getElementById("requisitionsTableBody");
 
-    const body =
-      document.getElementById(
-        "requisitionsBody"
-      );
+  if (!tbody) return;
 
-    if (!body) return;
+  const search =
+    document.getElementById("reqSearch")?.value
+      .trim()
+      .toLowerCase() || "";
 
-    const search =
-      String(
-        document.getElementById(
-          "reqSearch"
-        )?.value || ""
-      ).toLowerCase();
+  const status =
+    document.getElementById("reqStatusFilter")?.value || "";
 
-    const status =
-      document.getElementById(
-        "reqStatusFilter"
-      )?.value || "";
+  const filtered = requisitions.filter(req => {
+    const searchable = [
+      req.req_no,
+      req.requested_by,
+      vehicleName(req.vehicle_id),
+      req.item_description,
+      req.expense_type,
+      req.category,
+      req.status,
+      req.notes
+    ]
+      .join(" ")
+      .toLowerCase();
 
-    const filtered =
-      requisitions.filter(req => {
+    const matchesSearch =
+      !search || searchable.includes(search);
 
-        const matchesSearch =
-          !search ||
-          String(
-            req.req_no || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            req.item_description || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            req.requested_by || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            vehicleName(
-              req.vehicle_id
-            )
-          )
-            .toLowerCase()
-            .includes(search);
+    const matchesStatus =
+      !status || req.status === status;
 
-        const matchesStatus =
-          !status ||
-          req.status === status;
+    return matchesSearch && matchesStatus;
+  });
 
-        return (
-          matchesSearch &&
-          matchesStatus
-        );
-      });
+  const overallTotal = filtered.reduce(
+    (sum, req) => sum + number(req.total_amount),
+    0
+  );
 
-    // ==================================================
-    // OVERALL TOTAL OF CURRENTLY DISPLAYED REQUISITIONS
-    // ==================================================
+  setText(
+    "reqOverallTotal",
+    money(overallTotal)
+  );
 
-    const overallTotal =
-      filtered.reduce(
-        (sum, req) =>
-          sum +
-          number(req.total_amount),
-        0
-      );
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="empty">
+          No requisitions found.
+        </td>
+      </tr>
+    `;
 
-    const totalElement =
-      document.getElementById(
-        "reqOverallTotal"
-      );
+    return;
+  }
 
-    if (totalElement) {
-
-      totalElement.textContent =
-        money(overallTotal);
-    }
-
-    // ==================================================
-    // TABLE
-    // ==================================================
-
-    if (!filtered.length) {
-
-      body.innerHTML = `
-        <tr>
-          <td colspan="11" class="empty">
-            No requisitions found.
-          </td>
-        </tr>
-      `;
-
-      return;
-    }
-
-    body.innerHTML =
-      filtered
-        .map(req => {
-
-          return `
-            <tr
-              class="clickable-row"
-              data-requisition-id="${escapeHtml(req.id)}">
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    req.req_no
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  req.req_date || ""
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  req.requested_by
-                )}
-              </td>
-
-              <td>
-                ${vehicleName(
-                  req.vehicle_id
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  req.item_description
-                )}
-              </td>
-
-              <td>
-                ${number(
-                  req.quantity
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  req.unit_cost
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${money(
-                    req.total_amount
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  req.expense_type || ""
-                )}
-              </td>
-
-              <td>
-                <span
-                  class="status ${statusClass(
-                    req.status
-                  )}">
-                  ${escapeHtml(
-                    req.status || ""
-                  )}
-                </span>
-              </td>
-
-              <td>
-                <div class="actions">
-
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-small"
-                    onclick="event.stopPropagation(); window.editRequisition('${req.id}')">
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    class="btn btn-danger btn-small"
-                    onclick="event.stopPropagation(); window.deleteRequisition('${req.id}')">
-                    Delete
-                  </button>
-
-                </div>
-              </td>
-
-            </tr>
-          `;
-        })
-        .join("");
-  };
-
-// ======================================================
-// REQUISITION AUTO TOTAL
-// ======================================================
-
-window.calculateReqTotal =
-  function() {
-
-    const quantity =
-      number(
-        document.getElementById(
-          "reqQuantity"
-        )?.value
-      );
-
-    const unitCost =
-      number(
-        document.getElementById(
-          "reqUnitCost"
-        )?.value
-      );
-
+  tbody.innerHTML = filtered.map(req => {
     const total =
-      quantity * unitCost;
+      number(req.total_amount) ||
+      number(req.quantity) * number(req.unit_cost);
 
-    const display =
-      document.getElementById(
-        "reqTotalDisplay"
-      );
-
-    if (display) {
-
-      display.textContent =
-        total.toLocaleString(
-          "en-KE",
-          {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }
-        );
-    }
-  };
-
-// ======================================================
-// OPEN REQUISITION
-// ======================================================
-
-window.openRequisitionModal =
-  function(id = null) {
-
-    document.getElementById(
-      "reqId"
-    ).value = id || "";
-
-    document.getElementById(
-      "requisitionModalTitle"
-    ).textContent =
-      id
-        ? "Edit Requisition"
-        : "Add Requisition";
-
-    populateVehicleSelects();
-
-    if (!id) {
-
-      document.getElementById(
-        "reqNo"
-      ).value = "";
-
-      document.getElementById(
-        "reqDate"
-      ).value = today();
-
-      document.getElementById(
-        "reqRequestedBy"
-      ).value = "";
-
-      document.getElementById(
-        "reqVehicle"
-      ).value = "";
-
-      document.getElementById(
-        "reqItemDescription"
-      ).value = "";
-
-      document.getElementById(
-        "reqQuantity"
-      ).value = "1";
-
-      document.getElementById(
-        "reqUnitCost"
-      ).value = "0";
-
-      document.getElementById(
-        "reqExpenseType"
-      ).value = "Materials";
-
-      document.getElementById(
-        "reqStatus"
-      ).value = "Pending";
-
-      document.getElementById(
-        "reqNotes"
-      ).value = "";
-
-      window.calculateReqTotal();
-    }
-
-    window.openModal(
-      "requisitionModal"
-    );
-  };
-
-// ======================================================
-// EDIT REQUISITION
-// ======================================================
-
-window.editRequisition =
-  function(id) {
-
-    const req =
-      requisitions.find(
-        r => r.id === id
-      );
-
-    if (!req) {
-
-      showToast(
-        "Requisition not found.",
-        true
-      );
-
-      return;
-    }
-
-    populateVehicleSelects();
-
-    document.getElementById(
-      "reqId"
-    ).value = req.id;
-
-    document.getElementById(
-      "reqNo"
-    ).value =
-      req.req_no || "";
-
-    document.getElementById(
-      "reqDate"
-    ).value =
-      req.req_date || today();
-
-    document.getElementById(
-      "reqRequestedBy"
-    ).value =
-      req.requested_by || "";
-
-    document.getElementById(
-      "reqVehicle"
-    ).value =
-      req.vehicle_id || "";
-
-    document.getElementById(
-      "reqItemDescription"
-    ).value =
-      req.item_description || "";
-
-    document.getElementById(
-      "reqQuantity"
-    ).value =
-      req.quantity || 1;
-
-    document.getElementById(
-      "reqUnitCost"
-    ).value =
-      req.unit_cost || 0;
-
-    document.getElementById(
-      "reqExpenseType"
-    ).value =
+    const expenseType =
       req.expense_type ||
+      req.category ||
       "Materials";
 
-    document.getElementById(
-      "reqStatus"
-    ).value =
-      req.status || "Pending";
+    return `
+      <tr onclick="editRequisition('${req.id}')"
+          style="cursor:pointer">
 
-    document.getElementById(
-      "reqNotes"
-    ).value =
-      req.notes || "";
+        <td>
+          <strong>${escapeHtml(req.req_no)}</strong>
+        </td>
 
-    window.calculateReqTotal();
+        <td>${escapeHtml(req.req_date || "")}</td>
 
-    document.getElementById(
-      "requisitionModalTitle"
-    ).textContent =
-      "Edit Requisition";
+        <td>${escapeHtml(req.requested_by)}</td>
 
-    window.openModal(
-      "requisitionModal"
-    );
+        <td>${escapeHtml(vehicleName(req.vehicle_id))}</td>
+
+        <td>${escapeHtml(req.item_description)}</td>
+
+        <td>${number(req.quantity)}</td>
+
+        <td>${money(req.unit_cost)}</td>
+
+        <td>
+          <strong>${money(total)}</strong>
+        </td>
+
+        <td>${escapeHtml(expenseType)}</td>
+
+        <td>
+          <span class="status ${statusClass(req.status)}">
+            ${escapeHtml(req.status || "")}
+          </span>
+        </td>
+
+        <td class="no-print">
+          <div class="actions">
+
+            <button
+              class="btn secondary"
+              onclick="event.stopPropagation(); previewSingleRequisition('${req.id}')">
+              Preview
+            </button>
+
+            <button
+              class="btn secondary"
+              onclick="event.stopPropagation(); editRequisition('${req.id}')">
+              Edit
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="event.stopPropagation(); deleteRequisition('${req.id}')">
+              Delete
+            </button>
+
+          </div>
+        </td>
+
+      </tr>
+    `;
+  }).join("");
+}
+
+window.calculateReqTotal = function() {
+  const quantity =
+    number(document.getElementById("reqQuantity")?.value);
+
+  const unitCost =
+    number(document.getElementById("reqUnitCost")?.value);
+
+  const total = quantity * unitCost;
+
+  const display =
+    document.getElementById("reqTotalDisplay");
+
+  if (display) {
+    display.value = money(total);
+  }
+
+  return total;
+};
+
+window.openRequisitionModal = function(id = null) {
+  const form =
+    document.getElementById("requisitionForm");
+
+  if (form) form.reset();
+
+  document.getElementById("requisitionId").value = "";
+
+  populateVehicleSelects();
+
+  document.getElementById("reqDate").value = today();
+
+  document.getElementById("reqQuantity").value = "1";
+
+  document.getElementById("reqUnitCost").value = "0";
+
+  document.getElementById("reqExpenseType").value =
+    "Materials";
+
+  document.getElementById("reqStatus").value =
+    "Pending";
+
+  document.getElementById("reqTotalDisplay").value =
+    money(0);
+
+  document.getElementById("requisitionModalTitle").textContent =
+    "Add Requisition";
+
+  if (id) {
+    editRequisition(id);
+    return;
+  }
+
+  openModal("requisitionModal");
+};
+
+window.editRequisition = function(id) {
+  const req = requisitions.find(r => r.id === id);
+
+  if (!req) return;
+
+  populateVehicleSelects();
+
+  document.getElementById("requisitionId").value =
+    req.id;
+
+  document.getElementById("reqNo").value =
+    req.req_no || "";
+
+  document.getElementById("reqDate").value =
+    req.req_date || today();
+
+  document.getElementById("reqRequestedBy").value =
+    req.requested_by || "";
+
+  document.getElementById("reqVehicle").value =
+    req.vehicle_id || "";
+
+  document.getElementById("reqItemDescription").value =
+    req.item_description || "";
+
+  document.getElementById("reqQuantity").value =
+    number(req.quantity);
+
+  document.getElementById("reqUnitCost").value =
+    number(req.unit_cost);
+
+  document.getElementById("reqExpenseType").value =
+    req.expense_type ||
+    req.category ||
+    "Materials";
+
+  document.getElementById("reqStatus").value =
+    req.status || "Pending";
+
+  document.getElementById("reqNotes").value =
+    req.notes || "";
+
+  calculateReqTotal();
+
+  document.getElementById("requisitionModalTitle").textContent =
+    "Edit Requisition";
+
+  openModal("requisitionModal");
+};
+
+async function saveRequisition() {
+  const id =
+    document.getElementById("requisitionId").value || null;
+
+  const quantity =
+    number(document.getElementById("reqQuantity").value);
+
+  const unitCost =
+    number(document.getElementById("reqUnitCost").value);
+
+  const expenseType =
+    document.getElementById("reqExpenseType").value ||
+    "Materials";
+
+  /*
+    IMPORTANT:
+    Supabase has BOTH category and expense_type.
+    We save both so the application remains compatible
+    with the current database.
+  */
+
+  const payload = {
+    req_no:
+      document.getElementById("reqNo").value.trim(),
+
+    req_date:
+      document.getElementById("reqDate").value || today(),
+
+    requested_by:
+      document.getElementById("reqRequestedBy").value.trim(),
+
+    vehicle_id:
+      document.getElementById("reqVehicle").value || null,
+
+    item_description:
+      document.getElementById("reqItemDescription").value.trim(),
+
+    quantity,
+
+    unit_cost: unitCost,
+
+    total_amount:
+      quantity * unitCost,
+
+    status:
+      document.getElementById("reqStatus").value,
+
+    notes:
+      document.getElementById("reqNotes").value.trim() || null,
+
+    category:
+      expenseType,
+
+    expense_type:
+      expenseType
   };
 
-// ======================================================
-// SAVE REQUISITION
-// ======================================================
+  try {
+    let result;
 
-window.saveRequisition =
-  async function(event) {
+    if (id) {
+      result = await supabase
+        .from(TABLES.requisitions)
+        .update(payload)
+        .eq("id", id);
+    } else {
+      result = await supabase
+        .from(TABLES.requisitions)
+        .insert(payload);
+    }
 
-    event.preventDefault();
-
-    const id =
-      document.getElementById(
-        "reqId"
-      ).value;
-
-    const quantity =
-      number(
-        document.getElementById(
-          "reqQuantity"
-        ).value
+    if (result.error) {
+      supabaseError(
+        result,
+        "Saving requisition"
       );
-
-    const unitCost =
-      number(
-        document.getElementById(
-          "reqUnitCost"
-        ).value
-      );
-
-    const payload = {
-
-      req_no:
-        document.getElementById(
-          "reqNo"
-        ).value.trim(),
-
-      req_date:
-        document.getElementById(
-          "reqDate"
-        ).value || today(),
-
-      requested_by:
-        document.getElementById(
-          "reqRequestedBy"
-        ).value.trim(),
-
-      vehicle_id:
-        document.getElementById(
-          "reqVehicle"
-        ).value || null,
-
-      item_description:
-        document.getElementById(
-          "reqItemDescription"
-        ).value.trim(),
-
-      quantity,
-
-      unit_cost:
-        unitCost,
-
-      total_amount:
-        quantity * unitCost,
-
-      status:
-        document.getElementById(
-          "reqStatus"
-        ).value,
-
-      notes:
-        document.getElementById(
-          "reqNotes"
-        ).value.trim() || null,
-
-      expense_type:
-        document.getElementById(
-          "reqExpenseType"
-        ).value
-    };
-
-    if (
-      !payload.req_no ||
-      !payload.requested_by ||
-      !payload.item_description
-    ) {
-
-      showToast(
-        "Requisition number, requested by and item description are required.",
-        true
-      );
-
       return;
     }
 
-    try {
-
-      let result;
-
-      if (id) {
-
-        result =
-          await supabase
-            .from(TABLES.requisitions)
-            .update(payload)
-            .eq("id", id);
-
-      } else {
-
-        result =
-          await supabase
-            .from(TABLES.requisitions)
-            .insert(payload);
-      }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      window.closeModal(
-        "requisitionModal"
-      );
-
-      await window.loadAllData();
-
-      showToast(
-        id
-          ? "Requisition updated successfully."
-          : "Requisition added successfully."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to save requisition",
-        error
-      );
-    }
-  };
-
-// ======================================================
-// DELETE REQUISITION
-// ======================================================
-
-window.deleteRequisition =
-  async function(id) {
-
-    if (
-      !confirm(
-        "Delete this requisition?"
-      )
-    ) {
-      return;
-    }
-
-    try {
-
-      const { error } =
-        await supabase
-          .from(TABLES.requisitions)
-          .delete()
-          .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
-      await window.loadAllData();
-
-      showToast(
-        "Requisition deleted."
-      );
-
-    } catch (error) {
-
-      supabaseError(
-        "Unable to delete requisition",
-        error
-      );
-    }
-  };
-
-// ======================================================
-// CLICKABLE TABLE ROWS
-// ======================================================
-
-function setupClickableRows() {
-
-  const vehiclesBody =
-    document.getElementById(
-      "vehiclesBody"
+    showToast(
+      id
+        ? "Requisition updated successfully."
+        : "Requisition saved successfully."
     );
 
-  if (vehiclesBody) {
+    closeModal("requisitionModal");
 
-    vehiclesBody.addEventListener(
-      "click",
-      event => {
+    await loadAllData();
 
-        if (
-          event.target.closest(
-            "button"
-          )
-        ) {
-          return;
-        }
-
-        const row =
-          event.target.closest(
-            "tr[data-vehicle-id]"
-          );
-
-        if (row) {
-
-          window.editVehicle(
-            row.dataset.vehicleId
-          );
-        }
-      }
-    );
-  }
-
-  const expensesBody =
-    document.getElementById(
-      "expensesBody"
-    );
-
-  if (expensesBody) {
-
-    expensesBody.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target.closest(
-            "button"
-          )
-        ) {
-          return;
-        }
-
-        const row =
-          event.target.closest(
-            "tr[data-expense-id]"
-          );
-
-        if (row) {
-
-          window.editExpense(
-            row.dataset.expenseId
-          );
-        }
-      }
-    );
-  }
-
-  const pettyBody =
-    document.getElementById(
-      "pettyBody"
-    );
-
-  if (pettyBody) {
-
-    pettyBody.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target.closest(
-            "button"
-          )
-        ) {
-          return;
-        }
-
-        const row =
-          event.target.closest(
-            "tr[data-petty-id]"
-          );
-
-        if (row) {
-
-          window.editPettyCash(
-            row.dataset.pettyId
-          );
-        }
-      }
-    );
-  }
-
-  const requisitionsBody =
-    document.getElementById(
-      "requisitionsBody"
-    );
-
-  if (requisitionsBody) {
-
-    requisitionsBody.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target.closest(
-            "button"
-          )
-        ) {
-          return;
-        }
-
-        const row =
-          event.target.closest(
-            "tr[data-requisition-id]"
-          );
-
-        if (row) {
-
-          window.editRequisition(
-            row.dataset.requisitionId
-          );
-        }
-      }
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Saving requisition"
     );
   }
 }
+
+async function deleteRequisition(id) {
+  const req =
+    requisitions.find(r => r.id === id);
+
+  if (!req) return;
+
+  const confirmed = confirm(
+    `Delete requisition ${req.req_no}?\n\n` +
+    `This will delete only this requisition record.`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const result = await supabase
+      .from(TABLES.requisitions)
+      .delete()
+      .eq("id", id);
+
+    if (result.error) {
+      supabaseError(
+        result,
+        "Deleting requisition"
+      );
+      return;
+    }
+
+    showToast("Requisition deleted.");
+
+    await loadAllData();
+
+  } catch (error) {
+    supabaseError(
+      { error },
+      "Deleting requisition"
+    );
+  }
+}
+
+window.deleteRequisition = deleteRequisition;
+
+// ======================================================
+// REQUISITION PREVIEW
+// ======================================================
+
+function getFilteredRequisitions() {
+  const search =
+    document.getElementById("reqSearch")?.value
+      .trim()
+      .toLowerCase() || "";
+
+  const status =
+    document.getElementById("reqStatusFilter")?.value || "";
+
+  return requisitions.filter(req => {
+    const searchable = [
+      req.req_no,
+      req.requested_by,
+      vehicleName(req.vehicle_id),
+      req.item_description,
+      req.expense_type,
+      req.category,
+      req.status,
+      req.notes
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      (!search || searchable.includes(search)) &&
+      (!status || req.status === status)
+    );
+  });
+}
+
+window.previewRequisitions = function() {
+  const filtered = getFilteredRequisitions();
+
+  if (!filtered.length) {
+    showToast(
+      "There are no requisitions to preview.",
+      true
+    );
+    return;
+  }
+
+  const total = filtered.reduce(
+    (sum, req) =>
+      sum +
+      (
+        number(req.total_amount) ||
+        number(req.quantity) * number(req.unit_cost)
+      ),
+    0
+  );
+
+  const rows = filtered.map(req => {
+    const amount =
+      number(req.total_amount) ||
+      number(req.quantity) * number(req.unit_cost);
+
+    return `
+      <tr>
+        <td>${escapeHtml(req.req_no)}</td>
+        <td>${escapeHtml(req.req_date || "")}</td>
+        <td>${escapeHtml(req.requested_by)}</td>
+        <td>${escapeHtml(vehicleName(req.vehicle_id))}</td>
+        <td>${escapeHtml(req.item_description)}</td>
+        <td>${number(req.quantity)}</td>
+        <td>${money(req.unit_cost)}</td>
+        <td>${money(amount)}</td>
+        <td>${escapeHtml(req.expense_type || req.category || "Materials")}</td>
+        <td>${escapeHtml(req.status || "")}</td>
+      </tr>
+    `;
+  }).join("");
+
+  document.getElementById(
+    "requisitionPreviewContent"
+  ).innerHTML = `
+    <div class="preview-meta">
+      <div>
+        <strong>Total Requisitions</strong><br>
+        ${filtered.length}
+      </div>
+
+      <div>
+        <strong>Overall Total</strong><br>
+        ${money(total)}
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Req No.</th>
+            <th>Date</th>
+            <th>Requested By</th>
+            <th>Vehicle</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Unit Cost</th>
+            <th>Total</th>
+            <th>Expense Type</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="preview-total">
+      <span>Overall Total</span>
+      <strong>${money(total)}</strong>
+    </div>
+  `;
+
+  window.currentRequisitionPreview = {
+    title: "Requisitions Preview",
+    rows: filtered,
+    total
+  };
+
+  openModal("requisitionPreviewModal");
+};
+
+window.previewSingleRequisition = function(id) {
+  const req = requisitions.find(r => r.id === id);
+
+  if (!req) return;
+
+  const total =
+    number(req.total_amount) ||
+    number(req.quantity) * number(req.unit_cost);
+
+  document.getElementById(
+    "requisitionPreviewContent"
+  ).innerHTML = `
+    <div class="preview-meta">
+
+      <div>
+        <strong>Requisition No.</strong><br>
+        ${escapeHtml(req.req_no)}
+      </div>
+
+      <div>
+        <strong>Date</strong><br>
+        ${escapeHtml(req.req_date || "")}
+      </div>
+
+      <div>
+        <strong>Requested By</strong><br>
+        ${escapeHtml(req.requested_by)}
+      </div>
+
+      <div>
+        <strong>Vehicle</strong><br>
+        ${escapeHtml(vehicleName(req.vehicle_id))}
+      </div>
+
+      <div>
+        <strong>Expense Type</strong><br>
+        ${escapeHtml(req.expense_type || req.category || "Materials")}
+      </div>
+
+      <div>
+        <strong>Status</strong><br>
+        ${escapeHtml(req.status || "")}
+      </div>
+
+    </div>
+
+    <div class="panel">
+
+      <div class="table-container">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Item Description</th>
+              <th>Quantity</th>
+              <th>Unit Cost</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>${escapeHtml(req.item_description)}</td>
+              <td>${number(req.quantity)}</td>
+              <td>${money(req.unit_cost)}</td>
+              <td><strong>${money(total)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+    </div>
+
+    ${
+      req.notes
+        ? `
+          <div style="margin-top:16px">
+            <strong>Notes</strong>
+            <p>${escapeHtml(req.notes)}</p>
+          </div>
+        `
+        : ""
+    }
+
+    <div class="preview-total">
+      <span>Total Amount</span>
+      <strong>${money(total)}</strong>
+    </div>
+  `;
+
+  window.currentRequisitionPreview = {
+    title: `Requisition ${req.req_no}`,
+    rows: [req],
+    total,
+    single: true
+  };
+
+  openModal("requisitionPreviewModal");
+};
+
+window.printRequisitionPreview = function() {
+  const content =
+    document.getElementById(
+      "requisitionPreviewContent"
+    )?.innerHTML || "";
+
+  if (!content) return;
+
+  printHtml(
+    "Requisition Preview",
+    content
+  );
+};
+
+window.shareRequisitionPreview = async function() {
+  const data =
+    window.currentRequisitionPreview;
+
+  if (!data) return;
+
+  let text =
+    `${data.title}\n` +
+    `====================\n\n`;
+
+  data.rows.forEach(req => {
+    const amount =
+      number(req.total_amount) ||
+      number(req.quantity) * number(req.unit_cost);
+
+    text +=
+      `Req No: ${req.req_no || ""}\n` +
+      `Date: ${req.req_date || ""}\n` +
+      `Requested By: ${req.requested_by || ""}\n` +
+      `Vehicle: ${vehicleName(req.vehicle_id)}\n` +
+      `Item: ${req.item_description || ""}\n` +
+      `Quantity: ${number(req.quantity)}\n` +
+      `Unit Cost: ${money(req.unit_cost)}\n` +
+      `Total: ${money(amount)}\n` +
+      `Expense Type: ${req.expense_type || req.category || "Materials"}\n` +
+      `Status: ${req.status || ""}\n\n`;
+  });
+
+  text +=
+    `OVERALL TOTAL: ${money(data.total)}`;
+
+  await shareText(
+    data.title,
+    text
+  );
+};
+
+// ======================================================
+// VEHICLE EXPENSE PREVIEW
+// ======================================================
+
+function getVehicleExpenses(vehicleId) {
+  return expenses.filter(
+    expense => expense.vehicle_id === vehicleId
+  );
+}
+
+window.previewVehicleExpense = function(vehicleId) {
+  if (!vehicleId) {
+    showToast(
+      "This expense is General / No Vehicle.",
+      true
+    );
+    return;
+  }
+
+  const vehicle =
+    vehicles.find(v => v.id === vehicleId);
+
+  const vehicleExpenses =
+    getVehicleExpenses(vehicleId);
+
+  if (!vehicleExpenses.length) {
+    showToast(
+      "No expenses found for this vehicle.",
+      true
+    );
+    return;
+  }
+
+  const total = vehicleExpenses.reduce(
+    (sum, expense) =>
+      sum + number(expense.amount),
+    0
+  );
+
+  const rows = vehicleExpenses.map(expense => `
+    <tr>
+      <td>${escapeHtml(expense.expense_date || "")}</td>
+      <td>${escapeHtml(expense.description || "")}</td>
+      <td>${escapeHtml(expense.category || "")}</td>
+      <td>${money(expense.amount)}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById(
+    "vehicleExpensePreviewContent"
+  ).innerHTML = `
+
+    <div class="preview-meta">
+
+      <div>
+        <strong>Registration</strong><br>
+        ${escapeHtml(vehicle?.registration || vehicleName(vehicleId))}
+      </div>
+
+      <div>
+        <strong>Customer</strong><br>
+        ${escapeHtml(vehicle?.customer || "")}
+      </div>
+
+      <div>
+        <strong>Total Expense Records</strong><br>
+        ${vehicleExpenses.length}
+      </div>
+
+      <div>
+        <strong>Total Expenses</strong><br>
+        ${money(total)}
+      </div>
+
+    </div>
+
+    <div class="table-container">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${rows}
+        </tbody>
+
+      </table>
+
+    </div>
+
+    <div class="preview-total">
+      <span>Total Vehicle Expenses</span>
+      <strong>${money(total)}</strong>
+    </div>
+  `;
+
+  window.currentVehicleExpensePreview = {
+    vehicleId,
+    vehicle,
+    expenses: vehicleExpenses,
+    total
+  };
+
+  openModal("vehicleExpensePreviewModal");
+};
+
+window.printVehicleExpensePreview = function() {
+  const content =
+    document.getElementById(
+      "vehicleExpensePreviewContent"
+    )?.innerHTML || "";
+
+  if (!content) return;
+
+  const vehicle =
+    window.currentVehicleExpensePreview?.vehicle;
+
+  printHtml(
+    `Vehicle Expenses - ${vehicle?.registration || ""}`,
+    content
+  );
+};
+
+window.shareVehicleExpensePreview = async function() {
+  const data =
+    window.currentVehicleExpensePreview;
+
+  if (!data) return;
+
+  const vehicle =
+    data.vehicle;
+
+  let text =
+    `VEHICLE EXPENSE REPORT\n` +
+    `========================\n\n` +
+    `Registration: ${vehicle?.registration || ""}\n` +
+    `Customer: ${vehicle?.customer || ""}\n\n`;
+
+  data.expenses.forEach(expense => {
+    text +=
+      `${expense.expense_date || ""} - ` +
+      `${expense.description || ""} - ` +
+      `${expense.category || ""} - ` +
+      `${money(expense.amount)}\n`;
+  });
+
+  text +=
+    `\nTOTAL VEHICLE EXPENSES: ${money(data.total)}`;
+
+  await shareText(
+    `Vehicle Expenses - ${vehicle?.registration || ""}`,
+    text
+  );
+};
 
 // ======================================================
 // PRINT
 // ======================================================
 
-window.printSection =
-  function(title, elementId) {
+window.printSection = function(title, areaId) {
+  const area =
+    document.getElementById(areaId);
 
-    const element =
-      document.getElementById(
-        elementId
-      );
+  if (!area) {
+    showToast(
+      "Print area not found.",
+      true
+    );
+    return;
+  }
 
-    if (!element) {
+  printHtml(
+    title,
+    area.innerHTML
+  );
+};
+
+function printHtml(title, content) {
+  const printWindow =
+    window.open(
+      "",
+      "_blank",
+      "width=1100,height=800"
+    );
+
+  if (!printWindow) {
+    showToast(
+      "Please allow pop-ups to print.",
+      true
+    );
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+
+      <meta charset="UTF-8">
+
+      <title>${escapeHtml(title)}</title>
+
+      <style>
+
+        body{
+          font-family:Arial,Helvetica,sans-serif;
+          color:#111827;
+          padding:25px;
+        }
+
+        h1{
+          margin:0 0 20px;
+          font-size:24px;
+        }
+
+        table{
+          width:100%;
+          border-collapse:collapse;
+          margin-top:15px;
+        }
+
+        th,td{
+          border:1px solid #cbd5e1;
+          padding:9px;
+          text-align:left;
+        }
+
+        th{
+          background:#f1f5f9;
+        }
+
+        .preview-meta{
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:10px;
+          margin-bottom:15px;
+        }
+
+        .preview-meta div{
+          border:1px solid #cbd5e1;
+          padding:10px;
+        }
+
+        .preview-total{
+          display:flex;
+          justify-content:space-between;
+          border-top:2px solid #111827;
+          padding-top:12px;
+          margin-top:15px;
+          font-size:18px;
+          font-weight:bold;
+        }
+
+        .print-summary{
+          display:flex;
+          justify-content:space-between;
+          padding:12px;
+          border:1px solid #cbd5e1;
+          margin-bottom:10px;
+          font-weight:bold;
+        }
+
+        @media print{
+          body{
+            padding:10px;
+          }
+        }
+
+      </style>
+
+    </head>
+
+    <body>
+
+      <h1>${escapeHtml(title)}</h1>
+
+      ${content}
+
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 300);
+}
+
+// ======================================================
+// SHARING
+// ======================================================
+
+async function shareText(title, text) {
+  try {
+
+    if (
+      navigator.share
+    ) {
+      await navigator.share({
+        title,
+        text
+      });
+
+      return;
+    }
+
+    if (
+      navigator.clipboard &&
+      navigator.clipboard.writeText
+    ) {
+      await navigator.clipboard.writeText(text);
 
       showToast(
-        "Nothing available to print.",
-        true
+        "Report copied. You can paste it into WhatsApp or another app."
       );
 
       return;
     }
 
-    const printWindow =
-      window.open(
-        "",
-        "_blank"
-      );
+    showToast(
+      "Sharing is not available on this device.",
+      true
+    );
 
-    if (!printWindow) {
+  } catch (error) {
 
-      showToast(
-        "Please allow pop-ups to print.",
-        true
-      );
-
+    if (error?.name === "AbortError") {
       return;
     }
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
+    console.error(error);
 
-      <html>
+    showToast(
+      "Unable to share the report.",
+      true
+    );
+  }
+}
 
-      <head>
-
-        <title>
-          ${escapeHtml(title)}
-        </title>
-
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1">
-
-        <style>
-
-          body {
-            font-family: Arial, sans-serif;
-            padding: 25px;
-            color: #111827;
-          }
-
-          h1 {
-            text-align: center;
-            margin-bottom: 5px;
-          }
-
-          .date {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #6b7280;
-          }
-
-          .print-summary {
-            border: 1px solid #d1d5db;
-            padding: 12px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            font-weight: 700;
-          }
-
-          .print-summary strong {
-            font-size: 18px;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-          }
-
-          th,
-          td {
-            border: 1px solid #d1d5db;
-            padding: 8px;
-            text-align: left;
-          }
-
-          th {
-            background: #f3f4f6;
-          }
-
-          button,
-          .actions {
-            display: none !important;
-          }
-
-          @media print {
-
-            body {
-              padding: 10px;
-            }
-
-          }
-
-        </style>
-
-      </head>
-
-      <body>
-
-        <h1>
-          ${escapeHtml(title)}
-        </h1>
-
-        <div class="date">
-          Printed:
-          ${new Date().toLocaleString("en-KE")}
-        </div>
-
-        ${element.outerHTML}
-
-      </body>
-
-      </html>
-    `);
-
-    printWindow.document.close();
-
-    setTimeout(() => {
-
-      printWindow.focus();
-
-      printWindow.print();
-
-      printWindow.close();
-
-    }, 500);
-  };
-
-// ======================================================
-// GENERAL SHARE
-// ======================================================
-
-window.shareText =
-  async function(title, text) {
-
-    const shareData = {
-      title,
-      text
-    };
-
-    try {
-
-      if (
-        navigator.share &&
-        typeof navigator.share ===
-          "function"
-      ) {
-
-        await navigator.share(
-          shareData
-        );
-
-        showToast(
-          "Shared successfully."
-        );
-
-        return;
-      }
-
-      if (
-        navigator.clipboard &&
-        navigator.clipboard.writeText
-      ) {
-
-        await navigator.clipboard.writeText(
-          text
-        );
-
-        showToast(
-          "Details copied. You can paste them anywhere."
-        );
-
-        return;
-      }
-
-      showToast(
-        "Sharing is not available on this browser.",
-        true
-      );
-
-    } catch (error) {
-
-      if (
-        error?.name ===
-        "AbortError"
-      ) {
-        return;
-      }
-
-      console.error(
-        "Share error:",
-        error
-      );
-
-      showToast(
-        "Unable to share.",
-        true
-      );
-    }
-  };
+window.shareText = shareText;
 
 // ======================================================
 // SHARE VEHICLES
 // ======================================================
 
-window.shareVehicles =
-  function() {
+window.shareVehicles = async function() {
+  const lines = [
+    "GARAGE VEHICLES",
+    "================"
+  ];
 
-    let text =
-`GARAGE OPERATIONS PRO
-VEHICLES
+  vehicles.forEach(vehicle => {
+    const billed = number(vehicle.billed);
+    const paid = number(vehicle.paid);
+    const outstanding = billed - paid;
 
-`;
-
-    const search =
-      String(
-        document.getElementById(
-          "vehicleSearch"
-        )?.value || ""
-      ).toLowerCase();
-
-    const status =
-      document.getElementById(
-        "vehicleStatusFilter"
-      )?.value || "";
-
-    const data =
-      vehicles.filter(v => {
-
-        const searchMatch =
-          !search ||
-          String(
-            v.registration || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            v.customer || ""
-          )
-            .toLowerCase()
-            .includes(search);
-
-        const statusMatch =
-          !status ||
-          v.status === status;
-
-        return (
-          searchMatch &&
-          statusMatch
-        );
-      });
-
-    data.forEach((v, i) => {
-
-      text +=
-`${i + 1}. ${v.registration || ""}
-Customer: ${v.customer || ""}
-Status: ${v.status || ""}
-Job: ${v.job_type || ""}
-Billed: ${money(v.billed)}
-Paid: ${money(v.paid)}
-Outstanding: ${money(
-        number(v.billed) -
-        number(v.paid)
-      )}
-
-`;
-    });
-
-    window.shareText(
-      "Garage Vehicles",
-      text
+    lines.push(
+      "",
+      `Registration: ${vehicle.registration || ""}`,
+      `Customer: ${vehicle.customer || ""}`,
+      `Date In: ${vehicle.date_in || ""}`,
+      `Job Type: ${vehicle.job_type || ""}`,
+      `Status: ${vehicle.status || ""}`,
+      `Billed: ${money(billed)}`,
+      `Paid: ${money(paid)}`,
+      `Outstanding: ${money(outstanding)}`
     );
-  };
+  });
+
+  await shareText(
+    "Garage Vehicles",
+    lines.join("\n")
+  );
+};
 
 // ======================================================
 // SHARE EXPENSES
 // ======================================================
 
-window.shareExpenses =
-  function() {
+window.shareExpenses = async function() {
+  const lines = [
+    "GARAGE EXPENSES",
+    "================"
+  ];
 
-    let text =
-`GARAGE OPERATIONS PRO
-EXPENSES
+  let total = 0;
 
-`;
+  expenses.forEach(expense => {
+    const amount = number(expense.amount);
 
-    const search =
-      String(
-        document.getElementById(
-          "expenseSearch"
-        )?.value || ""
-      ).toLowerCase();
+    total += amount;
 
-    const category =
-      document.getElementById(
-        "expenseCategoryFilter"
-      )?.value || "";
-
-    const data =
-      expenses.filter(e => {
-
-        const vehicle =
-          vehicles.find(
-            v =>
-              v.id ===
-              e.vehicle_id
-          );
-
-        const searchMatch =
-          !search ||
-          String(
-            e.description || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            vehicle?.registration || ""
-          )
-            .toLowerCase()
-            .includes(search);
-
-        const categoryMatch =
-          !category ||
-          e.category === category;
-
-        return (
-          searchMatch &&
-          categoryMatch
-        );
-      });
-
-    data.forEach((e, i) => {
-
-      text +=
-`${i + 1}. ${e.description || ""}
-Date: ${e.expense_date || ""}
-Vehicle: ${
-        e.vehicle_id
-          ? vehicleName(
-              e.vehicle_id
-            )
-          : "General"
-      }
-Category: ${e.category || ""}
-Amount: ${money(e.amount)}
-
-`;
-    });
-
-    window.shareText(
-      "Garage Expenses",
-      text
+    lines.push(
+      "",
+      `Date: ${expense.expense_date || ""}`,
+      `Vehicle: ${vehicleName(expense.vehicle_id)}`,
+      `Description: ${expense.description || ""}`,
+      `Category: ${expense.category || ""}`,
+      `Amount: ${money(amount)}`
     );
-  };
+  });
+
+  lines.push(
+    "",
+    `TOTAL EXPENSES: ${money(total)}`
+  );
+
+  await shareText(
+    "Garage Expenses",
+    lines.join("\n")
+  );
+};
 
 // ======================================================
 // SHARE PETTY CASH
 // ======================================================
 
-window.sharePettyCash =
-  function() {
+window.sharePettyCash = async function() {
+  const lines = [
+    "PETTY CASH",
+    "==========="
+  ];
 
-    let text =
-`GARAGE OPERATIONS PRO
-PETTY CASH
+  let total = 0;
 
-`;
+  pettyCash.forEach(item => {
+    const amount = number(item.amount);
 
-    const search =
-      String(
-        document.getElementById(
-          "pettySearch"
-        )?.value || ""
-      ).toLowerCase();
+    total += amount;
 
-    const category =
-      document.getElementById(
-        "pettyCategoryFilter"
-      )?.value || "";
-
-    const data =
-      pettyCash.filter(p => {
-
-        const searchMatch =
-          !search ||
-          String(
-            p.description || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            p.paid_to || ""
-          )
-            .toLowerCase()
-            .includes(search);
-
-        const categoryMatch =
-          !category ||
-          p.category === category;
-
-        return (
-          searchMatch &&
-          categoryMatch
-        );
-      });
-
-    data.forEach((p, i) => {
-
-      text +=
-`${i + 1}. ${p.description || ""}
-Date: ${p.cash_date || ""}
-Paid To: ${p.paid_to || ""}
-Category: ${p.category || ""}
-Amount: ${money(p.amount)}
-Notes: ${p.notes || ""}
-
-`;
-    });
-
-    window.shareText(
-      "Garage Petty Cash",
-      text
+    lines.push(
+      "",
+      `Date: ${item.cash_date || ""}`,
+      `Description: ${item.description || ""}`,
+      `Paid To: ${item.paid_to || ""}`,
+      `Category: ${item.category || ""}`,
+      `Amount: ${money(amount)}`,
+      `Notes: ${item.notes || ""}`
     );
-  };
+  });
+
+  lines.push(
+    "",
+    `TOTAL PETTY CASH: ${money(total)}`
+  );
+
+  await shareText(
+    "Petty Cash",
+    lines.join("\n")
+  );
+};
 
 // ======================================================
 // SHARE REQUISITIONS
 // ======================================================
 
-window.shareRequisitions =
-  function() {
+window.shareRequisitions = async function() {
+  const filtered =
+    getFilteredRequisitions();
 
-    let text =
-`GARAGE OPERATIONS PRO
-REQUISITIONS
+  let total = 0;
 
-`;
+  const lines = [
+    "GARAGE REQUISITIONS",
+    "===================="
+  ];
 
-    const search =
-      String(
-        document.getElementById(
-          "reqSearch"
-        )?.value || ""
-      ).toLowerCase();
+  filtered.forEach(req => {
+    const amount =
+      number(req.total_amount) ||
+      number(req.quantity) * number(req.unit_cost);
 
-    const status =
-      document.getElementById(
-        "reqStatusFilter"
-      )?.value || "";
+    total += amount;
 
-    const data =
-      requisitions.filter(r => {
-
-        const searchMatch =
-          !search ||
-          String(
-            r.req_no || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            r.item_description || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            r.requested_by || ""
-          )
-            .toLowerCase()
-            .includes(search) ||
-          String(
-            vehicleName(
-              r.vehicle_id
-            )
-          )
-            .toLowerCase()
-            .includes(search);
-
-        const statusMatch =
-          !status ||
-          r.status === status;
-
-        return (
-          searchMatch &&
-          statusMatch
-        );
-      });
-
-    const overallTotal =
-      data.reduce(
-        (sum, r) =>
-          sum +
-          number(r.total_amount),
-        0
-      );
-
-    text +=
-`Overall Total Amount: ${money(
-      overallTotal
-    )}
-
-`;
-
-    data.forEach((r, i) => {
-
-      text +=
-`${i + 1}. ${r.req_no || ""}
-Date: ${r.req_date || ""}
-Requested By: ${r.requested_by || ""}
-Vehicle: ${
-        r.vehicle_id
-          ? vehicleName(
-              r.vehicle_id
-            )
-          : "General"
-      }
-Item: ${r.item_description || ""}
-Quantity: ${number(r.quantity)}
-Unit Cost: ${money(r.unit_cost)}
-Total: ${money(r.total_amount)}
-Expense Type: ${r.expense_type || ""}
-Status: ${r.status || ""}
-
-`;
-    });
-
-    window.shareText(
-      "Garage Requisitions",
-      text
+    lines.push(
+      "",
+      `Req No: ${req.req_no || ""}`,
+      `Date: ${req.req_date || ""}`,
+      `Requested By: ${req.requested_by || ""}`,
+      `Vehicle: ${vehicleName(req.vehicle_id)}`,
+      `Item: ${req.item_description || ""}`,
+      `Quantity: ${number(req.quantity)}`,
+      `Unit Cost: ${money(req.unit_cost)}`,
+      `Total: ${money(amount)}`,
+      `Expense Type: ${req.expense_type || req.category || "Materials"}`,
+      `Status: ${req.status || ""}`
     );
-  };
+  });
+
+  lines.push(
+    "",
+    `OVERALL TOTAL: ${money(total)}`
+  );
+
+  await shareText(
+    "Garage Requisitions",
+    lines.join("\n")
+  );
+};
 
 // ======================================================
-// MODAL BACKDROP
+// SEARCH / FILTER EVENTS
 // ======================================================
 
-function setupModalHandlers() {
+document.addEventListener("DOMContentLoaded", () => {
 
+  const vehicleSearch =
+    document.getElementById("vehicleSearch");
+
+  const vehicleStatusFilter =
+    document.getElementById("vehicleStatusFilter");
+
+  const expenseSearch =
+    document.getElementById("expenseSearch");
+
+  const expenseCategoryFilter =
+    document.getElementById("expenseCategoryFilter");
+
+  const pettySearch =
+    document.getElementById("pettySearch");
+
+  const pettyCategoryFilter =
+    document.getElementById("pettyCategoryFilter");
+
+  const reqSearch =
+    document.getElementById("reqSearch");
+
+  const reqStatusFilter =
+    document.getElementById("reqStatusFilter");
+
+  vehicleSearch?.addEventListener(
+    "input",
+    renderVehicles
+  );
+
+  vehicleStatusFilter?.addEventListener(
+    "change",
+    renderVehicles
+  );
+
+  expenseSearch?.addEventListener(
+    "input",
+    renderExpenses
+  );
+
+  expenseCategoryFilter?.addEventListener(
+    "change",
+    renderExpenses
+  );
+
+  pettySearch?.addEventListener(
+    "input",
+    renderPettyCash
+  );
+
+  pettyCategoryFilter?.addEventListener(
+    "change",
+    renderPettyCash
+  );
+
+  reqSearch?.addEventListener(
+    "input",
+    renderRequisitions
+  );
+
+  reqStatusFilter?.addEventListener(
+    "change",
+    renderRequisitions
+  );
+
+  // Vehicle form
   document
-    .querySelectorAll(".modal")
-    .forEach(modal => {
+    .getElementById("vehicleForm")
+    ?.addEventListener(
+      "submit",
+      async event => {
+        event.preventDefault();
+        await saveVehicle();
+      }
+    );
 
-      modal.addEventListener(
-        "click",
-        event => {
+  // Expense form
+  document
+    .getElementById("expenseForm")
+    ?.addEventListener(
+      "submit",
+      async event => {
+        event.preventDefault();
+        await saveExpense();
+      }
+    );
 
-          if (
-            event.target ===
-            modal
-          ) {
+  // Petty cash form
+  document
+    .getElementById("pettyForm")
+    ?.addEventListener(
+      "submit",
+      async event => {
+        event.preventDefault();
+        await savePettyCash();
+      }
+    );
 
-            modal.classList.remove(
-              "show"
-            );
-          }
-        }
-      );
+  // Requisition form
+  document
+    .getElementById("requisitionForm")
+    ?.addEventListener(
+      "submit",
+      async event => {
+        event.preventDefault();
+        await saveRequisition();
+      }
+    );
+
+  // Close modal when clicking outside
+  document.querySelectorAll(".modal").forEach(modal => {
+
+    modal.addEventListener("click", event => {
+
+      if (event.target === modal) {
+        modal.classList.remove("show");
+      }
+
     });
-}
 
-// ======================================================
-// ESCAPE KEY
-// ======================================================
+  });
 
-function setupEscapeKey() {
-
+  // Escape key closes modal
   document.addEventListener(
     "keydown",
     event => {
 
-      if (
-        event.key !== "Escape"
-      ) {
-        return;
-      }
+      if (event.key !== "Escape") return;
 
       document
-        .querySelectorAll(
-          ".modal.show"
-        )
+        .querySelectorAll(".modal.show")
         .forEach(modal => {
-
-          modal.classList.remove(
-            "show"
-          );
+          modal.classList.remove("show");
         });
+
     }
   );
-}
+
+  // Initial load
+  loadAllData();
+
+});
 
 // ======================================================
-// REQUISITION AUTO CALCULATION
+// GLOBAL ERROR HANDLING
 // ======================================================
 
-function setupRequisitionCalculation() {
-
-  const quantity =
-    document.getElementById(
-      "reqQuantity"
-    );
-
-  const unitCost =
-    document.getElementById(
-      "reqUnitCost"
-    );
-
-  if (quantity) {
-
-    quantity.addEventListener(
-      "input",
-      window.calculateReqTotal
+window.addEventListener(
+  "unhandledrejection",
+  event => {
+    console.error(
+      "Unhandled promise rejection:",
+      event.reason
     );
   }
+);
 
-  if (unitCost) {
-
-    unitCost.addEventListener(
-      "input",
-      window.calculateReqTotal
+window.addEventListener(
+  "error",
+  event => {
+    console.error(
+      "Application error:",
+      event.error || event.message
     );
-  }
-}
-
-// ======================================================
-// START
-// ======================================================
-
-document.addEventListener(
-  "DOMContentLoaded",
-  async () => {
-
-    setupClickableRows();
-
-    setupModalHandlers();
-
-    setupEscapeKey();
-
-    setupRequisitionCalculation();
-
-    await window.loadAllData();
-
   }
 );
