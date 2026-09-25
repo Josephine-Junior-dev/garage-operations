@@ -1,2609 +1,2187 @@
-import { createClient }
-from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#07111f">
+<title>Garage Operations Pro</title>
 
-/* =========================================================
-   GARAGE OPERATIONS PRO
-   SUPABASE
-========================================================= */
+<style>
+:root{
+--bg:#f5f7fb;
+--card:#fff;
+--navy:#07111f;
+--navy2:#0d1b2e;
+--blue:#2563eb;
+--blue2:#3b82f6;
+--cyan:#06b6d4;
+--green:#16a34a;
+--orange:#f59e0b;
+--red:#dc2626;
+--purple:#7c3aed;
+--text:#0f172a;
+--muted:#64748b;
+--border:#e5e7eb;
+--soft:#f8fafc;
+--shadow:0 8px 28px rgba(15,23,42,.06);
+--shadow2:0 20px 60px rgba(15,23,42,.15);
+--radius:18px;
+}
 
-const SUPABASE_URL =
-  "https://ptluwoeogfkqavhspdjj.supabase.co";
+*{box-sizing:border-box;margin:0;padding:0}
 
-const SUPABASE_ANON_KEY =
-  "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
+html,body{
+width:100%;
+min-height:100%;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+background:var(--bg);
+color:var(--text);
+}
 
-const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+body{overflow-x:hidden}
 
-const TABLES = {
-  vehicles: "vehicles",
-  expenses: "expenses",
-  petty: "petty_cash",
-  requisitions: "requisitions"
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+/* LOGIN */
+
+#loginPage{
+min-height:100vh;
+min-height:100dvh;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:20px;
+position:relative;
+overflow:hidden;
+background:
+linear-gradient(135deg,rgba(3,10,20,.96),rgba(7,17,31,.78)),
+url("https://images.unsplash.com/photo-1487754180451-c456f719a1fc?auto=format&fit=crop&w=1800&q=85")
+center/cover no-repeat;
+}
+
+.login-glow{
+position:absolute;
+width:420px;height:420px;border-radius:50%;
+background:rgba(37,99,235,.22);
+filter:blur(100px);
+top:-150px;right:-100px;
+}
+
+.login-glow2{
+position:absolute;
+width:350px;height:350px;border-radius:50%;
+background:rgba(6,182,212,.12);
+filter:blur(100px);
+bottom:-150px;left:-100px;
+}
+
+.login-card{
+width:100%;
+max-width:430px;
+position:relative;
+z-index:2;
+padding:34px 28px 28px;
+background:rgba(255,255,255,.97);
+border:1px solid rgba(255,255,255,.6);
+border-radius:28px;
+box-shadow:0 30px 100px rgba(0,0,0,.38);
+backdrop-filter:blur(20px);
+}
+
+.brand-mark{
+width:68px;height:68px;
+border-radius:20px;
+margin:0 auto 20px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:linear-gradient(135deg,#2563eb,#06b6d4);
+color:white;
+font-size:28px;
+font-weight:900;
+box-shadow:0 15px 35px rgba(37,99,235,.32);
+}
+
+.login-card h1{
+text-align:center;
+font-size:27px;
+letter-spacing:-.8px;
+margin-bottom:7px;
+}
+
+.login-subtitle{
+text-align:center;
+color:var(--muted);
+font-size:14px;
+margin-bottom:30px;
+}
+
+.login-label{
+display:block;
+font-size:13px;
+font-weight:700;
+margin-bottom:8px;
+color:#334155;
+}
+
+.login-input{
+width:100%;
+height:52px;
+border:1px solid var(--border);
+border-radius:13px;
+padding:0 15px;
+outline:none;
+background:#f8fafc;
+margin-bottom:17px;
+transition:.2s;
+}
+
+.login-input:focus{
+background:white;
+border-color:var(--blue);
+box-shadow:0 0 0 4px rgba(37,99,235,.1);
+}
+
+.login-button{
+width:100%;
+height:53px;
+border:0;
+border-radius:14px;
+color:white;
+font-weight:800;
+font-size:15px;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
+box-shadow:0 12px 25px rgba(37,99,235,.25);
+}
+
+.login-error{
+color:#dc2626;
+font-size:13px;
+text-align:center;
+margin-top:13px;
+min-height:18px;
+}
+
+.login-footer{
+text-align:center;
+color:#94a3b8;
+font-size:11px;
+margin-top:25px;
+}
+
+/* APP */
+
+#app{display:none;min-height:100vh}
+
+.app-layout{min-height:100vh;display:flex}
+
+/* SIDEBAR */
+
+.sidebar{
+width:250px;
+flex-shrink:0;
+background:linear-gradient(180deg,#07111f,#0a1728);
+color:white;
+padding:22px 15px;
+display:flex;
+flex-direction:column;
+position:fixed;
+left:0;top:0;bottom:0;
+z-index:50;
+}
+
+.sidebar-brand{
+padding:8px 10px 26px;
+display:flex;
+align-items:center;
+gap:12px;
+}
+
+.sidebar-logo{
+width:42px;height:42px;
+border-radius:13px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:linear-gradient(135deg,#2563eb,#06b6d4);
+font-weight:900;
+box-shadow:0 8px 20px rgba(37,99,235,.25);
+}
+
+.sidebar-brand strong{display:block;font-size:14px}
+.sidebar-brand span{
+display:block;
+color:#94a3b8;
+font-size:10px;
+margin-top:2px;
+}
+
+.nav-title{
+color:#64748b;
+font-size:10px;
+text-transform:uppercase;
+letter-spacing:1.2px;
+font-weight:800;
+padding:10px 12px;
+}
+
+.sidebar nav{display:flex;flex-direction:column;gap:5px}
+
+.nav-btn{
+width:100%;
+border:0;
+background:transparent;
+color:#94a3b8;
+text-align:left;
+padding:12px 13px;
+border-radius:12px;
+font-size:13px;
+font-weight:650;
+display:flex;
+align-items:center;
+gap:11px;
+transition:.2s;
+}
+
+.nav-btn:hover{background:rgba(255,255,255,.06);color:white}
+
+.nav-btn.active{
+background:linear-gradient(90deg,rgba(37,99,235,.28),rgba(37,99,235,.08));
+color:white;
+box-shadow:inset 3px 0 0 #3b82f6;
+}
+
+.nav-icon{width:22px;text-align:center;font-size:16px}
+
+.sidebar-bottom{
+margin-top:auto;
+padding:15px 8px 5px;
+border-top:1px solid rgba(255,255,255,.07);
+}
+
+.user-mini{display:flex;align-items:center;gap:10px}
+
+.user-avatar{
+width:34px;height:34px;border-radius:50%;
+background:linear-gradient(135deg,#2563eb,#06b6d4);
+display:flex;align-items:center;justify-content:center;
+font-weight:800;font-size:13px;
+}
+
+.user-mini strong{font-size:12px;display:block}
+.user-mini span{font-size:10px;color:#64748b}
+
+/* MAIN */
+
+.main{
+margin-left:250px;
+width:calc(100% - 250px);
+min-height:100vh;
+}
+
+.topbar{
+height:70px;
+background:rgba(255,255,255,.94);
+border-bottom:1px solid var(--border);
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 28px;
+position:sticky;
+top:0;
+z-index:40;
+backdrop-filter:blur(14px);
+}
+
+.topbar-title strong{font-size:16px}
+.topbar-title span{
+display:block;color:var(--muted);
+font-size:11px;margin-top:2px;
+}
+
+.topbar-right{display:flex;align-items:center;gap:12px}
+
+.online-status{
+display:flex;align-items:center;gap:7px;
+color:#64748b;font-size:11px;
+}
+
+.online-dot{
+width:7px;height:7px;background:#22c55e;border-radius:50%;
+box-shadow:0 0 0 4px rgba(34,197,94,.1);
+}
+
+.content{
+padding:28px;
+max-width:1600px;
+margin:auto;
+}
+
+/* PAGE */
+
+.page-header{
+display:flex;
+justify-content:space-between;
+align-items:flex-end;
+gap:20px;
+margin-bottom:25px;
+}
+
+.page-header h2{
+font-size:27px;
+letter-spacing:-.9px;
+}
+
+.page-header p{
+color:var(--muted);
+font-size:13px;
+margin-top:5px;
+}
+
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* BUTTONS */
+
+.btn{
+min-height:40px;
+padding:0 14px;
+border:1px solid var(--border);
+border-radius:10px;
+background:white;
+color:#334155;
+font-weight:700;
+font-size:12px;
+display:inline-flex;
+align-items:center;
+justify-content:center;
+gap:7px;
+transition:.2s;
+}
+
+.btn:hover{transform:translateY(-1px);border-color:#cbd5e1}
+
+.btn-primary{
+color:white;
+border-color:#2563eb;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
+box-shadow:0 7px 18px rgba(37,99,235,.18);
+}
+
+.btn-danger{color:#dc2626}
+
+/* DASHBOARD */
+
+.dashboard-welcome{margin-bottom:25px}
+
+.dashboard-welcome h1{
+font-size:29px;
+letter-spacing:-1.1px;
+}
+
+.dashboard-welcome p{
+color:var(--muted);
+font-size:13px;
+margin-top:5px;
+}
+
+.kpi-grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+margin-bottom:20px;
+}
+
+.kpi-card{
+background:white;
+border:1px solid var(--border);
+border-radius:18px;
+padding:19px;
+box-shadow:var(--shadow);
+position:relative;
+overflow:hidden;
+}
+
+.kpi-card::after{
+content:"";
+position:absolute;
+width:75px;height:75px;
+border-radius:50%;
+right:-30px;top:-30px;
+background:rgba(37,99,235,.06);
+}
+
+.kpi-top{
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+
+.kpi-label{
+color:var(--muted);
+font-size:11px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:.5px;
+}
+
+.kpi-icon{
+width:34px;height:34px;
+border-radius:10px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#eff6ff;
+color:#2563eb;
+font-size:15px;
+}
+
+.kpi-value{
+margin-top:15px;
+font-size:27px;
+letter-spacing:-.8px;
+font-weight:800;
+}
+
+.kpi-meta{
+color:#94a3b8;
+font-size:10px;
+margin-top:5px;
+}
+
+/* CARDS */
+
+.section-card{
+background:white;
+border:1px solid var(--border);
+border-radius:18px;
+box-shadow:var(--shadow);
+overflow:hidden;
+}
+
+.section-card-header{
+padding:18px 20px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+border-bottom:1px solid var(--border);
+}
+
+.section-card-header h3{font-size:14px}
+.section-card-header span{font-size:11px;color:var(--muted)}
+
+.financial-grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+}
+
+.financial-item{
+padding:20px;
+border-right:1px solid var(--border);
+}
+
+.financial-item:last-child{border-right:0}
+
+.financial-item label{
+display:block;
+color:var(--muted);
+font-size:11px;
+margin-bottom:8px;
+}
+
+.financial-item strong{font-size:19px}
+
+.dashboard-columns{
+display:grid;
+grid-template-columns:1.35fr .65fr;
+gap:18px;
+margin-top:18px;
+}
+
+.activity-list{padding:5px 20px 10px}
+
+.activity-item{
+display:flex;
+align-items:center;
+gap:12px;
+padding:14px 0;
+border-bottom:1px solid #f1f5f9;
+}
+
+.activity-item:last-child{border-bottom:0}
+
+.activity-icon{
+width:38px;height:38px;
+border-radius:11px;
+background:#f1f5f9;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.activity-main{flex:1}
+.activity-main strong{display:block;font-size:12px}
+.activity-main span{
+display:block;
+font-size:10px;
+color:var(--muted);
+margin-top:3px;
+}
+
+.status{
+display:inline-flex;
+padding:5px 9px;
+border-radius:999px;
+font-size:10px;
+font-weight:800;
+}
+
+.status-under-repair{color:#92400e;background:#fef3c7}
+.status-completed{color:#166534;background:#dcfce7}
+.status-pending{color:#92400e;background:#fef3c7}
+.status-approved{color:#1d4ed8;background:#dbeafe}
+.status-purchased{color:#166534;background:#dcfce7}
+.status-rejected{color:#991b1b;background:#fee2e2}
+.status-default{color:#475569;background:#f1f5f9}
+
+/* QUICK ACTIONS */
+
+.quick-actions{
+padding:18px;
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:9px;
+}
+
+.quick-action{
+min-height:60px;
+border:1px solid var(--border);
+border-radius:12px;
+background:#fafafa;
+display:flex;
+align-items:center;
+gap:10px;
+padding:11px;
+text-align:left;
+transition:.2s;
+}
+
+.quick-action:hover{
+background:#f8fafc;
+border-color:#cbd5e1;
+transform:translateY(-1px);
+}
+
+.quick-action-icon{
+width:32px;height:32px;border-radius:9px;
+background:#eff6ff;color:#2563eb;
+display:flex;align-items:center;justify-content:center;
+}
+
+.quick-action strong{font-size:11px;display:block}
+.quick-action span{
+font-size:9px;color:var(--muted);display:block;margin-top:2px;
+}
+
+/* TOOLBAR */
+
+.toolbar{
+background:white;
+border:1px solid var(--border);
+border-radius:15px;
+padding:12px;
+display:flex;
+gap:9px;
+flex-wrap:wrap;
+margin-bottom:15px;
+box-shadow:var(--shadow);
+}
+
+.search-box{flex:1;min-width:190px}
+
+.search-box input,
+.filter-select{
+width:100%;
+height:40px;
+border:1px solid var(--border);
+border-radius:10px;
+background:#f8fafc;
+padding:0 12px;
+outline:none;
+font-size:12px;
+}
+
+.search-box input:focus,
+.filter-select:focus{
+border-color:var(--blue);
+background:white;
+}
+
+/* TABLE */
+
+.table-card{
+background:white;
+border:1px solid var(--border);
+border-radius:18px;
+overflow:auto;
+box-shadow:var(--shadow);
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+min-width:850px;
+}
+
+thead{background:#f8fafc}
+
+th{
+text-align:left;
+padding:13px 15px;
+font-size:10px;
+color:#64748b;
+text-transform:uppercase;
+letter-spacing:.5px;
+white-space:nowrap;
+}
+
+td{
+padding:14px 15px;
+border-top:1px solid #f1f5f9;
+font-size:12px;
+color:#334155;
+white-space:nowrap;
+}
+
+tbody tr:hover{background:#fafcff}
+
+.table-actions{display:flex;gap:5px}
+
+.action-btn{
+width:30px;height:30px;
+border:1px solid var(--border);
+border-radius:8px;
+background:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
+}
+
+/* MODALS */
+
+.modal{
+position:fixed;
+inset:0;
+background:rgba(2,8,23,.58);
+display:none;
+align-items:center;
+justify-content:center;
+padding:18px;
+z-index:100;
+backdrop-filter:blur(7px);
+}
+
+.modal.show{display:flex}
+
+.modal-content{
+width:100%;
+max-width:650px;
+max-height:92vh;
+overflow:auto;
+background:white;
+border-radius:22px;
+box-shadow:var(--shadow2);
+}
+
+.modal-header{
+padding:19px 21px;
+border-bottom:1px solid var(--border);
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.modal-header h3{font-size:16px}
+
+.modal-close{
+border:0;
+background:#f1f5f9;
+width:32px;height:32px;
+border-radius:9px;
+}
+
+.modal-body{padding:21px}
+
+.modal-footer{
+padding:16px 21px;
+border-top:1px solid var(--border);
+display:flex;
+justify-content:flex-end;
+gap:8px;
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:14px;
+}
+
+.form-group{
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+.form-group.full{grid-column:1/-1}
+
+.form-group label{
+font-size:11px;
+font-weight:750;
+color:#475569;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea{
+width:100%;
+border:1px solid var(--border);
+border-radius:10px;
+min-height:42px;
+padding:9px 11px;
+background:#f8fafc;
+outline:none;
+font-size:12px;
+}
+
+.form-group textarea{
+min-height:90px;
+resize:vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{
+border-color:var(--blue);
+background:white;
+box-shadow:0 0 0 3px rgba(37,99,235,.08);
+}
+
+/* TOAST */
+
+#toast{
+position:fixed;
+right:20px;
+bottom:20px;
+z-index:200;
+background:#07111f;
+color:white;
+padding:12px 16px;
+border-radius:11px;
+font-size:12px;
+box-shadow:var(--shadow2);
+display:none;
+}
+
+/* MOBILE NAV */
+
+.mobile-bottom-nav{display:none}
+
+@media(max-width:1000px){
+
+.sidebar{width:215px}
+
+.main{
+margin-left:215px;
+width:calc(100% - 215px);
+}
+
+.kpi-grid{grid-template-columns:repeat(2,1fr)}
+
+.dashboard-columns{grid-template-columns:1fr}
+
+.financial-grid{grid-template-columns:repeat(2,1fr)}
+
+.financial-item:nth-child(2){border-right:0}
+
+.financial-item:nth-child(-n+2){
+border-bottom:1px solid var(--border);
+}
+}
+
+@media(max-width:720px){
+
+body{padding-bottom:70px}
+
+.sidebar{display:none}
+
+.main{
+width:100%;
+margin-left:0;
+}
+
+.topbar{
+height:62px;
+padding:0 16px;
+}
+
+.topbar-title strong{font-size:14px}
+.topbar-title span{font-size:9px}
+.online-status{display:none}
+
+.content{padding:18px 14px 25px}
+
+.page-header{
+align-items:flex-start;
+flex-direction:column;
+margin-bottom:18px;
+}
+
+.page-header h2{font-size:23px}
+
+.header-actions{width:100%}
+
+.header-actions .btn{flex:1}
+
+.dashboard-welcome h1{font-size:24px}
+
+.kpi-grid{
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+}
+
+.kpi-card{
+padding:14px;
+border-radius:15px;
+}
+
+.kpi-value{font-size:22px}
+
+.kpi-icon{
+width:29px;height:29px;font-size:13px;
+}
+
+.financial-grid{grid-template-columns:1fr 1fr}
+
+.financial-item{padding:15px}
+
+.financial-item strong{font-size:15px}
+
+.quick-actions{padding:14px}
+
+.toolbar{padding:9px}
+
+.search-box{min-width:100%}
+
+.table-card{border-radius:14px}
+
+.form-grid{grid-template-columns:1fr}
+
+.form-group.full{grid-column:auto}
+
+.modal{
+align-items:flex-end;
+padding:0;
+}
+
+.modal-content{
+max-height:92vh;
+border-radius:22px 22px 0 0;
+}
+
+.mobile-bottom-nav{
+display:flex;
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+height:66px;
+background:rgba(255,255,255,.96);
+border-top:1px solid var(--border);
+z-index:80;
+backdrop-filter:blur(16px);
+padding:5px;
+}
+
+.mobile-nav-btn{
+flex:1;
+border:0;
+background:transparent;
+color:#94a3b8;
+border-radius:10px;
+font-size:9px;
+font-weight:700;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+gap:3px;
+}
+
+.mobile-nav-btn span:first-child{font-size:17px}
+
+.mobile-nav-btn.active{
+color:#2563eb;
+background:#eff6ff;
+}
+}
+
+@media(max-width:380px){
+
+.content{padding:15px 10px 20px}
+
+.kpi-grid{gap:8px}
+
+.kpi-card{padding:12px}
+
+.kpi-label{font-size:9px}
+
+.kpi-value{font-size:19px}
+
+.financial-item strong{font-size:14px}
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+
+<div id="loginPage">
+
+<div class="login-glow"></div>
+<div class="login-glow2"></div>
+
+<div class="login-card">
+
+<div class="brand-mark">🚘</div>
+
+<h1>Garage Operations Pro</h1>
+
+<div class="login-subtitle">
+Vehicle • Finance • Workshop Operations
+</div>
+
+<label class="login-label">Username</label>
+
+<input
+id="username"
+class="login-input"
+type="text"
+placeholder="Enter username"
+autocomplete="username">
+
+<label class="login-label">Password</label>
+
+<input
+id="password"
+class="login-input"
+type="password"
+placeholder="Enter password"
+autocomplete="current-password">
+
+<button
+id="loginBtn"
+class="login-button"
+onclick="login()">
+SIGN IN
+</button>
+
+<div id="loginError" class="login-error"></div>
+
+<div class="login-footer">
+Garage Operations Pro
+<br>
+Professional workshop management
+</div>
+
+</div>
+</div>
+
+
+<!-- APPLICATION -->
+
+<div id="app">
+
+<div class="app-layout">
+
+<aside class="sidebar">
+
+<div class="sidebar-brand">
+
+<div class="sidebar-logo">🚘</div>
+
+<div>
+<strong>Garage Operations</strong>
+<span>PRO WORKSPACE</span>
+</div>
+
+</div>
+
+<div class="nav-title">Workspace</div>
+
+<nav>
+
+<button class="nav-btn active"
+onclick="showSection('dashboard',this)">
+<span class="nav-icon">⌂</span>
+Dashboard
+</button>
+
+<button class="nav-btn"
+onclick="showSection('vehicles',this)">
+<span class="nav-icon">🚘</span>
+Vehicles
+</button>
+
+<button class="nav-btn"
+onclick="showSection('expenses',this)">
+<span class="nav-icon">💳</span>
+Expenses
+</button>
+
+<button class="nav-btn"
+onclick="showSection('pettyCash',this)">
+<span class="nav-icon">💰</span>
+Petty Cash
+</button>
+
+<button class="nav-btn"
+onclick="showSection('requisitions',this)">
+<span class="nav-icon">📋</span>
+Requisitions
+</button>
+
+</nav>
+
+<div class="sidebar-bottom">
+
+<div class="user-mini">
+
+<div class="user-avatar">J</div>
+
+<div>
+<strong id="sidebarUser">Josephine</strong>
+<span>Garage Administrator</span>
+</div>
+
+</div>
+
+</div>
+
+</aside>
+
+
+<main class="main">
+
+<header class="topbar">
+
+<div class="topbar-title">
+<strong>Garage Operations Pro</strong>
+<span>Workshop management workspace</span>
+</div>
+
+<div class="topbar-right">
+<div class="online-status">
+<span class="online-dot"></span>
+System online
+</div>
+</div>
+
+</header>
+
+
+<div class="content">
+
+<!-- DASHBOARD -->
+
+<section id="dashboard" class="app-section">
+
+<div class="dashboard-welcome">
+
+<h1>
+Good day, <span id="welcomeUser">Josephine</span> 👋
+</h1>
+
+<p>
+Here's what's happening across your garage today.
+</p>
+
+</div>
+
+
+<div class="kpi-grid">
+
+<div class="kpi-card">
+
+<div class="kpi-top">
+<span class="kpi-label">Total Vehicles</span>
+<span class="kpi-icon">🚘</span>
+</div>
+
+<div id="dashVehicles" class="kpi-value">0</div>
+
+<div class="kpi-meta">Vehicles in system</div>
+
+</div>
+
+
+<div class="kpi-card">
+
+<div class="kpi-top">
+<span class="kpi-label">Under Repair</span>
+<span class="kpi-icon">🔧</span>
+</div>
+
+<div id="dashRepair" class="kpi-value">0</div>
+
+<div class="kpi-meta">Active workshop jobs</div>
+
+</div>
+
+
+<div class="kpi-card">
+
+<div class="kpi-top">
+<span class="kpi-label">Outstanding</span>
+<span class="kpi-icon">₿</span>
+</div>
+
+<div id="dashOutstanding" class="kpi-value">KSh 0</div>
+
+<div class="kpi-meta">Awaiting payment</div>
+
+</div>
+
+
+<div class="kpi-card">
+
+<div class="kpi-top">
+<span class="kpi-label">Requisitions</span>
+<span class="kpi-icon">📋</span>
+</div>
+
+<div id="dashReq" class="kpi-value">0</div>
+
+<div class="kpi-meta">Total requisitions</div>
+
+</div>
+
+</div>
+
+
+<div class="section-card">
+
+<div class="section-card-header">
+<h3>Financial Overview</h3>
+<span>Current records</span>
+</div>
+
+<div class="financial-grid">
+
+<div class="financial-item">
+<label>Total Billed</label>
+<strong id="dashBilled">KSh 0</strong>
+</div>
+
+<div class="financial-item">
+<label>Total Paid</label>
+<strong id="dashPaid">KSh 0</strong>
+</div>
+
+<div class="financial-item">
+<label>Expenses</label>
+<strong id="dashExpenses">KSh 0</strong>
+</div>
+
+<div class="financial-item">
+<label>Petty Cash</label>
+<strong id="dashPetty">KSh 0</strong>
+</div>
+
+</div>
+</div>
+
+
+<div class="dashboard-columns">
+
+<div class="section-card">
+
+<div class="section-card-header">
+<h3>Workshop Activity</h3>
+<span>Recent vehicles</span>
+</div>
+
+<div id="dashboardActivity" class="activity-list"></div>
+
+</div>
+
+
+<div class="section-card">
+
+<div class="section-card-header">
+<h3>Quick Actions</h3>
+<span>Shortcuts</span>
+</div>
+
+<div class="quick-actions">
+
+<button class="quick-action"
+onclick="openVehicleModal()">
+
+<div class="quick-action-icon">+</div>
+
+<div>
+<strong>Add Vehicle</strong>
+<span>Register vehicle</span>
+</div>
+
+</button>
+
+
+<button class="quick-action"
+onclick="openExpenseModal()">
+
+<div class="quick-action-icon">+</div>
+
+<div>
+<strong>Add Expense</strong>
+<span>Record expense</span>
+</div>
+
+</button>
+
+
+<button class="quick-action"
+onclick="openPettyModal()">
+
+<div class="quick-action-icon">+</div>
+
+<div>
+<strong>Petty Cash</strong>
+<span>Add transaction</span>
+</div>
+
+</button>
+
+
+<button class="quick-action"
+onclick="openReqModal()">
+
+<div class="quick-action-icon">+</div>
+
+<div>
+<strong>Requisition</strong>
+<span>Request materials</span>
+</div>
+
+</button>
+
+</div>
+</div>
+
+</div>
+
+
+<div class="section-card" style="margin-top:18px">
+
+<div class="section-card-header">
+<h3>Requisition Overview</h3>
+<span>Total requested value</span>
+</div>
+
+<div class="financial-grid">
+
+<div class="financial-item">
+<label>Total Requisitions</label>
+<strong id="dashReqCount">0</strong>
+</div>
+
+<div class="financial-item">
+<label>Total Value</label>
+<strong id="dashReqTotal">KSh 0</strong>
+</div>
+
+<div class="financial-item">
+<label>Workshop Status</label>
+<strong>Active</strong>
+</div>
+
+<div class="financial-item">
+<label>System</label>
+<strong style="color:#16a34a">Online</strong>
+</div>
+
+</div>
+</div>
+
+</section>
+
+
+<!-- VEHICLES -->
+
+<section id="vehicles" class="app-section" style="display:none">
+
+<div class="page-header">
+
+<div>
+<h2>Vehicles</h2>
+<p>Manage vehicles and workshop jobs.</p>
+</div>
+
+<div class="header-actions">
+
+<button class="btn"
+onclick="printVehicles()">
+🖨 Print
+</button>
+
+<button class="btn btn-primary"
+onclick="openVehicleModal()">
++ Add Vehicle
+</button>
+
+</div>
+</div>
+
+
+<div class="toolbar">
+
+<div class="search-box">
+<input
+id="vehicleSearch"
+type="search"
+placeholder="Search registration or customer...">
+</div>
+
+<select id="vehicleStatusFilter"
+class="filter-select"
+style="max-width:190px">
+
+<option value="">All Statuses</option>
+<option value="Under Repair">Under Repair</option>
+<option value="Completed">Completed</option>
+<option value="Released">Released</option>
+
+</select>
+
+</div>
+
+
+<div class="table-card">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Registration</th>
+<th>Customer</th>
+<th>Date In</th>
+<th>Job Type</th>
+<th>Status</th>
+<th>Billed</th>
+<th>Paid</th>
+<th>Outstanding</th>
+<th>Actions</th>
+</tr>
+
+</thead>
+
+<tbody id="vehiclesTableBody"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- EXPENSES -->
+
+<section id="expenses" class="app-section" style="display:none">
+
+<div class="page-header">
+
+<div>
+<h2>Expenses</h2>
+<p>Track workshop expenses and costs.</p>
+</div>
+
+<div class="header-actions">
+
+<button class="btn"
+onclick="printExpenses()">
+🖨 Print
+</button>
+
+<button class="btn btn-primary"
+onclick="openExpenseModal()">
++ Add Expense
+</button>
+
+</div>
+</div>
+
+
+<div class="toolbar">
+
+<div class="search-box">
+<input
+id="expenseSearch"
+type="search"
+placeholder="Search expense...">
+</div>
+
+<select
+id="expenseCategoryFilter"
+class="filter-select"
+style="max-width:190px">
+
+<option value="">All Categories</option>
+
+</select>
+
+</div>
+
+
+<div class="table-card">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Date</th>
+<th>Vehicle</th>
+<th>Description</th>
+<th>Category</th>
+<th>Amount</th>
+<th>Actions</th>
+</tr>
+
+</thead>
+
+<tbody id="expensesTableBody"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- PETTY CASH -->
+
+<section id="pettyCash" class="app-section" style="display:none">
+
+<div class="page-header">
+
+<div>
+<h2>Petty Cash</h2>
+<p>Monitor small daily workshop transactions.</p>
+</div>
+
+<div class="header-actions">
+
+<button class="btn"
+onclick="printPettyCash()">
+🖨 Print
+</button>
+
+<button class="btn btn-primary"
+onclick="openPettyModal()">
++ Add Transaction
+</button>
+
+</div>
+</div>
+
+
+<div class="toolbar">
+
+<div class="search-box">
+<input
+id="pettySearch"
+type="search"
+placeholder="Search transaction...">
+</div>
+
+<select
+id="pettyCategoryFilter"
+class="filter-select"
+style="max-width:190px">
+
+<option value="">All Categories</option>
+
+</select>
+
+</div>
+
+
+<div class="table-card">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Date</th>
+<th>Description</th>
+<th>Paid To</th>
+<th>Category</th>
+<th>Amount</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+
+</thead>
+
+<tbody id="pettyTableBody"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- REQUISITIONS -->
+
+<section id="requisitions" class="app-section" style="display:none">
+
+<div class="page-header">
+
+<div>
+<h2>Requisitions</h2>
+<p>Manage workshop material and purchase requests.</p>
+</div>
+
+<div class="header-actions">
+
+<button class="btn"
+onclick="previewSelectedReq()">
+👁 Preview
+</button>
+
+<button class="btn"
+onclick="printRequisitions()">
+🖨 Print
+</button>
+
+<button class="btn btn-primary"
+onclick="openReqModal()">
++ New Requisition
+</button>
+
+</div>
+</div>
+
+
+<div class="toolbar">
+
+<div class="search-box">
+<input
+id="reqSearch"
+type="search"
+placeholder="Search requisition...">
+</div>
+
+<select
+id="reqStatusFilter"
+class="filter-select"
+style="max-width:190px">
+
+<option value="">All Statuses</option>
+<option value="Pending">Pending</option>
+<option value="Approved">Approved</option>
+<option value="Purchased">Purchased</option>
+<option value="Completed">Completed</option>
+<option value="Rejected">Rejected</option>
+
+</select>
+
+</div>
+
+
+<div class="section-card" style="margin-bottom:15px">
+
+<div class="section-card-header">
+
+<h3>Requisition Total</h3>
+
+<strong id="reqOverallTotal">
+KSh 0
+</strong>
+
+</div>
+
+</div>
+
+
+<div class="table-card">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Req No.</th>
+<th>Date</th>
+<th>Requested By</th>
+<th>Vehicle</th>
+<th>Item Description</th>
+<th>Qty</th>
+<th>Unit Cost</th>
+<th>Total</th>
+<th>Expense Type</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+
+</thead>
+
+<tbody id="requisitionsTableBody"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</div>
+</main>
+
+</div>
+
+
+<!-- MOBILE NAV -->
+
+<div class="mobile-bottom-nav">
+
+<button class="mobile-nav-btn active"
+onclick="showSection('dashboard',this)">
+<span>⌂</span>
+<span>Home</span>
+</button>
+
+<button class="mobile-nav-btn"
+onclick="showSection('vehicles',this)">
+<span>🚘</span>
+<span>Vehicles</span>
+</button>
+
+<button class="mobile-nav-btn"
+onclick="showSection('expenses',this)">
+<span>💳</span>
+<span>Expenses</span>
+</button>
+
+<button class="mobile-nav-btn"
+onclick="showSection('pettyCash',this)">
+<span>💰</span>
+<span>Cash</span>
+</button>
+
+<button class="mobile-nav-btn"
+onclick="showSection('requisitions',this)">
+<span>📋</span>
+<span>Requests</span>
+</button>
+
+</div>
+
+</div>
+
+
+<!-- VEHICLE MODAL -->
+
+<div id="vehicleModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="vehicleModalTitle">Add Vehicle</h3>
+<button class="modal-close"
+onclick="closeModal('vehicleModal')">✕</button>
+</div>
+
+<form id="vehicleForm">
+
+<div class="modal-body">
+
+<input id="vehicleId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Registration</label>
+<input id="vehicleRegistration" required>
+</div>
+
+<div class="form-group">
+<label>Customer</label>
+<input id="vehicleCustomer" required>
+</div>
+
+<div class="form-group">
+<label>Date In</label>
+<input id="vehicleDateIn" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Date Out</label>
+<input id="vehicleDateOut" type="date">
+</div>
+
+<div class="form-group">
+<label>Job Type</label>
+<input id="vehicleJobType" value="Repair">
+</div>
+
+<div class="form-group">
+<label>Status</label>
+
+<select id="vehicleStatus">
+<option value="Under Repair">Under Repair</option>
+<option value="Completed">Completed</option>
+<option value="Released">Released</option>
+</select>
+
+</div>
+
+<div class="form-group">
+<label>Released To</label>
+<input id="vehicleReleasedTo">
+</div>
+
+<div class="form-group">
+<label>Released Contact</label>
+<input id="vehicleReleasedContact">
+</div>
+
+<div class="form-group">
+<label>Billed</label>
+<input id="vehicleBilled" type="number" step="0.01">
+</div>
+
+<div class="form-group">
+<label>Paid</label>
+<input id="vehiclePaid" type="number" step="0.01">
+</div>
+
+<div class="form-group full">
+<label>Description</label>
+<textarea id="vehicleDescription"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+
+<button type="button" class="btn"
+onclick="closeModal('vehicleModal')">
+Cancel
+</button>
+
+<button type="submit" class="btn btn-primary">
+Save Vehicle
+</button>
+
+</div>
+
+</form>
+</div>
+</div>
+
+
+<!-- EXPENSE MODAL -->
+
+<div id="expenseModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="expenseModalTitle">Add Expense</h3>
+<button class="modal-close"
+onclick="closeModal('expenseModal')">✕</button>
+</div>
+
+<form id="expenseForm">
+
+<div class="modal-body">
+
+<input id="expenseId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Vehicle</label>
+<select id="expenseVehicle">
+<option value="">General Expense</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Date</label>
+<input id="expenseDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Category</label>
+<input id="expenseCategory" required>
+</div>
+
+<div class="form-group">
+<label>Amount</label>
+<input id="expenseAmount" type="number" step="0.01" required>
+</div>
+
+<div class="form-group full">
+<label>Description</label>
+<textarea id="expenseDescription" required></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+
+<button type="button" class="btn"
+onclick="closeModal('expenseModal')">
+Cancel
+</button>
+
+<button type="submit" class="btn btn-primary">
+Save Expense
+</button>
+
+</div>
+
+</form>
+</div>
+</div>
+
+
+<!-- PETTY CASH MODAL -->
+
+<div id="pettyModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="pettyModalTitle">Add Petty Cash</h3>
+<button class="modal-close"
+onclick="closeModal('pettyModal')">✕</button>
+</div>
+
+<form id="pettyForm">
+
+<div class="modal-body">
+
+<input id="pettyId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Date</label>
+<input id="pettyDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Paid To</label>
+<input id="pettyPaidTo" required>
+</div>
+
+<div class="form-group">
+<label>Category</label>
+<input id="pettyCategory" required>
+</div>
+
+<div class="form-group">
+<label>Amount</label>
+<input id="pettyAmount" type="number" step="0.01" required>
+</div>
+
+<div class="form-group full">
+<label>Description</label>
+<textarea id="pettyDescription" required></textarea>
+</div>
+
+<div class="form-group full">
+<label>Notes</label>
+<textarea id="pettyNotes"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+
+<button type="button" class="btn"
+onclick="closeModal('pettyModal')">
+Cancel
+</button>
+
+<button type="submit" class="btn btn-primary">
+Save Transaction
+</button>
+
+</div>
+
+</form>
+</div>
+</div>
+
+
+<!-- REQUISITION MODAL -->
+
+<div id="reqModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="reqModalTitle">New Requisition</h3>
+<button class="modal-close"
+onclick="closeModal('reqModal')">✕</button>
+</div>
+
+<form id="reqForm">
+
+<div class="modal-body">
+
+<input id="reqId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Requisition No.</label>
+<input id="reqNo" required>
+</div>
+
+<div class="form-group">
+<label>Date</label>
+<input id="reqDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Requested By</label>
+<input id="reqRequestedBy" required>
+</div>
+
+<div class="form-group">
+<label>Vehicle</label>
+<select id="reqVehicle">
+<option value="">Select Vehicle</option>
+</select>
+</div>
+
+<div class="form-group full">
+<label>Item Description</label>
+<textarea id="reqItemDescription" required></textarea>
+</div>
+
+<div class="form-group">
+<label>Quantity</label>
+<input id="reqQuantity" type="number" min="0" step="0.01" required>
+</div>
+
+<div class="form-group">
+<label>Unit Cost</label>
+<input id="reqUnitCost" type="number" min="0" step="0.01" required>
+</div>
+
+<div class="form-group">
+<label>Total Amount</label>
+<input id="reqTotal" type="number" readonly>
+</div>
+
+<div class="form-group">
+<label>Status</label>
+<select id="reqStatus">
+<option value="Pending">Pending</option>
+<option value="Approved">Approved</option>
+<option value="Purchased">Purchased</option>
+<option value="Completed">Completed</option>
+<option value="Rejected">Rejected</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Category</label>
+<input id="reqCategory">
+</div>
+
+<div class="form-group">
+<label>Expense Type</label>
+<input id="reqExpenseType">
+</div>
+
+<div class="form-group full">
+<label>Notes</label>
+<textarea id="reqNotes"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+
+<button type="button" class="btn"
+onclick="closeModal('reqModal')">
+Cancel
+</button>
+
+<button type="submit" class="btn btn-primary">
+Save Requisition
+</button>
+
+</div>
+
+</form>
+</div>
+</div>
+
+
+<!-- REQUISITION PREVIEW -->
+
+<div id="reqPreviewModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h3>Requisition Preview</h3>
+<button class="modal-close"
+onclick="closeModal('reqPreviewModal')">✕</button>
+</div>
+
+<div id="reqPreviewContent" class="modal-body"></div>
+
+<div class="modal-footer">
+
+<button class="btn"
+onclick="closeModal('reqPreviewModal')">
+Close
+</button>
+
+<button class="btn btn-primary"
+onclick="printSelectedReq()">
+🖨 Print
+</button>
+
+</div>
+
+</div>
+</div>
+
+
+<!-- VEHICLE EXPENSE PREVIEW -->
+
+<div id="vehicleExpensePreviewModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h3>Vehicle Expense Summary</h3>
+<button class="modal-close"
+onclick="closeModal('vehicleExpensePreviewModal')">✕</button>
+</div>
+
+<div id="vehicleExpensePreviewContent" class="modal-body"></div>
+
+<div class="modal-footer">
+
+<button class="btn"
+onclick="closeModal('vehicleExpensePreviewModal')">
+Close
+</button>
+
+<button class="btn btn-primary"
+onclick="printVehicleExpensePreview()">
+🖨 Print
+</button>
+
+</div>
+
+</div>
+</div>
+
+
+<div id="toast"></div>
+
+
+<script>
+/* LOGIN — SAME CURRENT LOGIC */
+
+function login(){
+
+const username=document.getElementById("username").value.trim().toLowerCase();
+const password=document.getElementById("password").value;
+const error=document.getElementById("loginError");
+
+const users={
+josephine:"1234",
+boss:"1234",
+staff:"1234"
 };
 
-/* =========================================================
-   APP STATE
-========================================================= */
+if(users[username] && users[username]===password){
 
-let vehicles = [];
-let expenses = [];
-let pettyCash = [];
-let requisitions = [];
+sessionStorage.setItem("garageLoggedIn","true");
+sessionStorage.setItem("garageUser",username);
 
-let selectedReqId = null;
-let selectedVehicleId = null;
-let selectedVehicleExpenseId = null;
+error.textContent="";
 
-let pettyCashSupportsReqNo = false;
+document.getElementById("loginPage").style.display="none";
+document.getElementById("app").style.display="block";
 
-/* =========================================================
-   HELPERS
-========================================================= */
+updateUserDisplay(username);
 
-function number(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+}else{
+
+error.textContent="Invalid username or password.";
+
+}
 }
 
-function money(value) {
-  return "KSh " + number(value).toLocaleString("en-KE", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  });
+function updateUserDisplay(username){
+
+const displayName=
+username.charAt(0).toUpperCase()+username.slice(1);
+
+const welcome=document.getElementById("welcomeUser");
+const sidebar=document.getElementById("sidebarUser");
+
+if(welcome)welcome.textContent=displayName;
+if(sidebar)sidebar.textContent=displayName;
 }
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
+function checkLogin(){
+
+const loggedIn=sessionStorage.getItem("garageLoggedIn");
+const username=sessionStorage.getItem("garageUser");
+
+if(loggedIn==="true"){
+
+document.getElementById("loginPage").style.display="none";
+document.getElementById("app").style.display="block";
+
+updateUserDisplay(username||"josephine");
+
+}
 }
 
-function normalizeReqNo(value) {
-  return String(value || "")
-    .trim()
-    .toUpperCase();
-}
+document.addEventListener("DOMContentLoaded",checkLogin);
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
-
-function vehicleName(id) {
-  const vehicle = vehicles.find(v => String(v.id) === String(id));
-
-  if (!vehicle) {
-    return "—";
-  }
-
-  return `${vehicle.registration || ""} — ${vehicle.customer || ""}`;
-}
-
-function statusClass(status) {
-  return String(status || "")
-    .toLowerCase()
-    .replace(/\s+/g, "-");
-}
-
-function showToast(message, type = "success") {
-  let toast = document.getElementById("appToast");
-
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "appToast";
-
-    toast.style.position = "fixed";
-    toast.style.left = "50%";
-    toast.style.bottom = "24px";
-    toast.style.transform = "translateX(-50%)";
-    toast.style.zIndex = "99999";
-    toast.style.padding = "13px 18px";
-    toast.style.borderRadius = "12px";
-    toast.style.fontSize = "14px";
-    toast.style.fontWeight = "700";
-    toast.style.maxWidth = "90%";
-    toast.style.textAlign = "center";
-    toast.style.boxShadow = "0 10px 30px rgba(0,0,0,.25)";
-
-    document.body.appendChild(toast);
-  }
-
-  toast.textContent = message;
-
-  toast.style.background =
-    type === "error" ? "#7f1d1d" :
-    type === "warning" ? "#78350f" :
-    "#14532d";
-
-  toast.style.color = "#fff";
-
-  clearTimeout(window.__garageToastTimer);
-
-  window.__garageToastTimer = setTimeout(() => {
-    toast.remove();
-  }, 3500);
-}
-
-function supabaseError(error, fallback = "Something went wrong.") {
-  console.error(error);
-
-  const message =
-    error?.message ||
-    error?.details ||
-    error?.hint ||
-    fallback;
-
-  showToast(message, "error");
-}
-
-/* =========================================================
-   PREMIUM STYLES
-========================================================= */
-
-function injectPremiumStyles() {
-  if (document.getElementById("garagePremiumStyles")) return;
-
-  const style = document.createElement("style");
-  style.id = "garagePremiumStyles";
-
-  style.textContent = `
-    .req-finance {
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width:170px;
-    }
-
-    .req-finance-row {
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      font-size:12px;
-    }
-
-    .req-finance-label {
-      color:#94a3b8;
-    }
-
-    .req-finance-value {
-      font-weight:800;
-      color:#f8fafc;
-    }
-
-    .req-finance-balance {
-      border-top:1px solid rgba(148,163,184,.18);
-      padding-top:6px;
-      margin-top:2px;
-    }
-
-    .req-summary {
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:10px;
-      margin:15px 0;
-    }
-
-    .req-summary-card {
-      padding:14px;
-      border:1px solid rgba(148,163,184,.18);
-      border-radius:14px;
-      background:rgba(15,23,42,.55);
-    }
-
-    .req-summary-card span {
-      display:block;
-      color:#94a3b8;
-      font-size:11px;
-      margin-bottom:5px;
-    }
-
-    .req-summary-card strong {
-      display:block;
-      color:#f8fafc;
-      font-size:18px;
-    }
-
-    .req-payment-note {
-      font-size:11px;
-      color:#94a3b8;
-      margin-top:3px;
-    }
-
-    .req-no-badge {
-      display:inline-flex;
-      align-items:center;
-      padding:5px 9px;
-      border-radius:8px;
-      background:rgba(59,130,246,.12);
-      border:1px solid rgba(59,130,246,.25);
-      color:#bfdbfe;
-      font-weight:800;
-      font-size:12px;
-    }
-
-    @media(max-width:600px) {
-      .req-summary {
-        grid-template-columns:1fr;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
-/* =========================================================
-   MODALS
-========================================================= */
-
-window.openModal = function(id) {
-  const modal = document.getElementById(id);
-  if (!modal) return;
-
-  modal.classList.add("active");
-  modal.style.display = "flex";
-};
-
-window.closeModal = function(id) {
-  const modal = document.getElementById(id);
-  if (!modal) return;
-
-  modal.classList.remove("active");
-  modal.style.display = "none";
-};
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-window.showSection = function(section) {
-  document.querySelectorAll(".section").forEach(el => {
-    el.style.display = "none";
-  });
-
-  const target =
-    document.getElementById(section) ||
-    document.getElementById(section + "Section");
-
-  if (target) {
-    target.style.display = "";
-  }
-
-  document.querySelectorAll("[data-section]").forEach(btn => {
-    btn.classList.toggle(
-      "active",
-      btn.dataset.section === section
-    );
-  });
-
-  if (section === "dashboard") {
-    renderDashboard();
-  }
-
-  if (section === "vehicles") {
-    renderVehicles();
-  }
-
-  if (section === "expenses") {
-    renderExpenses();
-  }
-
-  if (section === "pettyCash" || section === "petty") {
-    renderPettyCash();
-  }
-
-  if (section === "requisitions") {
-    renderRequisitions();
-  }
-};
-
-window.goToDashboardSection = function(section) {
-  showSection(section);
-};
-
-/* =========================================================
-   VEHICLE SELECTS
-========================================================= */
-
-function populateVehicleSelects() {
-  const selects = document.querySelectorAll(
-    'select[name="vehicle_id"], #vehicle_id, #expenseVehicleId, #reqVehicleId'
-  );
-
-  selects.forEach(select => {
-    const current = select.value;
-
-    select.innerHTML =
-      `<option value="">Select vehicle</option>` +
-      vehicles.map(v => `
-        <option value="${escapeHtml(v.id)}">
-          ${escapeHtml(v.registration)} — ${escapeHtml(v.customer || "")}
-        </option>
-      `).join("");
-
-    if (current) {
-      select.value = current;
-    }
-  });
-}
-
-/* =========================================================
-   VEHICLES
-========================================================= */
-
-async function loadVehicles() {
-  const { data, error } = await supabase
-    .from(TABLES.vehicles)
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    supabaseError(error, "Unable to load vehicles.");
-    return;
-  }
-
-  vehicles = data || [];
-
-  populateVehicleSelects();
-  renderVehicles();
-  renderDashboard();
-}
-
-function renderVehicles() {
-  const search =
-    document.getElementById("vehicleSearch")?.value
-      ?.toLowerCase()
-      .trim() || "";
-
-  const filtered = vehicles.filter(v => {
-    const text = [
-      v.registration,
-      v.customer,
-      v.status,
-      v.description
-    ].join(" ").toLowerCase();
-
-    return !search || text.includes(search);
-  });
-
-  const container =
-    document.getElementById("vehiclesList") ||
-    document.getElementById("vehicleList") ||
-    document.getElementById("vehiclesTableBody");
-
-  if (!container) return;
-
-  if (!filtered.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        No vehicles found.
-      </div>
-    `;
-    return;
-  }
-
-  const rows = filtered.map(v => `
-    <tr>
-      <td><strong>${escapeHtml(v.registration)}</strong></td>
-      <td>${escapeHtml(v.customer || "—")}</td>
-      <td>${escapeHtml(v.date_in || "—")}</td>
-      <td>${escapeHtml(v.date_out || "—")}</td>
-      <td>${escapeHtml(v.job_type || "—")}</td>
-      <td>${escapeHtml(v.status || "—")}</td>
-      <td>${money(v.billed)}</td>
-      <td>${money(v.paid)}</td>
-      <td>
-        <button onclick="editVehicle('${v.id}')">✏️</button>
-        <button onclick="deleteVehicle('${v.id}')">🗑</button>
-        <button onclick="openVehicleWorkspace('${v.id}')">👁</button>
-      </td>
-    </tr>
-  `).join("");
-
-  if (container.tagName === "TBODY") {
-    container.innerHTML = rows;
-  } else {
-    container.innerHTML = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Registration</th>
-              <th>Customer</th>
-              <th>Date In</th>
-              <th>Date Out</th>
-              <th>Job</th>
-              <th>Status</th>
-              <th>Billed</th>
-              <th>Paid</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    `;
-  }
-}
-
-window.saveVehicle = async function() {
-  const id =
-    document.getElementById("vehicleId")?.value || null;
-
-  const payload = {
-    registration:
-      document.getElementById("vehicleRegistration")?.value
-        ?.trim()
-        .toUpperCase(),
-
-    customer:
-      document.getElementById("vehicleCustomer")?.value?.trim(),
-
-    date_in:
-      document.getElementById("vehicleDateIn")?.value ||
-      null,
-
-    date_out:
-      document.getElementById("vehicleDateOut")?.value ||
-      null,
-
-    job_type:
-      document.getElementById("vehicleJobType")?.value?.trim(),
-
-    status:
-      document.getElementById("vehicleStatus")?.value ||
-      "Under Repair",
-
-    released_to:
-      document.getElementById("vehicleReleasedTo")?.value?.trim(),
-
-    released_contact:
-      document.getElementById("vehicleReleasedContact")?.value?.trim(),
-
-    description:
-      document.getElementById("vehicleDescription")?.value?.trim(),
-
-    billed:
-      number(document.getElementById("vehicleBilled")?.value),
-
-    paid:
-      number(document.getElementById("vehiclePaid")?.value)
-  };
-
-  if (!payload.registration) {
-    showToast("Vehicle registration is required.", "warning");
-    return;
-  }
-
-  let result;
-
-  if (id) {
-    result = await supabase
-      .from(TABLES.vehicles)
-      .update(payload)
-      .eq("id", id);
-  } else {
-    result = await supabase
-      .from(TABLES.vehicles)
-      .insert(payload);
-  }
-
-  if (result.error) {
-    supabaseError(result.error, "Unable to save vehicle.");
-    return;
-  }
-
-  showToast("Vehicle saved successfully.");
-  closeModal("vehicleModal");
-
-  await loadVehicles();
-};
-
-window.editVehicle = function(id) {
-  const v = vehicles.find(x => String(x.id) === String(id));
-
-  if (!v) return;
-
-  const fields = {
-    vehicleId: v.id,
-    vehicleRegistration: v.registration,
-    vehicleCustomer: v.customer,
-    vehicleDateIn: v.date_in,
-    vehicleDateOut: v.date_out,
-    vehicleJobType: v.job_type,
-    vehicleStatus: v.status,
-    vehicleReleasedTo: v.released_to,
-    vehicleReleasedContact: v.released_contact,
-    vehicleDescription: v.description,
-    vehicleBilled: v.billed,
-    vehiclePaid: v.paid
-  };
-
-  Object.entries(fields).forEach(([id2, value]) => {
-    const el = document.getElementById(id2);
-    if (el) el.value = value ?? "";
-  });
-
-  openModal("vehicleModal");
-};
-
-window.deleteVehicle = async function(id) {
-  if (!confirm("Delete this vehicle?")) return;
-
-  const { error } = await supabase
-    .from(TABLES.vehicles)
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    supabaseError(error, "Unable to delete vehicle.");
-    return;
-  }
-
-  showToast("Vehicle deleted.");
-  await loadVehicles();
-};
-
-window.openVehicleWorkspace = function(id) {
-  selectedVehicleId = id;
-
-  const v = vehicles.find(x => String(x.id) === String(id));
-
-  if (!v) return;
-
-  setText("workspaceVehicleName", vehicleName(id));
-
-  renderVehicleExpenses(id);
-
-  const modal =
-    document.getElementById("vehicleWorkspaceModal");
-
-  if (modal) {
-    openModal("vehicleWorkspaceModal");
-  } else {
-    showSection("expenses");
-  }
-};
-
-/* =========================================================
-   EXPENSES
-========================================================= */
-
-async function loadExpenses() {
-  const { data, error } = await supabase
-    .from(TABLES.expenses)
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    supabaseError(error, "Unable to load expenses.");
-    return;
-  }
-
-  expenses = data || [];
-
-  renderExpenses();
-
-  if (selectedVehicleId) {
-    renderVehicleExpenses(selectedVehicleId);
-  }
-
-  renderDashboard();
-}
-
-function renderExpenses() {
-  const search =
-    document.getElementById("expenseSearch")?.value
-      ?.toLowerCase()
-      .trim() || "";
-
-  const filtered = expenses.filter(e => {
-    const text = [
-      e.description,
-      e.category,
-      e.expense_type,
-      vehicleName(e.vehicle_id)
-    ].join(" ").toLowerCase();
-
-    return !search || text.includes(search);
-  });
-
-  const container =
-    document.getElementById("expensesList") ||
-    document.getElementById("expenseList") ||
-    document.getElementById("expensesTableBody");
-
-  if (!container) return;
-
-  if (!filtered.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        No expenses found.
-      </div>
-    `;
-    return;
-  }
-
-  const rows = filtered.map(e => `
-    <tr>
-      <td>${escapeHtml(e.expense_date || e.created_at?.slice(0,10) || "—")}</td>
-      <td>${escapeHtml(vehicleName(e.vehicle_id))}</td>
-      <td>${escapeHtml(e.description || "—")}</td>
-      <td>${escapeHtml(e.category || e.expense_type || "—")}</td>
-      <td>${money(e.amount)}</td>
-      <td>
-        <button onclick="editExpense('${e.id}')">✏️</button>
-        <button onclick="deleteExpense('${e.id}')">🗑</button>
-      </td>
-    </tr>
-  `).join("");
-
-  if (container.tagName === "TBODY") {
-    container.innerHTML = rows;
-  } else {
-    container.innerHTML = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Vehicle</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    `;
-  }
-}
-
-function renderVehicleExpenses(vehicleId) {
-  const list = expenses.filter(
-    e => String(e.vehicle_id) === String(vehicleId)
-  );
-
-  const container =
-    document.getElementById("vehicleExpensesList");
-
-  if (!container) return;
-
-  if (!list.length) {
-    container.innerHTML =
-      `<div class="empty-state">No expenses for this vehicle.</div>`;
-    return;
-  }
-
-  const total = list.reduce(
-    (sum, e) => sum + number(e.amount),
-    0
-  );
-
-  container.innerHTML = `
-    <div class="req-summary-card">
-      <span>Total vehicle expenses</span>
-      <strong>${money(total)}</strong>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${list.map(e => `
-            <tr>
-              <td>${escapeHtml(e.expense_date || e.created_at?.slice(0,10) || "—")}</td>
-              <td>${escapeHtml(e.description || "—")}</td>
-              <td>${escapeHtml(e.category || e.expense_type || "—")}</td>
-              <td>${money(e.amount)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-window.saveExpense = async function() {
-  const id =
-    document.getElementById("expenseId")?.value || null;
-
-  const payload = {
-    vehicle_id:
-      document.getElementById("expenseVehicleId")?.value ||
-      document.getElementById("expenseVehicle")?.value ||
-      null,
-
-    description:
-      document.getElementById("expenseDescription")?.value?.trim(),
-
-    amount:
-      number(document.getElementById("expenseAmount")?.value),
-
-    category:
-      document.getElementById("expenseCategory")?.value ||
-      document.getElementById("expenseType")?.value ||
-      "Other",
-
-    expense_type:
-      document.getElementById("expenseType")?.value ||
-      document.getElementById("expenseCategory")?.value ||
-      "Other",
-
-    expense_date:
-      document.getElementById("expenseDate")?.value ||
-      today(),
-
-    notes:
-      document.getElementById("expenseNotes")?.value?.trim()
-  };
-
-  if (!payload.description) {
-    showToast("Expense description is required.", "warning");
-    return;
-  }
-
-  let result;
-
-  if (id) {
-    result = await supabase
-      .from(TABLES.expenses)
-      .update(payload)
-      .eq("id", id);
-  } else {
-    result = await supabase
-      .from(TABLES.expenses)
-      .insert(payload);
-  }
-
-  if (result.error) {
-    supabaseError(result.error, "Unable to save expense.");
-    return;
-  }
-
-  showToast("Expense saved.");
-  closeModal("expenseModal");
-
-  await loadExpenses();
-};
-
-window.editExpense = function(id) {
-  const e = expenses.find(x => String(x.id) === String(id));
-
-  if (!e) return;
-
-  const values = {
-    expenseId: e.id,
-    expenseVehicleId: e.vehicle_id,
-    expenseVehicle: e.vehicle_id,
-    expenseDescription: e.description,
-    expenseAmount: e.amount,
-    expenseCategory: e.category || e.expense_type,
-    expenseType: e.expense_type || e.category,
-    expenseDate: e.expense_date,
-    expenseNotes: e.notes
-  };
-
-  Object.entries(values).forEach(([id2, value]) => {
-    const el = document.getElementById(id2);
-    if (el) el.value = value ?? "";
-  });
-
-  openModal("expenseModal");
-};
-
-window.deleteExpense = async function(id) {
-  if (!confirm("Delete this expense?")) return;
-
-  const { error } = await supabase
-    .from(TABLES.expenses)
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    supabaseError(error, "Unable to delete expense.");
-    return;
-  }
-
-  showToast("Expense deleted.");
-  await loadExpenses();
-};
-
-/* =========================================================
-   PETTY CASH
-========================================================= */
-
-async function loadPettyCash() {
-  /*
-    IMPORTANT:
-    req_no is used to connect a payment to a specific
-    requisition.
-
-    We first try to load req_no.
-    If the database has not yet been given the column,
-    we fall back to the normal petty_cash columns.
-  */
-
-  let result = await supabase
-    .from(TABLES.petty)
-    .select("*, req_no")
-    .order("created_at", { ascending: false });
-
-  if (result.error) {
-    console.warn(
-      "petty_cash.req_no is not available yet.",
-      result.error
-    );
-
-    pettyCashSupportsReqNo = false;
-
-    result = await supabase
-      .from(TABLES.petty)
-      .select("*")
-      .order("created_at", { ascending: false });
-  } else {
-    pettyCashSupportsReqNo = true;
-  }
-
-  if (result.error) {
-    supabaseError(
-      result.error,
-      "Unable to load petty cash."
-    );
-    return;
-  }
-
-  pettyCash = result.data || [];
-
-  populatePettyCashReqSelect();
-  renderPettyCash();
-  renderDashboard();
-}
-
-function populatePettyCashReqSelect() {
-  const select =
-    document.getElementById("pettyReqNo");
-
-  if (!select) return;
-
-  const current = select.value;
-
-  const uniqueReqs = [
-    ...new Map(
-      requisitions.map(r => [
-        normalizeReqNo(r.req_no),
-        r
-      ])
-    ).values()
-  ];
-
-  select.innerHTML =
-    `<option value="">Not linked to requisition</option>` +
-    uniqueReqs.map(r => `
-      <option value="${escapeHtml(normalizeReqNo(r.req_no))}">
-        ${escapeHtml(normalizeReqNo(r.req_no))}
-      </option>
-    `).join("");
-
-  if (current) {
-    select.value = current;
-  }
-}
-
-function renderPettyCash() {
-  const search =
-    document.getElementById("pettySearch")?.value
-      ?.toLowerCase()
-      .trim() || "";
-
-  const filtered = pettyCash.filter(p => {
-    const text = [
-      p.description,
-      p.paid_to,
-      p.category,
-      p.req_no
-    ].join(" ").toLowerCase();
-
-    return !search || text.includes(search);
-  });
-
-  const container =
-    document.getElementById("pettyCashList") ||
-    document.getElementById("pettyList") ||
-    document.getElementById("pettyCashTableBody");
-
-  if (!container) return;
-
-  if (!filtered.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        No petty cash records found.
-      </div>
-    `;
-    return;
-  }
-
-  const rows = filtered.map(p => `
-    <tr>
-      <td>${escapeHtml(p.cash_date || p.created_at?.slice(0,10) || "—")}</td>
-
-      <td>
-        ${
-          p.req_no
-            ? `<span class="req-no-badge">${escapeHtml(normalizeReqNo(p.req_no))}</span>`
-            : "—"
-        }
-      </td>
-
-      <td>${escapeHtml(p.description || "—")}</td>
-      <td>${escapeHtml(p.paid_to || "—")}</td>
-      <td>${escapeHtml(p.category || "—")}</td>
-      <td>${money(p.amount)}</td>
-
-      <td>
-        <button onclick="editPettyCash('${p.id}')">✏️</button>
-        <button onclick="deletePettyCash('${p.id}')">🗑</button>
-      </td>
-    </tr>
-  `).join("");
-
-  if (container.tagName === "TBODY") {
-    container.innerHTML = rows;
-  } else {
-    container.innerHTML = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Req No.</th>
-              <th>Description</th>
-              <th>Paid To</th>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-}
-
-window.savePettyCash = async function() {
-  const id =
-    document.getElementById("pettyCashId")?.value || null;
-
-  const reqNo =
-    normalizeReqNo(
-      document.getElementById("pettyReqNo")?.value
-    );
-
-  const payload = {
-    cash_date:
-      document.getElementById("pettyDate")?.value ||
-      today(),
-
-    description:
-      document.getElementById("pettyDescription")?.value?.trim(),
-
-    paid_to:
-      document.getElementById("pettyPaidTo")?.value?.trim(),
-
-    category:
-      document.getElementById("pettyCategory")?.value ||
-      "Other",
-
-    amount:
-      number(document.getElementById("pettyAmount")?.value),
-
-    notes:
-      document.getElementById("pettyNotes")?.value?.trim()
-  };
-
-  /*
-    Only send req_no when the column exists.
-  */
-
-  if (pettyCashSupportsReqNo) {
-    payload.req_no = reqNo || null;
-  }
-
-  if (!payload.description) {
-    showToast(
-      "Petty cash description is required.",
-      "warning"
-    );
-    return;
-  }
-
-  let result;
-
-  if (id) {
-    result = await supabase
-      .from(TABLES.petty)
-      .update(payload)
-      .eq("id", id);
-  } else {
-    result = await supabase
-      .from(TABLES.petty)
-      .insert(payload);
-  }
-
-  if (result.error) {
-    supabaseError(
-      result.error,
-      "Unable to save petty cash."
-    );
-    return;
-  }
-
-  showToast("Petty cash saved.");
-  closeModal("pettyCashModal");
-
-  await loadPettyCash();
-};
-
-window.editPettyCash = function(id) {
-  const p =
-    pettyCash.find(x => String(x.id) === String(id));
-
-  if (!p) return;
-
-  const values = {
-    pettyCashId: p.id,
-    pettyDate: p.cash_date,
-    pettyReqNo: normalizeReqNo(p.req_no),
-    pettyDescription: p.description,
-    pettyPaidTo: p.paid_to,
-    pettyCategory: p.category,
-    pettyAmount: p.amount,
-    pettyNotes: p.notes
-  };
-
-  Object.entries(values).forEach(([id2, value]) => {
-    const el = document.getElementById(id2);
-    if (el) el.value = value ?? "";
-  });
-
-  openModal("pettyCashModal");
-};
-
-window.deletePettyCash = async function(id) {
-  if (!confirm("Delete this petty cash record?")) {
-    return;
-  }
-
-  const { error } = await supabase
-    .from(TABLES.petty)
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    supabaseError(
-      error,
-      "Unable to delete petty cash."
-    );
-    return;
-  }
-
-  showToast("Petty cash deleted.");
-  await loadPettyCash();
-};
-
-/* =========================================================
-   REQUISITION FINANCIAL CALCULATION
-   THIS IS THE IMPORTANT FIX
-========================================================= */
-
-/*
-  Every requisition number has its OWN financial position.
-
-  Example:
-
-  REQ-001
-  Requested = 20,000
-  Received  = only petty cash linked to REQ-001
-
-  REQ-002
-  Requested = 16,000
-  Received  = only petty cash linked to REQ-002
-
-  NEVER:
-  total all requisitions
-  divide/allocate all petty cash
-  combine REQ-001 and REQ-002
-*/
-
-function getRequisitionFinance(reqNo) {
-  const key = normalizeReqNo(reqNo);
-
-  /*
-    Get ONLY rows belonging to this requisition.
-  */
-
-  const matchingReqs =
-    requisitions.filter(
-      r => normalizeReqNo(r.req_no) === key
-    );
-
-  /*
-    Requested amount is the SUM of this requisition's
-    own line items.
-
-    Example REQ-002:
-
-    5,000
-    1,000
-    4,000
-    6,000
-    -------
-    16,000
-  */
-
-  const requested =
-    matchingReqs.reduce(
-      (sum, r) => {
-        /*
-          Always calculate from quantity × unit cost
-          when both are available.
-
-          This prevents accidental combined totals.
-        */
-
-        const qty = number(r.quantity);
-        const unit = number(r.unit_cost);
-
-        const calculated =
-          qty > 0
-            ? qty * unit
-            : number(r.total_amount);
-
-        return sum + calculated;
-      },
-      0
-    );
-
-  /*
-    RECEIVED:
-    ONLY petty cash whose req_no exactly matches
-    this requisition number.
-  */
-
-  const received =
-    pettyCash
-      .filter(
-        p =>
-          normalizeReqNo(p.req_no) === key &&
-          key !== ""
-      )
-      .reduce(
-        (sum, p) => sum + number(p.amount),
-        0
-      );
-
-  /*
-    Balance belongs only to this requisition.
-  */
-
-  const balance =
-    Math.max(requested - received, 0);
-
-  return {
-    requested,
-    received,
-    balance
-  };
-}
-
-/* =========================================================
-   REQUISITIONS
-========================================================= */
-
-async function loadRequisitions() {
-  const { data, error } = await supabase
-    .from(TABLES.requisitions)
-    .select("*")
-    .order("req_date", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    supabaseError(
-      error,
-      "Unable to load requisitions."
-    );
-    return;
-  }
-
-  requisitions = data || [];
-
-  populatePettyCashReqSelect();
-  renderRequisitions();
-  renderDashboard();
-}
-
-function getRequisitionGroups() {
-  const groups = new Map();
-
-  requisitions.forEach(req => {
-    const key = normalizeReqNo(req.req_no);
-
-    if (!groups.has(key)) {
-      groups.set(key, []);
-    }
-
-    groups.get(key).push(req);
-  });
-
-  return groups;
-}
-
-function renderRequisitionSummary(reqNo = "") {
-  const container =
-    document.getElementById("requisitionSummary");
-
-  if (!container) return;
-
-  const key = normalizeReqNo(reqNo);
-
-  if (!key) {
-    const allRequested =
-      requisitions.reduce(
-        (sum, r) => {
-          const qty = number(r.quantity);
-          const unit = number(r.unit_cost);
-
-          return sum +
-            (qty > 0
-              ? qty * unit
-              : number(r.total_amount));
-        },
-        0
-      );
-
-    const allReceived =
-      pettyCash.reduce(
-        (sum, p) => sum + number(p.amount),
-        0
-      );
-
-    container.innerHTML = `
-      <div class="req-summary">
-        <div class="req-summary-card">
-          <span>All Requisition Requests</span>
-          <strong>${money(allRequested)}</strong>
-        </div>
-
-        <div class="req-summary-card">
-          <span>All Petty Cash</span>
-          <strong>${money(allReceived)}</strong>
-        </div>
-
-        <div class="req-summary-card">
-          <span>Overall Position</span>
-          <strong>
-            ${money(Math.max(allRequested - allReceived, 0))}
-          </strong>
-        </div>
-      </div>
-    `;
-
-    return;
-  }
-
-  const finance = getRequisitionFinance(key);
-
-  container.innerHTML = `
-    <div class="req-summary">
-      <div class="req-summary-card">
-        <span>Requested</span>
-        <strong>${money(finance.requested)}</strong>
-      </div>
-
-      <div class="req-summary-card">
-        <span>Received</span>
-        <strong>${money(finance.received)}</strong>
-        <div class="req-payment-note">
-          Only payments linked to ${escapeHtml(key)}
-        </div>
-      </div>
-
-      <div class="req-summary-card">
-        <span>Balance</span>
-        <strong>${money(finance.balance)}</strong>
-      </div>
-    </div>
-  `;
-}
-
-function renderRequisitions() {
-  const search =
-    document.getElementById("requisitionSearch")?.value
-      ?.trim()
-      .toLowerCase() || "";
-
-  const status =
-    document.getElementById("requisitionStatusFilter")?.value ||
-    "";
-
-  const filtered =
-    requisitions.filter(r => {
-      const text = [
-        r.req_no,
-        r.req_date,
-        r.requested_by,
-        r.item_description,
-        vehicleName(r.vehicle_id),
-        r.status,
-        r.category,
-        r.expense_type
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      const matchesSearch =
-        !search || text.includes(search);
-
-      const matchesStatus =
-        !status ||
-        String(r.status || "").toLowerCase() ===
-          status.toLowerCase();
-
-      return matchesSearch && matchesStatus;
-    });
-
-  /*
-    If search is an exact requisition number,
-    show its own financial summary.
-  */
-
-  const exactReq =
-    normalizeReqNo(search);
-
-  if (
-    exactReq &&
-    requisitions.some(
-      r => normalizeReqNo(r.req_no) === exactReq
-    )
-  ) {
-    renderRequisitionSummary(exactReq);
-  } else {
-    renderRequisitionSummary("");
-  }
-
-  const container =
-    document.getElementById("requisitionsList") ||
-    document.getElementById("requisitionList") ||
-    document.getElementById("requisitionsTableBody");
-
-  if (!container) return;
-
-  if (!filtered.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        No requisitions found.
-      </div>
-    `;
-    return;
-  }
-
-  const rows =
-    filtered.map(r => {
-      /*
-        IMPORTANT:
-        This row's amount belongs ONLY to this row.
-      */
-
-      const qty = number(r.quantity);
-      const unit = number(r.unit_cost);
-
-      const lineTotal =
-        qty > 0
-          ? qty * unit
-          : number(r.total_amount);
-
-      /*
-        For the financial block, calculate using
-        the entire exact requisition number.
-      */
-
-      const finance =
-        getRequisitionFinance(r.req_no);
-
-      return `
-        <tr>
-
-          <td>
-            <strong>
-              ${escapeHtml(normalizeReqNo(r.req_no))}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHtml(r.req_date || "—")}
-          </td>
-
-          <td>
-            ${escapeHtml(r.requested_by || "—")}
-          </td>
-
-          <td>
-            ${escapeHtml(vehicleName(r.vehicle_id))}
-          </td>
-
-          <td>
-            ${escapeHtml(r.item_description || "—")}
-          </td>
-
-          <td>
-            ${qty}
-          </td>
-
-          <td>
-            ${money(unit)}
-          </td>
-
-          <td>
-            <strong>${money(lineTotal)}</strong>
-          </td>
-
-          <td>
-            ${escapeHtml(
-              r.category ||
-              r.expense_type ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            <span class="status ${statusClass(r.status)}">
-              ${escapeHtml(r.status || "Pending")}
-            </span>
-          </td>
-
-          <td>
-            <div class="req-finance">
-
-              <div class="req-finance-row">
-                <span class="req-finance-label">
-                  Requested
-                </span>
-                <span class="req-finance-value">
-                  ${money(finance.requested)}
-                </span>
-              </div>
-
-              <div class="req-finance-row">
-                <span class="req-finance-label">
-                  Received
-                </span>
-                <span class="req-finance-value">
-                  ${money(finance.received)}
-                </span>
-              </div>
-
-              <div class="req-finance-row req-finance-balance">
-                <span class="req-finance-label">
-                  Balance
-                </span>
-                <span class="req-finance-value">
-                  ${money(finance.balance)}
-                </span>
-              </div>
-
-              ${
-                finance.received === 0
-                  ? `
-                    <div class="req-payment-note">
-                      No linked payment
-                    </div>
-                  `
-                  : ""
-              }
-
-            </div>
-          </td>
-
-          <td>
-            <button
-              type="button"
-              onclick="previewReq('${r.id}')">
-              👁
-            </button>
-
-            <button
-              type="button"
-              onclick="editRequisition('${r.id}')">
-              ✏️
-            </button>
-
-            <button
-              type="button"
-              onclick="deleteRequisition('${r.id}')">
-              🗑
-            </button>
-          </td>
-
-        </tr>
-      `;
-    }).join("");
-
-  if (container.tagName === "TBODY") {
-    container.innerHTML = rows;
-  } else {
-    container.innerHTML = `
-      <div class="table-wrap">
-        <table>
-
-          <thead>
-            <tr>
-              <th>Req No.</th>
-              <th>Date</th>
-              <th>Requested By</th>
-              <th>Vehicle</th>
-              <th>Item Description</th>
-              <th>Qty</th>
-              <th>Unit Cost</th>
-              <th>Total</th>
-              <th>Expense Type</th>
-              <th>Status</th>
-              <th>Financial Position</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            ${rows}
-          </tbody>
-
-        </table>
-      </div>
-    `;
-  }
-
-  /*
-    Keep the old overall "Requisition Total" card,
-    but calculate it correctly from requisition rows.
-  */
-
-  const total =
-    filtered.reduce(
-      (sum, r) => {
-        const qty = number(r.quantity);
-        const unit = number(r.unit_cost);
-
-        return sum +
-          (qty > 0
-            ? qty * unit
-            : number(r.total_amount));
-      },
-      0
-    );
-
-  setText(
-    "requisitionTotal",
-    money(total)
-  );
-}
-
-/* =========================================================
-   SAVE REQUISITION
-========================================================= */
-
-window.saveRequisition = async function() {
-  const id =
-    document.getElementById("reqId")?.value || null;
-
-  const reqNoInput =
-    document.getElementById("reqNo")?.value?.trim();
-
-  const reqNo =
-    normalizeReqNo(reqNoInput);
-
-  const quantity =
-    number(
-      document.getElementById("reqQuantity")?.value
-    );
-
-  const unitCost =
-    number(
-      document.getElementById("reqUnitCost")?.value
-    );
-
-  /*
-    CRITICAL:
-    Every line saves its OWN total.
-
-    quantity × unit cost
-  */
-
-  const lineTotal =
-    quantity * unitCost;
-
-  const payload = {
-    req_no: reqNo,
-
-    req_date:
-      document.getElementById("reqDate")?.value ||
-      today(),
-
-    requested_by:
-      document.getElementById("reqRequestedBy")?.value?.trim(),
-
-    vehicle_id:
-      document.getElementById("reqVehicleId")?.value ||
-      null,
-
-    item_description:
-      document.getElementById("reqItemDescription")?.value?.trim(),
-
-    quantity,
-
-    unit_cost: unitCost,
-
-    total_amount: lineTotal,
-
-    status:
-      document.getElementById("reqStatus")?.value ||
-      "Pending",
-
-    notes:
-      document.getElementById("reqNotes")?.value?.trim()
-  };
-
-  /*
-    Preserve optional category/expense_type if those
-    fields exist in the database and the HTML.
-  */
-
-  const category =
-    document.getElementById("reqCategory")?.value ||
-    document.getElementById("reqExpenseType")?.value ||
-    "";
-
-  if (category) {
-    payload.category = category;
-    payload.expense_type = category;
-  }
-
-  if (!reqNo) {
-    showToast(
-      "Requisition number is required.",
-      "warning"
-    );
-    return;
-  }
-
-  if (!payload.item_description) {
-    showToast(
-      "Item description is required.",
-      "warning"
-    );
-    return;
-  }
-
-  if (quantity <= 0) {
-    showToast(
-      "Quantity must be greater than zero.",
-      "warning"
-    );
-    return;
-  }
-
-  if (unitCost < 0) {
-    showToast(
-      "Unit cost cannot be negative.",
-      "warning"
-    );
-    return;
-  }
-
-  let result;
-
-  if (id) {
-    result = await supabase
-      .from(TABLES.requisitions)
-      .update(payload)
-      .eq("id", id);
-  } else {
-    result = await supabase
-      .from(TABLES.requisitions)
-      .insert(payload);
-  }
-
-  if (result.error) {
-    supabaseError(
-      result.error,
-      "Unable to save requisition."
-    );
-    return;
-  }
-
-  showToast(
-    `${reqNo} saved at ${money(lineTotal)}.`
-  );
-
-  closeModal("requisitionModal");
-
-  await loadRequisitions();
-};
-
-/* =========================================================
-   EDIT REQUISITION
-========================================================= */
-
-window.editRequisition = function(id) {
-  const r =
-    requisitions.find(
-      x => String(x.id) === String(id)
-    );
-
-  if (!r) return;
-
-  const values = {
-    reqId: r.id,
-    reqNo: normalizeReqNo(r.req_no),
-    reqDate: r.req_date,
-    reqRequestedBy: r.requested_by,
-    reqVehicleId: r.vehicle_id,
-    reqItemDescription: r.item_description,
-    reqQuantity: r.quantity,
-    reqUnitCost: r.unit_cost,
-    reqStatus: r.status,
-    reqNotes: r.notes,
-    reqCategory: r.category || r.expense_type,
-    reqExpenseType: r.expense_type || r.category
-  };
-
-  Object.entries(values).forEach(([id2, value]) => {
-    const el = document.getElementById(id2);
-
-    if (el) {
-      el.value = value ?? "";
-    }
-  });
-
-  openModal("requisitionModal");
-};
-
-/* =========================================================
-   DELETE REQUISITION
-========================================================= */
-
-window.deleteRequisition = async function(id) {
-  const r =
-    requisitions.find(
-      x => String(x.id) === String(id)
-    );
-
-  if (!r) return;
-
-  if (
-    !confirm(
-      `Delete ${normalizeReqNo(r.req_no)} — ${r.item_description}?`
-    )
-  ) {
-    return;
-  }
-
-  const { error } =
-    await supabase
-      .from(TABLES.requisitions)
-      .delete()
-      .eq("id", id);
-
-  if (error) {
-    supabaseError(
-      error,
-      "Unable to delete requisition."
-    );
-    return;
-  }
-
-  showToast("Requisition deleted.");
-
-  await loadRequisitions();
-};
-
-/* =========================================================
-   PREVIEW REQUISITION
-========================================================= */
-
-window.previewReq = function(id) {
-  const r =
-    requisitions.find(
-      x => String(x.id) === String(id)
-    );
-
-  if (!r) return;
-
-  const reqNo =
-    normalizeReqNo(r.req_no);
-
-  const finance =
-    getRequisitionFinance(reqNo);
-
-  const lines =
-    requisitions.filter(
-      x =>
-        normalizeReqNo(x.req_no) === reqNo
-    );
-
-  const html = `
-    <div class="preview-card">
-
-      <div class="preview-header">
-        <h2>${escapeHtml(reqNo)}</h2>
-        <p>Garage Operations Pro</p>
-      </div>
-
-      <div class="req-summary">
-
-        <div class="req-summary-card">
-          <span>Requested</span>
-          <strong>${money(finance.requested)}</strong>
-        </div>
-
-        <div class="req-summary-card">
-          <span>Received</span>
-          <strong>${money(finance.received)}</strong>
-        </div>
-
-        <div class="req-summary-card">
-          <span>Balance</span>
-          <strong>${money(finance.balance)}</strong>
-        </div>
-
-      </div>
-
-      <div class="table-wrap">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Qty</th>
-              <th>Unit Cost</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-
-          <tbody>
-
-            ${lines.map(line => {
-
-              const qty =
-                number(line.quantity);
-
-              const unit =
-                number(line.unit_cost);
-
-              const total =
-                qty * unit;
-
-              return `
-                <tr>
-                  <td>
-                    ${escapeHtml(
-                      line.item_description || "—"
-                    )}
-                  </td>
-
-                  <td>${qty}</td>
-
-                  <td>${money(unit)}</td>
-
-                  <td>
-                    <strong>
-                      ${money(total)}
-                    </strong>
-                  </td>
-                </tr>
-              `;
-
-            }).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-      <div class="preview-footer">
-
-        <p>
-          <strong>Requested:</strong>
-          ${money(finance.requested)}
-        </p>
-
-        <p>
-          <strong>Received:</strong>
-          ${money(finance.received)}
-        </p>
-
-        <p>
-          <strong>Balance:</strong>
-          ${money(finance.balance)}
-        </p>
-
-        <p class="req-payment-note">
-          Received amount includes only petty cash
-          linked to ${escapeHtml(reqNo)}.
-        </p>
-
-      </div>
-
-    </div>
-  `;
-
-  const container =
-    document.getElementById("requisitionPreview");
-
-  if (container) {
-    container.innerHTML = html;
-    openModal("requisitionPreviewModal");
-  } else {
-    const win = window.open(
-      "",
-      "_blank",
-      "width=900,height=700"
-    );
-
-    if (!win) return;
-
-    win.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${escapeHtml(reqNo)}</title>
-        <style>
-          body{
-            font-family:Arial,sans-serif;
-            padding:30px;
-            color:#111827;
-          }
-          table{
-            width:100%;
-            border-collapse:collapse;
-          }
-          th,td{
-            border:1px solid #ddd;
-            padding:10px;
-            text-align:left;
-          }
-          th{
-            background:#f3f4f6;
-          }
-        </style>
-      </head>
-      <body>
-        ${html}
-      </body>
-      </html>
-    `);
-
-    win.document.close();
-  }
-};
-
-/* =========================================================
-   PRINT REQUISITION
-========================================================= */
-
-window.printRequisition = function(id) {
-  const r =
-    requisitions.find(
-      x => String(x.id) === String(id)
-    );
-
-  if (!r) return;
-
-  const reqNo =
-    normalizeReqNo(r.req_no);
-
-  const finance =
-    getRequisitionFinance(reqNo);
-
-  const lines =
-    requisitions.filter(
-      x =>
-        normalizeReqNo(x.req_no) === reqNo
-    );
-
-  const printWindow =
-    window.open(
-      "",
-      "_blank",
-      "width=900,height=700"
-    );
-
-  if (!printWindow) {
-    showToast(
-      "Please allow pop-ups to print.",
-      "warning"
-    );
-    return;
-  }
-
-  printWindow.document.write(`
-    <!DOCTYPE html>
-
-    <html>
-
-    <head>
-
-      <title>${escapeHtml(reqNo)}</title>
-
-      <style>
-
-        body {
-          font-family: Arial, sans-serif;
-          padding: 30px;
-          color: #111827;
-        }
-
-        h1 {
-          margin-bottom: 4px;
-        }
-
-        .subtitle {
-          color: #6b7280;
-          margin-bottom: 25px;
-        }
-
-        .summary {
-          display:grid;
-          grid-template-columns:repeat(3,1fr);
-          gap:12px;
-          margin:20px 0;
-        }
-
-        .card {
-          border:1px solid #ddd;
-          border-radius:8px;
-          padding:14px;
-        }
-
-        .card span {
-          display:block;
-          color:#6b7280;
-          font-size:12px;
-          margin-bottom:5px;
-        }
-
-        .card strong {
-          font-size:18px;
-        }
-
-        table {
-          width:100%;
-          border-collapse:collapse;
-          margin-top:20px;
-        }
-
-        th, td {
-          border:1px solid #ddd;
-          padding:10px;
-          text-align:left;
-        }
-
-        th {
-          background:#f3f4f6;
-        }
-
-        .footer {
-          margin-top:25px;
-        }
-
-      </style>
-
-    </head>
-
-    <body>
-
-      <h1>${escapeHtml(reqNo)}</h1>
-
-      <div class="subtitle">
-        Garage Operations Pro — Requisition
-      </div>
-
-      <div class="summary">
-
-        <div class="card">
-          <span>Requested</span>
-          <strong>${money(finance.requested)}</strong>
-        </div>
-
-        <div class="card">
-          <span>Received</span>
-          <strong>${money(finance.received)}</strong>
-        </div>
-
-        <div class="card">
-          <span>Balance</span>
-          <strong>${money(finance.balance)}</strong>
-        </div>
-
-      </div>
-
-      <table>
-
-        <thead>
-          <tr>
-            <th>Item Description</th>
-            <th>Qty</th>
-            <th>Unit Cost</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          ${lines.map(line => {
-
-            const qty =
-              number(line.quantity);
-
-            const unit =
-              number(line.unit_cost);
-
-            const total =
-              qty * unit;
-
-            return `
-              <tr>
-
-                <td>
-                  ${escapeHtml(
-                    line.item_description || "—"
-                  )}
-                </td>
-
-                <td>${qty}</td>
-
-                <td>${money(unit)}</td>
-
-                <td>${money(total)}</td>
-
-              </tr>
-            `;
-
-          }).join("")}
-
-        </tbody>
-
-      </table>
-
-      <div class="footer">
-
-        <p>
-          <strong>Requested:</strong>
-          ${money(finance.requested)}
-        </p>
-
-        <p>
-          <strong>Received:</strong>
-          ${money(finance.received)}
-        </p>
-
-        <p>
-          <strong>Balance:</strong>
-          ${money(finance.balance)}
-        </p>
-
-        <p>
-          Received amount is based only on petty cash
-          linked to ${escapeHtml(reqNo)}.
-        </p>
-
-      </div>
-
-    </body>
-
-    </html>
-  `);
-
-  printWindow.document.close();
-
-  setTimeout(() => {
-    printWindow.print();
-  }, 400);
-};
-
-/* =========================================================
-   SHARE REQUISITION
-========================================================= */
-
-window.shareRequisition = async function(id) {
-  const r =
-    requisitions.find(
-      x => String(x.id) === String(id)
-    );
-
-  if (!r) return;
-
-  const reqNo =
-    normalizeReqNo(r.req_no);
-
-  const finance =
-    getRequisitionFinance(reqNo);
-
-  const lines =
-    requisitions.filter(
-      x =>
-        normalizeReqNo(x.req_no) === reqNo
-    );
-
-  const text = [
-    "GARAGE OPERATIONS PRO",
-    `REQUISITION: ${reqNo}`,
-    "",
-    ...lines.map(line => {
-      const qty = number(line.quantity);
-      const unit = number(line.unit_cost);
-      const total = qty * unit;
-
-      return `${line.item_description}: ${qty} × ${money(unit)} = ${money(total)}`;
-    }),
-    "",
-    `Requested: ${money(finance.requested)}`,
-    `Received: ${money(finance.received)}`,
-    `Balance: ${money(finance.balance)}`,
-    "",
-    `Received applies only to ${reqNo}.`
-  ].join("\n");
-
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: reqNo,
-        text
-      });
-
-      return;
-    } catch (error) {
-      console.log("Share cancelled.");
-    }
-  }
-
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast("Requisition copied to clipboard.");
-  } catch (error) {
-    showToast(
-      "Sharing is not available on this device.",
-      "warning"
-    );
-  }
-};
-
-/* =========================================================
-   DASHBOARD
-========================================================= */
-
-function renderDashboard() {
-  const totalVehicles =
-    vehicles.length;
-
-  const underRepair =
-    vehicles.filter(
-      v =>
-        String(v.status || "")
-          .toLowerCase() === "under repair"
-    ).length;
-
-  const storage =
-    vehicles.filter(
-      v =>
-        String(v.status || "")
-          .toLowerCase() === "storage"
-    ).length;
-
-  const completed =
-    vehicles.filter(
-      v =>
-        String(v.status || "")
-          .toLowerCase() === "completed"
-    ).length;
-
-  const released =
-    vehicles.filter(
-      v =>
-        String(v.status || "")
-          .toLowerCase() === "released"
-    ).length;
-
-  const expenseTotal =
-    expenses.reduce(
-      (sum, e) => sum + number(e.amount),
-      0
-    );
-
-  const pettyTotal =
-    pettyCash.reduce(
-      (sum, p) => sum + number(p.amount),
-      0
-    );
-
-  /*
-    Dashboard requisition total is the total of
-    individual requisition lines.
-
-    It does NOT alter individual requisition finances.
-  */
-
-  const requisitionTotal =
-    requisitions.reduce(
-      (sum, r) => {
-        const qty = number(r.quantity);
-        const unit = number(r.unit_cost);
-
-        return sum +
-          (qty > 0
-            ? qty * unit
-            : number(r.total_amount));
-      },
-      0
-    );
-
-  setText("dashboardVehicles", totalVehicles);
-  setText("dashboardUnderRepair", underRepair);
-  setText("dashboardStorage", storage);
-  setText("dashboardCompleted", completed);
-  setText("dashboardReleased", released);
-  setText("dashboardExpenses", money(expenseTotal));
-  setText("dashboardPettyCash", money(pettyTotal));
-  setText(
-    "dashboardRequisitions",
-    money(requisitionTotal)
-  );
-
-  renderPremiumDashboard();
-}
-
-function renderPremiumDashboard() {
-  const now = new Date();
-
-  setText(
-    "liveDate",
-    now.toLocaleDateString(
-      "en-KE",
-      {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-      }
-    )
-  );
-
-  setText(
-    "liveTime",
-    now.toLocaleTimeString("en-KE")
-  );
-
-  setText(
-    "lastUpdated",
-    "Last updated " +
-      now.toLocaleTimeString("en-KE")
-  );
-}
-
-/* =========================================================
-   SEARCH LISTENERS
-========================================================= */
-
-document.addEventListener("input", event => {
-  if (
-    event.target.id ===
-    "vehicleSearch"
-  ) {
-    renderVehicles();
-  }
-
-  if (
-    event.target.id ===
-    "expenseSearch"
-  ) {
-    renderExpenses();
-  }
-
-  if (
-    event.target.id ===
-    "pettySearch"
-  ) {
-    renderPettyCash();
-  }
-
-  if (
-    event.target.id ===
-    "requisitionSearch"
-  ) {
-    renderRequisitions();
-  }
+document.getElementById("password")?.addEventListener("keydown",e=>{
+if(e.key==="Enter")login();
 });
+</script>
 
-document.addEventListener("change", event => {
-  if (
-    event.target.id ===
-    "requisitionStatusFilter"
-  ) {
-    renderRequisitions();
-  }
-});
 
-/* =========================================================
-   REQUISITION AUTO TOTAL PREVIEW
-========================================================= */
+<script type="module" src="app.js"></script>
 
-function updateRequisitionLineTotal() {
-  const quantity =
-    number(
-      document.getElementById("reqQuantity")?.value
-    );
-
-  const unitCost =
-    number(
-      document.getElementById("reqUnitCost")?.value
-    );
-
-  const total =
-    quantity * unitCost;
-
-  setText(
-    "reqTotalPreview",
-    money(total)
-  );
-
-  const input =
-    document.getElementById("reqTotalAmount");
-
-  if (input) {
-    input.value = total;
-  }
-}
-
-document.addEventListener("input", event => {
-  if (
-    event.target.id === "reqQuantity" ||
-    event.target.id === "reqUnitCost"
-  ) {
-    updateRequisitionLineTotal();
-  }
-});
-
-/* =========================================================
-   MODAL CLOSE
-========================================================= */
-
-document.addEventListener("click", event => {
-  const target = event.target;
-
-  if (
-    target.classList.contains("modal") &&
-    target.dataset.closeOnOutside === "true"
-  ) {
-    target.style.display = "none";
-    target.classList.remove("active");
-  }
-});
-
-/* =========================================================
-   ESCAPE KEY
-========================================================= */
-
-document.addEventListener("keydown", event => {
-  if (event.key !== "Escape") return;
-
-  document
-    .querySelectorAll(".modal.active")
-    .forEach(modal => {
-      modal.classList.remove("active");
-      modal.style.display = "none";
-    });
-});
-
-/* =========================================================
-   CLOCK
-========================================================= */
-
-setInterval(() => {
-  renderPremiumDashboard();
-}, 1000);
-
-/* =========================================================
-   GLOBAL ERROR HANDLING
-========================================================= */
-
-window.addEventListener("error", event => {
-  console.error(
-    "Garage Operations Pro error:",
-    event.error || event.message
-  );
-});
-
-window.addEventListener(
-  "unhandledrejection",
-  event => {
-    console.error(
-      "Garage Operations Pro promise error:",
-      event.reason
-    );
-  }
-);
-
-/* =========================================================
-   START APPLICATION
-========================================================= */
-
-async function startApp() {
-  injectPremiumStyles();
-
-  /*
-    Login logic remains handled by the existing HTML/login
-    flow. This file starts the application data layer.
-  */
-
-  await loadVehicles();
-
-  await loadExpenses();
-
-  await loadRequisitions();
-
-  /*
-    Requisitions must load before petty cash so that the
-    petty cash requisition selector contains REQ-001,
-    REQ-002, etc.
-  */
-
-  await loadPettyCash();
-
-  populateVehicleSelects();
-
-  populatePettyCashReqSelect();
-
-  renderDashboard();
-
-  /*
-    Do not automatically change the user's current page.
-    Existing login/navigation remains in control.
-  */
-}
-
-/* =========================================================
-   START
-========================================================= */
-
-if (
-  document.readyState === "loading"
-) {
-  document.addEventListener(
-    "DOMContentLoaded",
-    startApp
-  );
-} else {
-  startApp();
-}
+</body>
+</html>
