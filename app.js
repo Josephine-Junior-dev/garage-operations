@@ -3,12 +3,13 @@ from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 /* =========================================================
    GARAGE OPERATIONS PRO
-   COMPLETE APP.JS
+   PREMIUM GRAPHITE / STEEL EDITION
    ========================================================= */
 
 /* =========================================================
    SUPABASE
    ========================================================= */
+
 const SUPABASE_URL =
 "https://ptluwoeogfkqavhspdjj.supabase.co";
 
@@ -17,13 +18,14 @@ const SUPABASE_ANON_KEY =
 
 const supabase =
 createClient(
-SUPABASE_URL,
-SUPABASE_ANON_KEY
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
 );
 
 /* =========================================================
    TABLES
    ========================================================= */
+
 const TABLES = {
     vehicles: "vehicles",
     expenses: "expenses",
@@ -34,6 +36,7 @@ const TABLES = {
 /* =========================================================
    LOCAL DATA
    ========================================================= */
+
 let vehicles = [];
 let expenses = [];
 let pettyCash = [];
@@ -44,41 +47,538 @@ let selectedVehicleExpenseId = null;
 let selectedVehicleId = null;
 
 /* =========================================================
+   PREMIUM APP STYLE
+   ========================================================= */
+
+function injectPremiumStyles() {
+
+    if (document.getElementById("garagePremiumStyles"))
+        return;
+
+    const style =
+        document.createElement("style");
+
+    style.id =
+        "garagePremiumStyles";
+
+    style.textContent = `
+
+    /* ==============================================
+       GARAGE OPERATIONS PRO
+       GRAPHITE / STEEL / WHITE
+       ============================================== */
+
+    :root{
+        --gop-bg:#111416;
+        --gop-panel:#181c1f;
+        --gop-panel-2:#202529;
+        --gop-border:#30363b;
+        --gop-border-light:#3a4248;
+        --gop-text:#f2f4f5;
+        --gop-muted:#9aa3aa;
+        --gop-soft:#c5cbd0;
+        --gop-accent:#8fa5b5;
+        --gop-accent-2:#b8c5ce;
+        --gop-danger:#c77979;
+        --gop-shadow:0 18px 50px rgba(0,0,0,.28);
+    }
+
+    /* Vehicle table */
+
+    #vehiclesSection .table-actions{
+        display:flex !important;
+        flex-direction:row !important;
+        align-items:center;
+        justify-content:flex-end;
+        gap:6px;
+        flex-wrap:nowrap !important;
+        white-space:nowrap;
+    }
+
+    #vehiclesSection .vehicle-row{
+        transition:
+            background .18s ease,
+            transform .18s ease;
+    }
+
+    #vehiclesSection .vehicle-row:hover{
+        background:rgba(255,255,255,.025);
+    }
+
+    #vehiclesSection .vehicle-action-btn{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        gap:5px;
+        height:32px;
+        padding:0 10px;
+        border-radius:8px;
+        border:1px solid var(--gop-border-light);
+        background:#202529;
+        color:#edf1f3;
+        font-size:11px;
+        font-weight:700;
+        cursor:pointer;
+        white-space:nowrap;
+        transition:
+            background .18s ease,
+            border-color .18s ease,
+            transform .18s ease;
+    }
+
+    #vehiclesSection .vehicle-action-btn:hover{
+        background:#2a3035;
+        border-color:#59636b;
+        transform:translateY(-1px);
+    }
+
+    #vehiclesSection .vehicle-delete-btn{
+        color:#e0b2b2;
+    }
+
+    /* ==============================================
+       VEHICLE PAGE TOOLBAR
+       ============================================== */
+
+    #vehiclePageActionBar{
+        position:sticky;
+        bottom:12px;
+        z-index:30;
+
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:18px;
+
+        margin-top:22px;
+        padding:13px 15px;
+
+        background:rgba(24,28,31,.96);
+        border:1px solid #343b40;
+        border-radius:16px;
+
+        box-shadow:
+            0 18px 45px rgba(0,0,0,.35);
+
+        backdrop-filter:blur(14px);
+        -webkit-backdrop-filter:blur(14px);
+    }
+
+    .gop-toolbar-label{
+        min-width:0;
+    }
+
+    .gop-toolbar-label span{
+        display:block;
+        font-size:9px;
+        letter-spacing:1.3px;
+        text-transform:uppercase;
+        color:#7f8990;
+        font-weight:800;
+        margin-bottom:3px;
+    }
+
+    .gop-toolbar-label strong{
+        display:block;
+        color:#f1f4f5;
+        font-size:13px;
+        max-width:240px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    .gop-toolbar-buttons{
+        display:flex;
+        align-items:center;
+        gap:7px;
+        flex-shrink:0;
+    }
+
+    .gop-toolbar-btn{
+        min-height:36px;
+        padding:0 13px;
+
+        border:1px solid #3a4248;
+        border-radius:9px;
+
+        background:#202529;
+        color:#e9edef;
+
+        font-size:11px;
+        font-weight:800;
+
+        cursor:pointer;
+        white-space:nowrap;
+
+        transition:
+            background .18s ease,
+            border-color .18s ease,
+            transform .18s ease;
+    }
+
+    .gop-toolbar-btn:hover:not(:disabled){
+        background:#2a3035;
+        border-color:#626d75;
+        transform:translateY(-1px);
+    }
+
+    .gop-toolbar-btn:disabled{
+        opacity:.35;
+        cursor:not-allowed;
+    }
+
+    .gop-toolbar-btn.primary{
+        background:#d5dde2;
+        color:#141719;
+        border-color:#d5dde2;
+    }
+
+    .gop-toolbar-btn.primary:hover:not(:disabled){
+        background:#eef2f4;
+        border-color:#eef2f4;
+    }
+
+    /* ==============================================
+       VEHICLE WORKSPACE
+       ============================================== */
+
+    .gop-vehicle-workspace{
+        color:#e9edef;
+        background:#15191c;
+        border-radius:18px;
+    }
+
+    .gop-vw-header{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:18px;
+        padding-bottom:18px;
+        border-bottom:1px solid #30363b;
+        margin-bottom:18px;
+    }
+
+    .gop-eyebrow{
+        font-size:9px;
+        letter-spacing:1.5px;
+        text-transform:uppercase;
+        color:#7f8990;
+        font-weight:800;
+        margin-bottom:6px;
+    }
+
+    .gop-vw-title{
+        margin:0;
+        font-size:25px;
+        line-height:1.15;
+        color:#f5f7f8;
+        font-weight:850;
+        letter-spacing:-.4px;
+    }
+
+    .gop-vw-customer{
+        color:#9aa3aa;
+        font-size:13px;
+        margin-top:6px;
+    }
+
+    .gop-vw-status{
+        flex-shrink:0;
+    }
+
+    .gop-vw-grid{
+        display:grid;
+        grid-template-columns:
+            repeat(5,minmax(0,1fr));
+        gap:9px;
+        margin-bottom:22px;
+    }
+
+    .gop-vw-stat{
+        min-width:0;
+        padding:13px;
+        border:1px solid #30363b;
+        background:#1c2124;
+        border-radius:13px;
+    }
+
+    .gop-vw-stat-label{
+        font-size:9px;
+        text-transform:uppercase;
+        letter-spacing:.8px;
+        color:#7f8990;
+        font-weight:800;
+    }
+
+    .gop-vw-stat-value{
+        margin-top:6px;
+        font-size:14px;
+        font-weight:800;
+        color:#edf1f3;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .gop-vw-section{
+        margin-top:20px;
+    }
+
+    .gop-vw-section-head{
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-end;
+        gap:12px;
+        margin-bottom:10px;
+    }
+
+    .gop-vw-section-title{
+        font-size:16px;
+        font-weight:850;
+        color:#f1f4f5;
+    }
+
+    .gop-vw-section-sub{
+        margin-top:3px;
+        font-size:11px;
+        color:#7f8990;
+    }
+
+    .gop-vw-total{
+        font-size:17px;
+        font-weight:900;
+        color:#edf1f3;
+        white-space:nowrap;
+    }
+
+    .gop-vw-info{
+        display:grid;
+        grid-template-columns:
+            repeat(3,minmax(0,1fr));
+        gap:9px;
+        margin-bottom:22px;
+    }
+
+    .gop-vw-info-item{
+        padding:12px 13px;
+        border:1px solid #30363b;
+        background:#1a1f22;
+        border-radius:12px;
+    }
+
+    .gop-vw-info-item span{
+        display:block;
+        font-size:9px;
+        text-transform:uppercase;
+        letter-spacing:.7px;
+        color:#788289;
+        font-weight:800;
+        margin-bottom:5px;
+    }
+
+    .gop-vw-info-item strong{
+        color:#dfe4e7;
+        font-size:12px;
+    }
+
+    .gop-expense-list{
+        border:1px solid #30363b;
+        border-radius:14px;
+        overflow:hidden;
+        background:#181c1f;
+    }
+
+    .gop-expense-head,
+    .gop-expense-row{
+        display:grid;
+        grid-template-columns:110px 120px minmax(0,1fr) 110px;
+        gap:12px;
+        align-items:center;
+    }
+
+    .gop-expense-head{
+        padding:10px 13px;
+        background:#202529;
+        border-bottom:1px solid #30363b;
+        color:#7f8990;
+        font-size:9px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.7px;
+    }
+
+    .gop-expense-row{
+        padding:12px 13px;
+        border-bottom:1px solid #292f33;
+        color:#dce1e4;
+        font-size:11px;
+    }
+
+    .gop-expense-row:last-child{
+        border-bottom:0;
+    }
+
+    .gop-expense-row .amount{
+        text-align:right;
+        font-weight:850;
+        color:#f0f3f4;
+    }
+
+    .gop-expense-empty{
+        padding:36px 18px;
+        text-align:center;
+        color:#7f8990;
+    }
+
+    .gop-add-expense{
+        border:1px solid #3b454c;
+        background:#242a2e;
+        color:#f0f3f4;
+        border-radius:9px;
+        min-height:34px;
+        padding:0 12px;
+        font-size:11px;
+        font-weight:800;
+        cursor:pointer;
+    }
+
+    .gop-add-expense:hover{
+        background:#2d3439;
+    }
+
+    /* ==============================================
+       MOBILE
+       ============================================== */
+
+    @media(max-width:900px){
+
+        #vehiclePageActionBar{
+            flex-direction:column;
+            align-items:stretch;
+            gap:10px;
+        }
+
+        .gop-toolbar-label strong{
+            max-width:none;
+        }
+
+        .gop-toolbar-buttons{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            width:100%;
+        }
+
+        .gop-toolbar-btn{
+            width:100%;
+        }
+
+        .gop-vw-grid{
+            grid-template-columns:
+                repeat(2,minmax(0,1fr));
+        }
+
+        .gop-vw-info{
+            grid-template-columns:
+                repeat(2,minmax(0,1fr));
+        }
+
+        .gop-expense-list{
+            overflow-x:auto;
+        }
+
+        .gop-expense-head,
+        .gop-expense-row{
+            min-width:620px;
+        }
+
+    }
+
+    @media(max-width:560px){
+
+        #vehiclesSection .vehicle-action-btn{
+            height:30px;
+            padding:0 8px;
+            font-size:10px;
+        }
+
+        #vehiclesSection .table-actions{
+            gap:4px;
+        }
+
+        .gop-vw-title{
+            font-size:21px;
+        }
+
+        .gop-vw-header{
+            gap:10px;
+        }
+
+        .gop-vw-grid,
+        .gop-vw-info{
+            grid-template-columns:1fr 1fr;
+        }
+
+        .gop-toolbar-buttons{
+            grid-template-columns:repeat(2,1fr);
+        }
+
+    }
+
+    `;
+
+    document.head.appendChild(style);
+}
+
+/* =========================================================
    HELPERS
    ========================================================= */
 
 function money(value) {
-    const n = Number(value || 0);
+
+    const n =
+        Number(value || 0);
 
     return "KSh " +
-        n.toLocaleString("en-KE", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        });
+        n.toLocaleString(
+            "en-KE",
+            {
+                minimumFractionDigits:0,
+                maximumFractionDigits:2
+            }
+        );
 }
 
 function number(value) {
+
     return Number(value || 0);
 }
 
 function today() {
-    return new Date().toISOString().slice(0, 10);
+
+    return new Date()
+        .toISOString()
+        .slice(0,10);
 }
 
 function escapeHtml(value) {
+
     return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
 }
 
 function vehicleName(id) {
 
-    if (!id) return "General";
+    if (!id)
+        return "General";
 
-    const v = vehicles.find(x => x.id === id);
+    const v =
+        vehicles.find(
+            x => x.id === id
+        );
 
     return v
         ? `${v.registration}${v.customer ? " — " + v.customer : ""}`
@@ -87,7 +587,9 @@ function vehicleName(id) {
 
 function statusClass(status) {
 
-    const s = String(status || "").toLowerCase();
+    const s =
+        String(status || "")
+            .toLowerCase();
 
     if (s.includes("repair"))
         return "status-under-repair";
@@ -113,9 +615,10 @@ function statusClass(status) {
     return "status-default";
 }
 
-function setText(id, value) {
+function setText(id,value) {
 
-    const element = document.getElementById(id);
+    const element =
+        document.getElementById(id);
 
     if (element)
         element.textContent = value;
@@ -123,18 +626,29 @@ function setText(id, value) {
 
 function showToast(message) {
 
-    const toast = document.getElementById("toast");
+    const toast =
+        document.getElementById("toast");
 
     if (!toast) return;
 
-    toast.textContent = message;
-    toast.style.display = "block";
+    toast.textContent =
+        message;
 
-    clearTimeout(window.__toastTimer);
+    toast.style.display =
+        "block";
 
-    window.__toastTimer = setTimeout(() => {
-        toast.style.display = "none";
-    }, 2800);
+    clearTimeout(
+        window.__toastTimer
+    );
+
+    window.__toastTimer =
+        setTimeout(
+            () => {
+                toast.style.display =
+                    "none";
+            },
+            2800
+        );
 }
 
 function supabaseError(error) {
@@ -151,17 +665,21 @@ function supabaseError(error) {
    MODALS
    ========================================================= */
 
-window.openModal = function(id) {
+window.openModal =
+function(id) {
 
-    const modal = document.getElementById(id);
+    const modal =
+        document.getElementById(id);
 
     if (modal)
         modal.classList.add("show");
 };
 
-window.closeModal = function(id) {
+window.closeModal =
+function(id) {
 
-    const modal = document.getElementById(id);
+    const modal =
+        document.getElementById(id);
 
     if (modal)
         modal.classList.remove("show");
@@ -171,22 +689,27 @@ window.closeModal = function(id) {
    NAVIGATION
    ========================================================= */
 
-window.showSection = function(sectionId, button) {
+window.showSection =
+function(sectionId,button) {
 
     document
         .querySelectorAll(".app-section")
         .forEach(section => {
-            section.style.display = "none";
+            section.style.display =
+                "none";
         });
 
     const section =
         document.getElementById(sectionId);
 
     if (section)
-        section.style.display = "block";
+        section.style.display =
+            "block";
 
     document
-        .querySelectorAll(".nav-btn,.mobile-nav-btn")
+        .querySelectorAll(
+            ".nav-btn,.mobile-nav-btn"
+        )
         .forEach(btn => {
             btn.classList.remove("active");
         });
@@ -208,15 +731,17 @@ window.showSection = function(sectionId, button) {
     }
 
     window.scrollTo({
-        top: 0,
-        behavior: "smooth"
+        top:0,
+        behavior:"smooth"
     });
 };
 
-window.goToDashboardSection = function(sectionId) {
+window.goToDashboardSection =
+function(sectionId) {
 
-    window.showSection(sectionId);
-
+    window.showSection(
+        sectionId
+    );
 };
 
 /* =========================================================
@@ -226,48 +751,70 @@ window.goToDashboardSection = function(sectionId) {
 function populateVehicleSelects() {
 
     const selects = [
-        document.getElementById("expenseVehicle"),
-        document.getElementById("reqVehicle")
+        document.getElementById(
+            "expenseVehicle"
+        ),
+        document.getElementById(
+            "reqVehicle"
+        )
     ];
 
     selects.forEach(select => {
 
         if (!select) return;
 
-        const current = select.value;
+        const current =
+            select.value;
 
-        if (select.id === "expenseVehicle") {
+        if (
+            select.id ===
+            "expenseVehicle"
+        ) {
 
             select.innerHTML =
-                `<option value="">General Expense</option>`;
+                `<option value="">
+                    General Expense
+                </option>`;
 
         } else {
 
             select.innerHTML =
-                `<option value="">Select Vehicle</option>`;
+                `<option value="">
+                    Select Vehicle
+                </option>`;
         }
 
         [...vehicles]
-            .sort((a, b) =>
-                String(a.registration || "")
-                    .localeCompare(
-                        String(b.registration || "")
+            .sort(
+                (a,b) =>
+                    String(
+                        a.registration || ""
+                    ).localeCompare(
+                        String(
+                            b.registration || ""
+                        )
                     )
             )
             .forEach(v => {
 
                 const option =
-                    document.createElement("option");
+                    document.createElement(
+                        "option"
+                    );
 
-                option.value = v.id;
+                option.value =
+                    v.id;
 
                 option.textContent =
                     `${v.registration}${v.customer ? " — " + v.customer : ""}`;
 
-                select.appendChild(option);
+                select.appendChild(
+                    option
+                );
             });
 
-        select.value = current;
+        select.value =
+            current;
     });
 }
 
@@ -280,12 +827,16 @@ async function loadVehicles() {
     const {
         data,
         error
-    } = await supabase
-        .from(TABLES.vehicles)
-        .select("*")
-        .order("created_at", {
-            ascending: false
-        });
+    } =
+        await supabase
+            .from(TABLES.vehicles)
+            .select("*")
+            .order(
+                "created_at",
+                {
+                    ascending:false
+                }
+            );
 
     if (error) {
 
@@ -293,7 +844,8 @@ async function loadVehicles() {
         return;
     }
 
-    vehicles = data || [];
+    vehicles =
+        data || [];
 }
 
 /* =========================================================
@@ -305,12 +857,16 @@ async function loadExpenses() {
     const {
         data,
         error
-    } = await supabase
-        .from(TABLES.expenses)
-        .select("*")
-        .order("expense_date", {
-            ascending: false
-        });
+    } =
+        await supabase
+            .from(TABLES.expenses)
+            .select("*")
+            .order(
+                "expense_date",
+                {
+                    ascending:false
+                }
+            );
 
     if (error) {
 
@@ -318,7 +874,8 @@ async function loadExpenses() {
         return;
     }
 
-    expenses = data || [];
+    expenses =
+        data || [];
 }
 
 /* =========================================================
@@ -330,12 +887,16 @@ async function loadPettyCash() {
     const {
         data,
         error
-    } = await supabase
-        .from(TABLES.petty)
-        .select("*")
-        .order("cash_date", {
-            ascending: false
-        });
+    } =
+        await supabase
+            .from(TABLES.petty)
+            .select("*")
+            .order(
+                "cash_date",
+                {
+                    ascending:false
+                }
+            );
 
     if (error) {
 
@@ -343,7 +904,8 @@ async function loadPettyCash() {
         return;
     }
 
-    pettyCash = data || [];
+    pettyCash =
+        data || [];
 }
 
 /* =========================================================
@@ -355,12 +917,16 @@ async function loadRequisitions() {
     const {
         data,
         error
-    } = await supabase
-        .from(TABLES.requisitions)
-        .select("*")
-        .order("req_date", {
-            ascending: false
-        });
+    } =
+        await supabase
+            .from(TABLES.requisitions)
+            .select("*")
+            .order(
+                "req_date",
+                {
+                    ascending:false
+                }
+            );
 
     if (error) {
 
@@ -368,8 +934,198 @@ async function loadRequisitions() {
         return;
     }
 
-    requisitions = data || [];
+    requisitions =
+        data || [];
 }
+
+/* =========================================================
+   VEHICLE PAGE ACTION BAR
+   ========================================================= */
+
+function ensureVehicleActionBar() {
+
+    const section =
+        document.getElementById(
+            "vehiclesSection"
+        );
+
+    if (!section)
+        return;
+
+    if (
+        document.getElementById(
+            "vehiclePageActionBar"
+        )
+    )
+        return;
+
+    const bar =
+        document.createElement("div");
+
+    bar.id =
+        "vehiclePageActionBar";
+
+    bar.innerHTML = `
+
+        <div class="gop-toolbar-label">
+
+            <span>
+                Selected Vehicle
+            </span>
+
+            <strong id="selectedVehicleLabel">
+                No vehicle selected
+            </strong>
+
+        </div>
+
+        <div class="gop-toolbar-buttons">
+
+            <button
+                type="button"
+                id="vehicleEditBottomBtn"
+                class="gop-toolbar-btn"
+                onclick="editSelectedVehicle()"
+                disabled
+            >
+                ✏ Edit
+            </button>
+
+            <button
+                type="button"
+                id="vehicleAddBottomBtn"
+                class="gop-toolbar-btn primary"
+                onclick="addVehicle()"
+            >
+                + Add Vehicle
+            </button>
+
+            <button
+                type="button"
+                id="vehicleDeleteBottomBtn"
+                class="gop-toolbar-btn"
+                onclick="deleteSelectedVehicle()"
+                disabled
+            >
+                🗑 Delete
+            </button>
+
+            <button
+                type="button"
+                id="vehiclePrintBottomBtn"
+                class="gop-toolbar-btn"
+                onclick="printSelectedVehicle()"
+                disabled
+            >
+                🖨 Print
+            </button>
+
+            <button
+                type="button"
+                id="vehicleShareBottomBtn"
+                class="gop-toolbar-btn"
+                onclick="shareSelectedVehicle()"
+                disabled
+            >
+                ↗ Share
+            </button>
+
+        </div>
+
+    `;
+
+    section.appendChild(bar);
+
+    updateVehicleActionBar();
+}
+
+function updateVehicleActionBar() {
+
+    const label =
+        document.getElementById(
+            "selectedVehicleLabel"
+        );
+
+    const edit =
+        document.getElementById(
+            "vehicleEditBottomBtn"
+        );
+
+    const add =
+        document.getElementById(
+            "vehicleAddBottomBtn"
+        );
+
+    const del =
+        document.getElementById(
+            "vehicleDeleteBottomBtn"
+        );
+
+    const print =
+        document.getElementById(
+            "vehiclePrintBottomBtn"
+        );
+
+    const share =
+        document.getElementById(
+            "vehicleShareBottomBtn"
+        );
+
+    const vehicle =
+        vehicles.find(
+            v => v.id === selectedVehicleId
+        );
+
+    if (label) {
+
+        label.textContent =
+            vehicle
+                ? `${vehicle.registration}${vehicle.customer ? " — " + vehicle.customer : ""}`
+                : "No vehicle selected";
+    }
+
+    const disabled =
+        !vehicle;
+
+    if (edit)
+        edit.disabled =
+            disabled;
+
+    if (del)
+        del.disabled =
+            disabled;
+
+    if (print)
+        print.disabled =
+            disabled;
+
+    if (share)
+        share.disabled =
+            disabled;
+
+    if (add)
+        add.disabled =
+            false;
+}
+
+/* =========================================================
+   SELECT VEHICLE
+   ========================================================= */
+
+window.selectVehicle =
+function(vehicleId) {
+
+    selectedVehicleId =
+        vehicleId;
+
+    updateVehicleActionBar();
+
+    renderVehicles();
+
+    openVehicleWorkspace(
+        vehicleId
+    );
+};
 
 /* =========================================================
    LOAD EVERYTHING
@@ -393,15 +1149,17 @@ async function loadAllData() {
     renderRequisitions();
     renderPremiumDashboard();
 
-    /*
-       If the user currently has a vehicle workspace open,
-       refresh it after any CRUD operation.
-    */
+    ensureVehicleActionBar();
+
+    updateVehicleActionBar();
+
     if (selectedVehicleId) {
 
         const exists =
             vehicles.some(
-                v => v.id === selectedVehicleId
+                v =>
+                    v.id ===
+                    selectedVehicleId
             );
 
         if (exists) {
@@ -425,44 +1183,53 @@ function renderDashboard() {
     const underRepair =
         vehicles.filter(v =>
             String(v.status || "")
-                .toLowerCase() === "under repair"
+                .toLowerCase() ===
+            "under repair"
         ).length;
 
     const totalBilled =
         vehicles.reduce(
-            (sum, v) =>
-                sum + number(v.billed),
+            (sum,v) =>
+                sum +
+                number(v.billed),
             0
         );
 
     const totalPaid =
         vehicles.reduce(
-            (sum, v) =>
-                sum + number(v.paid),
+            (sum,v) =>
+                sum +
+                number(v.paid),
             0
         );
 
     const outstanding =
-        totalBilled - totalPaid;
+        totalBilled -
+        totalPaid;
 
     const totalExpenses =
         expenses.reduce(
-            (sum, e) =>
-                sum + number(e.amount),
+            (sum,e) =>
+                sum +
+                number(e.amount),
             0
         );
 
     const totalPetty =
         pettyCash.reduce(
-            (sum, p) =>
-                sum + number(p.amount),
+            (sum,p) =>
+                sum +
+                number(p.amount),
             0
         );
 
     const reqTotal =
         requisitions.reduce(
-            (sum, r) =>
-                sum + number(r.total_amount),
+            (sum,r) =>
+                sum +
+                number(
+                    r.total_amount
+                ),
             0
         );
 
@@ -533,11 +1300,12 @@ function renderPremiumDashboard() {
             "dashboardActivity"
         );
 
-    if (!box) return;
+    if (!box)
+        return;
 
     const recent =
         [...vehicles]
-            .sort((a, b) => {
+            .sort((a,b) => {
 
                 const da =
                     new Date(
@@ -555,19 +1323,32 @@ function renderPremiumDashboard() {
 
                 return db - da;
             })
-            .slice(0, 5);
+            .slice(0,5);
 
     if (!recent.length) {
 
         box.innerHTML = `
-        <div class="activity-item">
-            <div class="activity-icon">🚘</div>
 
-            <div class="activity-main">
-                <strong>No vehicle activity yet</strong>
-                <span>Add your first vehicle to begin.</span>
+            <div class="activity-item">
+
+                <div class="activity-icon">
+                    🚘
+                </div>
+
+                <div class="activity-main">
+
+                    <strong>
+                        No vehicle activity yet
+                    </strong>
+
+                    <span>
+                        Add your first vehicle to begin.
+                    </span>
+
+                </div>
+
             </div>
-        </div>
+
         `;
 
         return;
@@ -576,42 +1357,44 @@ function renderPremiumDashboard() {
     box.innerHTML =
         recent.map(v => `
 
-        <div
-            class="activity-item"
-            style="cursor:pointer"
-            onclick="openVehicleWorkspace('${v.id}')"
-        >
+            <div
+                class="activity-item"
+                style="cursor:pointer"
+                onclick="openVehicleWorkspace('${v.id}')"
+            >
 
-            <div class="activity-icon">🚘</div>
+                <div class="activity-icon">
+                    🚘
+                </div>
 
-            <div class="activity-main">
+                <div class="activity-main">
 
-                <strong>
+                    <strong>
+                        ${escapeHtml(
+                            v.registration ||
+                            "Unknown vehicle"
+                        )}
+                    </strong>
+
+                    <span>
+                        ${escapeHtml(
+                            v.customer ||
+                            "No customer"
+                        )}
+                    </span>
+
+                </div>
+
+                <span
+                    class="status ${statusClass(v.status)}"
+                >
                     ${escapeHtml(
-                        v.registration ||
-                        "Unknown vehicle"
-                    )}
-                </strong>
-
-                <span>
-                    ${escapeHtml(
-                        v.customer ||
-                        "No customer"
+                        v.status ||
+                        "Unknown"
                     )}
                 </span>
 
             </div>
-
-            <span
-                class="status ${statusClass(v.status)}"
-            >
-                ${escapeHtml(
-                    v.status ||
-                    "Unknown"
-                )}
-            </span>
-
-        </div>
 
         `).join("");
 }
@@ -627,7 +1410,10 @@ function renderVehicles() {
             "vehiclesTableBody"
         );
 
-    if (!tbody) return;
+    if (!tbody)
+        return;
+
+    ensureVehicleActionBar();
 
     const search =
         String(
@@ -648,22 +1434,31 @@ function renderVehicles() {
 
             const matchesSearch =
                 !search ||
-                String(v.registration || "")
-                    .toLowerCase()
-                    .includes(search) ||
+                String(
+                    v.registration || ""
+                )
+                .toLowerCase()
+                .includes(search) ||
 
-                String(v.customer || "")
-                    .toLowerCase()
-                    .includes(search) ||
+                String(
+                    v.customer || ""
+                )
+                .toLowerCase()
+                .includes(search) ||
 
-                String(v.job_type || "")
-                    .toLowerCase()
-                    .includes(search);
+                String(
+                    v.job_type || ""
+                )
+                .toLowerCase()
+                .includes(search);
 
             const matchesStatus =
                 !status ||
-                String(v.status || "")
-                    .toLowerCase() === status;
+                String(
+                    v.status || ""
+                )
+                .toLowerCase() ===
+                status;
 
             return (
                 matchesSearch &&
@@ -674,18 +1469,22 @@ function renderVehicles() {
     if (!filtered.length) {
 
         tbody.innerHTML = `
-        <tr>
-            <td
-                colspan="9"
-                style="
-                    text-align:center;
-                    padding:35px;
-                    color:#94a3b8
-                "
-            >
-                No vehicles found.
-            </td>
-        </tr>
+
+            <tr>
+
+                <td
+                    colspan="10"
+                    style="
+                        text-align:center;
+                        padding:35px;
+                        color:#94a3b8
+                    "
+                >
+                    No vehicles found.
+                </td>
+
+            </tr>
+
         `;
 
         return;
@@ -698,19 +1497,28 @@ function renderVehicles() {
                 number(v.billed) -
                 number(v.paid);
 
+            const selected =
+                selectedVehicleId ===
+                v.id
+                    ? " selected"
+                    : "";
+
             return `
 
             <tr
-                onclick="openVehicleWorkspace('${v.id}')"
+                class="vehicle-row${selected}"
+                onclick="selectVehicle('${v.id}')"
                 style="cursor:pointer"
             >
 
                 <td>
+
                     <strong>
                         ${escapeHtml(
                             v.registration
                         )}
                     </strong>
+
                 </td>
 
                 <td>
@@ -727,11 +1535,18 @@ function renderVehicles() {
 
                 <td>
                     ${escapeHtml(
+                        v.date_out || "-"
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
                         v.job_type || ""
                     )}
                 </td>
 
                 <td>
+
                     <span
                         class="status ${statusClass(v.status)}"
                     >
@@ -739,6 +1554,7 @@ function renderVehicles() {
                             v.status || ""
                         )}
                     </span>
+
                 </td>
 
                 <td>
@@ -760,33 +1576,21 @@ function renderVehicles() {
                     <div class="table-actions">
 
                         <button
-                            class="action-btn"
-                            title="Open Vehicle"
-                            onclick="
-                                openVehicleWorkspace('${v.id}')
-                            "
-                        >
-                            👁
-                        </button>
-
-                        <button
-                            class="action-btn"
+                            type="button"
+                            class="vehicle-action-btn"
                             title="Edit Vehicle"
-                            onclick="
-                                editVehicle('${v.id}')
-                            "
+                            onclick="editVehicle('${v.id}')"
                         >
-                            ✏️
+                            ✏ Edit
                         </button>
 
                         <button
-                            class="action-btn"
+                            type="button"
+                            class="vehicle-action-btn vehicle-delete-btn"
                             title="Delete Vehicle"
-                            onclick="
-                                deleteVehicle('${v.id}')
-                            "
+                            onclick="deleteVehicle('${v.id}')"
                         >
-                            🗑
+                            🗑 Delete
                         </button>
 
                     </div>
@@ -796,85 +1600,81 @@ function renderVehicles() {
             </tr>
 
             `;
+
         }).join("");
 }
 
 /* =========================================================
    VEHICLE WORKSPACE
-   IMPORTANT:
-   CLICKING VEHICLE DOES NOT OPEN THE FORM.
-   IT OPENS THIS WORKSPACE FIRST.
    ========================================================= */
 
-window.openVehicleWorkspace = function(vehicleId) {
+window.openVehicleWorkspace =
+function(vehicleId) {
 
-    selectedVehicleId = vehicleId;
+    selectedVehicleId =
+        vehicleId;
 
-    /*
-       If the vehicle expense modal exists in the HTML,
-       use it as the Vehicle Workspace.
-    */
+    updateVehicleActionBar();
 
     const modal =
         document.getElementById(
             "vehicleExpensePreviewModal"
         );
 
-    if (!modal) {
-
-        /*
-           Fallback:
-           still show the workspace content if the modal
-           was not found.
-        */
-
-        window.showSection("vehicles");
-
-        renderVehicleWorkspace(
-            vehicleId
-        );
-
-        return;
-    }
-
     renderVehicleWorkspace(
         vehicleId
     );
 
-    openModal(
-        "vehicleExpensePreviewModal"
-    );
+    if (modal) {
+
+        openModal(
+            "vehicleExpensePreviewModal"
+        );
+
+    } else {
+
+        window.showSection(
+            "vehicles"
+        );
+    }
 };
 
 /* =========================================================
    VEHICLE WORKSPACE RENDER
    ========================================================= */
 
-function renderVehicleWorkspace(vehicleId) {
+function renderVehicleWorkspace(
+    vehicleId
+) {
 
     const vehicle =
         vehicles.find(
             v => v.id === vehicleId
         );
 
-    if (!vehicle) return;
+    if (!vehicle)
+        return;
 
     const content =
         document.getElementById(
             "vehicleExpensePreviewContent"
         );
 
-    if (!content) return;
+    if (!content)
+        return;
 
     const list =
         expenses.filter(
-            e => e.vehicle_id === vehicleId
+            e =>
+                e.vehicle_id ===
+                vehicleId
         );
 
     const total =
         list.reduce(
-            (sum, e) =>
-                sum + number(e.amount),
+            (sum,e) =>
+                sum +
+                number(e.amount),
             0
         );
 
@@ -884,606 +1684,438 @@ function renderVehicleWorkspace(vehicleId) {
 
     content.innerHTML = `
 
-    <div
-        style="
-            font-family:Arial,sans-serif;
-            max-width:100%;
-        "
-    >
+        <div class="gop-vehicle-workspace">
 
-        <!-- HEADER -->
+            <div class="gop-vw-header">
 
-        <div
-            style="
-                display:flex;
-                justify-content:space-between;
-                align-items:flex-start;
-                gap:15px;
-                padding-bottom:18px;
-                border-bottom:1px solid #e5e7eb;
-                margin-bottom:20px;
-            "
-        >
+                <div>
 
-            <div>
+                    <div class="gop-eyebrow">
+                        Vehicle Workspace
+                    </div>
 
-                <div
-                    style="
-                        font-size:11px;
-                        font-weight:700;
-                        letter-spacing:1px;
-                        color:#64748b;
-                        text-transform:uppercase;
-                        margin-bottom:6px;
-                    "
-                >
-                    Vehicle Workspace
+                    <h2 class="gop-vw-title">
+                        ${escapeHtml(
+                            vehicle.registration
+                        )}
+                    </h2>
+
+                    <div class="gop-vw-customer">
+                        ${escapeHtml(
+                            vehicle.customer ||
+                            "No customer"
+                        )}
+                    </div>
+
                 </div>
 
-                <h2
-                    style="
-                        margin:0;
-                        font-size:25px;
-                        font-weight:800;
-                    "
-                >
-                    ${escapeHtml(
-                        vehicle.registration
-                    )}
-                </h2>
+                <div class="gop-vw-status">
 
-                <div
-                    style="
-                        color:#64748b;
-                        font-size:13px;
-                        margin-top:5px;
-                    "
-                >
-                    ${escapeHtml(
-                        vehicle.customer ||
-                        "No customer"
-                    )}
+                    <span
+                        class="status ${statusClass(vehicle.status)}"
+                    >
+                        ${escapeHtml(
+                            vehicle.status ||
+                            "Unknown"
+                        )}
+                    </span>
+
                 </div>
 
             </div>
 
-            <span
-                class="status ${statusClass(vehicle.status)}"
-            >
-                ${escapeHtml(
-                    vehicle.status ||
-                    "Unknown"
-                )}
-            </span>
+            <div class="gop-vw-grid">
 
-        </div>
+                <div class="gop-vw-stat">
 
-        <!-- VEHICLE SUMMARY -->
+                    <div class="gop-vw-stat-label">
+                        Job
+                    </div>
 
-        <div
-            style="
-                display:grid;
-                grid-template-columns:
-                    repeat(auto-fit,minmax(130px,1fr));
-                gap:10px;
-                margin-bottom:22px;
-            "
-        >
+                    <div class="gop-vw-stat-value">
+                        ${escapeHtml(
+                            vehicle.job_type ||
+                            "Repair"
+                        )}
+                    </div>
 
-            <div
-                style="
-                    padding:14px;
-                    border-radius:14px;
-                    background:#f8fafc;
-                    border:1px solid #e5e7eb;
-                "
-            >
-                <div
-                    style="
-                        font-size:10px;
-                        color:#64748b;
-                        text-transform:uppercase;
-                        font-weight:700;
-                    "
-                >
-                    Job
                 </div>
 
-                <div
-                    style="
-                        font-weight:800;
-                        margin-top:5px;
-                    "
-                >
-                    ${escapeHtml(
-                        vehicle.job_type ||
-                        "Repair"
-                    )}
+                <div class="gop-vw-stat">
+
+                    <div class="gop-vw-stat-label">
+                        Date In
+                    </div>
+
+                    <div class="gop-vw-stat-value">
+                        ${escapeHtml(
+                            vehicle.date_in ||
+                            "-"
+                        )}
+                    </div>
+
                 </div>
+
+                <div class="gop-vw-stat">
+
+                    <div class="gop-vw-stat-label">
+                        Date Out
+                    </div>
+
+                    <div class="gop-vw-stat-value">
+                        ${escapeHtml(
+                            vehicle.date_out ||
+                            "-"
+                        )}
+                    </div>
+
+                </div>
+
+                <div class="gop-vw-stat">
+
+                    <div class="gop-vw-stat-label">
+                        Billed
+                    </div>
+
+                    <div class="gop-vw-stat-value">
+                        ${money(
+                            vehicle.billed
+                        )}
+                    </div>
+
+                </div>
+
+                <div class="gop-vw-stat">
+
+                    <div class="gop-vw-stat-label">
+                        Outstanding
+                    </div>
+
+                    <div class="gop-vw-stat-value">
+                        ${money(
+                            outstanding
+                        )}
+                    </div>
+
+                </div>
+
             </div>
 
-            <div
-                style="
-                    padding:14px;
-                    border-radius:14px;
-                    background:#f8fafc;
-                    border:1px solid #e5e7eb;
-                "
-            >
-                <div
-                    style="
-                        font-size:10px;
-                        color:#64748b;
-                        text-transform:uppercase;
-                        font-weight:700;
-                    "
-                >
-                    Date In
+            <div class="gop-vw-info">
+
+                <div class="gop-vw-info-item">
+
+                    <span>
+                        Released To
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(
+                            vehicle.released_to ||
+                            "-"
+                        )}
+                    </strong>
+
                 </div>
 
-                <div
-                    style="
-                        font-weight:800;
-                        margin-top:5px;
-                    "
-                >
-                    ${escapeHtml(
-                        vehicle.date_in ||
-                        "-"
-                    )}
-                </div>
-            </div>
+                <div class="gop-vw-info-item">
 
-            <div
-                style="
-                    padding:14px;
-                    border-radius:14px;
-                    background:#f8fafc;
-                    border:1px solid #e5e7eb;
-                "
-            >
-                <div
-                    style="
-                        font-size:10px;
-                        color:#64748b;
-                        text-transform:uppercase;
-                        font-weight:700;
-                    "
-                >
-                    Billed
+                    <span>
+                        Release Contact
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(
+                            vehicle.released_contact ||
+                            "-"
+                        )}
+                    </strong>
+
                 </div>
 
-                <div
-                    style="
-                        font-weight:800;
-                        margin-top:5px;
-                    "
-                >
-                    ${money(vehicle.billed)}
-                </div>
-            </div>
+                <div class="gop-vw-info-item">
 
-            <div
-                style="
-                    padding:14px;
-                    border-radius:14px;
-                    background:#f8fafc;
-                    border:1px solid #e5e7eb;
-                "
-            >
-                <div
-                    style="
-                        font-size:10px;
-                        color:#64748b;
-                        text-transform:uppercase;
-                        font-weight:700;
-                    "
-                >
-                    Paid
+                    <span>
+                        Total Vehicle Expenses
+                    </span>
+
+                    <strong>
+                        ${money(total)}
+                    </strong>
+
                 </div>
 
-                <div
-                    style="
-                        font-weight:800;
-                        margin-top:5px;
-                    "
-                >
-                    ${money(vehicle.paid)}
-                </div>
-            </div>
+                <div class="gop-vw-info-item"
+                     style="grid-column:1/-1">
 
-            <div
-                style="
-                    padding:14px;
-                    border-radius:14px;
-                    background:#f8fafc;
-                    border:1px solid #e5e7eb;
-                "
-            >
-                <div
-                    style="
-                        font-size:10px;
-                        color:#64748b;
-                        text-transform:uppercase;
-                        font-weight:700;
-                    "
-                >
-                    Outstanding
-                </div>
+                    <span>
+                        Description
+                    </span>
 
-                <div
-                    style="
-                        font-weight:800;
-                        margin-top:5px;
-                    "
-                >
-                    ${money(outstanding)}
-                </div>
-            </div>
+                    <strong>
+                        ${escapeHtml(
+                            vehicle.description ||
+                            "No description recorded."
+                        )}
+                    </strong>
 
-        </div>
-
-        <!-- ACTION BAR -->
-
-        <div
-            style="
-                display:flex;
-                flex-wrap:wrap;
-                gap:8px;
-                margin-bottom:22px;
-            "
-        >
-
-            <button
-                type="button"
-                onclick="openExpenseModalForVehicle('${vehicle.id}')"
-                style="
-                    border:0;
-                    border-radius:10px;
-                    padding:11px 15px;
-                    background:#111827;
-                    color:white;
-                    font-weight:700;
-                    cursor:pointer;
-                "
-            >
-                + Add Expense
-            </button>
-
-            <button
-                type="button"
-                onclick="editVehicle('${vehicle.id}')"
-                style="
-                    border:1px solid #d1d5db;
-                    border-radius:10px;
-                    padding:11px 15px;
-                    background:white;
-                    color:#111827;
-                    font-weight:700;
-                    cursor:pointer;
-                "
-            >
-                ✏️ Edit Vehicle
-            </button>
-
-            <button
-                type="button"
-                onclick="closeModal('vehicleExpensePreviewModal')"
-                style="
-                    border:1px solid #d1d5db;
-                    border-radius:10px;
-                    padding:11px 15px;
-                    background:white;
-                    color:#64748b;
-                    font-weight:700;
-                    cursor:pointer;
-                "
-            >
-                Close
-            </button>
-
-        </div>
-
-        <!-- EXPENSE HEADER -->
-
-        <div
-            style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                gap:10px;
-                margin-bottom:12px;
-            "
-        >
-
-            <div>
-
-                <div
-                    style="
-                        font-size:16px;
-                        font-weight:800;
-                    "
-                >
-                    Expenses So Far
-                </div>
-
-                <div
-                    style="
-                        color:#64748b;
-                        font-size:12px;
-                        margin-top:3px;
-                    "
-                >
-                    All expenses recorded against this vehicle
                 </div>
 
             </div>
 
             <div
-                style="
-                    font-size:18px;
-                    font-weight:900;
-                "
+                class="gop-vw-section"
             >
-                ${money(total)}
-            </div>
-
-        </div>
-
-        <!-- EXPENSE LIST -->
-
-        ${
-            list.length
-
-            ?
-
-            list.map(e => `
 
                 <div
-                    style="
-                        padding:14px 0;
-                        border-bottom:1px solid #e5e7eb;
-                    "
+                    class="gop-vw-section-head"
                 >
+
+                    <div>
+
+                        <div
+                            class="gop-vw-section-title"
+                        >
+                            Expense History
+                        </div>
+
+                        <div
+                            class="gop-vw-section-sub"
+                        >
+                            Expenses recorded against this vehicle
+                        </div>
+
+                    </div>
 
                     <div
                         style="
                             display:flex;
-                            justify-content:space-between;
-                            align-items:flex-start;
-                            gap:10px;
+                            align-items:center;
+                            gap:9px;
                         "
                     >
 
-                        <div>
+                        <strong
+                            class="gop-vw-total"
+                        >
+                            ${money(total)}
+                        </strong>
 
-                            <div
-                                style="
-                                    font-weight:800;
-                                    font-size:13px;
-                                "
-                            >
-                                ${escapeHtml(
-                                    e.description ||
-                                    "Expense"
-                                )}
-                            </div>
+                        <button
+                            type="button"
+                            class="gop-add-expense"
+                            onclick="openExpenseModalForVehicle('${vehicle.id}')"
+                        >
+                            + Expense
+                        </button>
 
-                            <div
-                                style="
-                                    color:#64748b;
-                                    font-size:11px;
-                                    margin-top:5px;
-                                "
-                            >
-                                ${escapeHtml(
-                                    e.expense_date ||
-                                    ""
-                                )}
+                    </div>
 
-                                ${e.category
-                                    ? " · " +
-                                      escapeHtml(
-                                          e.category
-                                      )
-                                    : ""}
+                </div>
+
+                ${
+                    list.length
+
+                    ?
+
+                    `
+
+                    <div class="gop-expense-list">
+
+                        <div class="gop-expense-head">
+
+                            <div>Date</div>
+                            <div>Category</div>
+                            <div>Description</div>
+                            <div style="text-align:right">
+                                Amount
                             </div>
 
                         </div>
 
-                        <strong>
-                            ${money(e.amount)}
-                        </strong>
+                        ${
+                            list.map(e => `
+
+                                <div
+                                    class="gop-expense-row"
+                                >
+
+                                    <div>
+                                        ${escapeHtml(
+                                            e.expense_date ||
+                                            "-"
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        ${escapeHtml(
+                                            e.category ||
+                                            "-"
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        ${escapeHtml(
+                                            e.description ||
+                                            "Expense"
+                                        )}
+                                    </div>
+
+                                    <div class="amount">
+                                        ${money(
+                                            e.amount
+                                        )}
+                                    </div>
+
+                                </div>
+
+                            `).join("")
+                        }
 
                     </div>
+
+                    `
+
+                    :
+
+                    `
 
                     <div
-                        style="
-                            display:flex;
-                            gap:7px;
-                            margin-top:10px;
-                        "
+                        class="gop-expense-empty"
                     >
 
-                        <button
-                            type="button"
-                            onclick="editExpenseFromVehicle('${e.id}')"
+                        <div
                             style="
-                                border:1px solid #d1d5db;
-                                background:white;
-                                border-radius:8px;
-                                padding:6px 10px;
-                                font-size:11px;
-                                font-weight:700;
-                                cursor:pointer;
+                                font-size:27px;
+                                margin-bottom:7px;
                             "
                         >
-                            ✏️ Edit
-                        </button>
+                            ₵
+                        </div>
 
-                        <button
-                            type="button"
-                            onclick="deleteExpenseFromVehicle('${e.id}')"
+                        <strong
                             style="
-                                border:1px solid #fecaca;
-                                background:#fff7f7;
-                                color:#b91c1c;
-                                border-radius:8px;
-                                padding:6px 10px;
-                                font-size:11px;
-                                font-weight:700;
-                                cursor:pointer;
+                                display:block;
+                                color:#b9c1c6;
+                                margin-bottom:5px;
                             "
                         >
-                            🗑 Delete
-                        </button>
+                            No expenses recorded
+                        </strong>
+
+                        <span
+                            style="font-size:11px"
+                        >
+                            Add the first expense for this vehicle.
+                        </span>
 
                     </div>
 
-                </div>
+                    `
+                }
 
-            `).join("")
+            </div>
 
-            :
-
-            `
             <div
                 style="
-                    padding:35px 15px;
-                    text-align:center;
-                    border:1px dashed #d1d5db;
-                    border-radius:14px;
-                    color:#94a3b8;
+                    margin-top:18px;
+                    padding-top:14px;
+                    border-top:1px solid #30363b;
+                    display:flex;
+                    justify-content:flex-end;
                 "
             >
 
-                <div
-                    style="
-                        font-size:30px;
-                        margin-bottom:8px;
-                    "
+                <button
+                    type="button"
+                    class="gop-add-expense"
+                    onclick="closeModal('vehicleExpensePreviewModal')"
                 >
-                    💰
-                </div>
-
-                <strong
-                    style="
-                        display:block;
-                        color:#475569;
-                        margin-bottom:5px;
-                    "
-                >
-                    No expenses recorded yet
-                </strong>
-
-                <span
-                    style="
-                        font-size:12px;
-                    "
-                >
-                    Add the first expense for this vehicle.
-                </span>
+                    Close
+                </button>
 
             </div>
-            `
-        }
 
-    </div>
+        </div>
+
     `;
 }
 
 /* =========================================================
-   VEHICLE EXPENSE ACTIONS
+   VEHICLE BOTTOM ACTIONS
    ========================================================= */
 
-window.openExpenseModalForVehicle =
-function(vehicleId) {
+window.addVehicle =
+function() {
 
-    selectedVehicleId = vehicleId;
-
-    /*
-       Close the vehicle workspace first.
-       Then open ONLY the expense form.
-    */
-
-    closeModal(
-        "vehicleExpensePreviewModal"
-    );
-
-    window.openExpenseModal();
-
-    const select =
-        document.getElementById(
-            "expenseVehicle"
-        );
-
-    if (select)
-        select.value = vehicleId;
+    window.openVehicleModal();
 };
 
-window.editExpenseFromVehicle =
-function(expenseId) {
+window.editSelectedVehicle =
+function() {
 
-    const expense =
-        expenses.find(
-            e => e.id === expenseId
+    if (!selectedVehicleId) {
+
+        showToast(
+            "Select a vehicle first."
         );
 
-    if (!expense) return;
-
-    selectedVehicleId =
-        expense.vehicle_id || selectedVehicleId;
-
-    closeModal(
-        "vehicleExpensePreviewModal"
-    );
-
-    window.openExpenseModal(
-        expenseId
-    );
-};
-
-window.deleteExpenseFromVehicle =
-async function(expenseId) {
-
-    if (
-        !confirm(
-            "Delete this expense?"
-        )
-    )
-        return;
-
-    const {
-        error
-    } =
-        await supabase
-            .from(TABLES.expenses)
-            .delete()
-            .eq("id", expenseId);
-
-    if (error) {
-
-        supabaseError(error);
         return;
     }
 
-    showToast(
-        "Expense deleted."
+    editVehicle(
+        selectedVehicleId
     );
-
-    await loadAllData();
 };
 
-/* =========================================================
-   LEGACY VEHICLE EXPENSE PREVIEW
-   Kept for existing buttons / compatibility.
-   ========================================================= */
+window.deleteSelectedVehicle =
+function() {
 
-window.previewVehicleExpenses =
-function(vehicleId) {
+    if (!selectedVehicleId) {
 
-    window.openVehicleWorkspace(
-        vehicleId
+        showToast(
+            "Select a vehicle first."
+        );
+
+        return;
+    }
+
+    deleteVehicle(
+        selectedVehicleId
+    );
+};
+
+window.printSelectedVehicle =
+function() {
+
+    if (!selectedVehicleId) {
+
+        showToast(
+            "Select a vehicle first."
+        );
+
+        return;
+    }
+
+    printVehicleReport(
+        selectedVehicleId
+    );
+};
+
+window.shareSelectedVehicle =
+function() {
+
+    if (!selectedVehicleId) {
+
+        showToast(
+            "Select a vehicle first."
+        );
+
+        return;
+    }
+
+    shareVehicle(
+        selectedVehicleId
     );
 };
 
@@ -1502,16 +2134,25 @@ function(id = null) {
     if (form)
         form.reset();
 
-    document.getElementById(
-        "vehicleId"
-    ).value = id || "";
+    const idField =
+        document.getElementById(
+            "vehicleId"
+        );
 
-    document.getElementById(
-        "vehicleModalTitle"
-    ).textContent =
-        id
-            ? "Edit Vehicle"
-            : "Add Vehicle";
+    if (idField)
+        idField.value =
+            id || "";
+
+    const title =
+        document.getElementById(
+            "vehicleModalTitle"
+        );
+
+    if (title)
+        title.textContent =
+            id
+                ? "Edit Vehicle"
+                : "Add Vehicle";
 
     if (id) {
 
@@ -1520,86 +2161,94 @@ function(id = null) {
                 x => x.id === id
             );
 
-        if (!v) return;
+        if (!v)
+            return;
 
-        document.getElementById(
-            "vehicleRegistration"
-        ).value =
-            v.registration || "";
+        const fields = {
 
-        document.getElementById(
-            "vehicleCustomer"
-        ).value =
-            v.customer || "";
+            vehicleRegistration:
+                v.registration || "",
 
-        document.getElementById(
-            "vehicleDateIn"
-        ).value =
-            v.date_in || "";
+            vehicleCustomer:
+                v.customer || "",
 
-        document.getElementById(
-            "vehicleDateOut"
-        ).value =
-            v.date_out || "";
+            vehicleDateIn:
+                v.date_in || "",
 
-        document.getElementById(
-            "vehicleJobType"
-        ).value =
-            v.job_type || "Repair";
+            vehicleDateOut:
+                v.date_out || "",
 
-        document.getElementById(
-            "vehicleStatus"
-        ).value =
-            v.status || "Under Repair";
+            vehicleJobType:
+                v.job_type || "Repair",
 
-        document.getElementById(
-            "vehicleReleasedTo"
-        ).value =
-            v.released_to || "";
+            vehicleStatus:
+                v.status || "Under Repair",
 
-        document.getElementById(
-            "vehicleReleasedContact"
-        ).value =
-            v.released_contact || "";
+            vehicleReleasedTo:
+                v.released_to || "",
 
-        document.getElementById(
-            "vehicleDescription"
-        ).value =
-            v.description || "";
+            vehicleReleasedContact:
+                v.released_contact || "",
 
-        document.getElementById(
-            "vehicleBilled"
-        ).value =
-            v.billed || 0;
+            vehicleDescription:
+                v.description || "",
 
-        document.getElementById(
-            "vehiclePaid"
-        ).value =
-            v.paid || 0;
+            vehicleBilled:
+                v.billed || 0,
+
+            vehiclePaid:
+                v.paid || 0
+        };
+
+        Object.entries(fields)
+            .forEach(
+                ([fieldId,value]) => {
+
+                    const field =
+                        document.getElementById(
+                            fieldId
+                        );
+
+                    if (field)
+                        field.value =
+                            value;
+                }
+            );
 
     } else {
 
-        document.getElementById(
-            "vehicleDateIn"
-        ).value = today();
+        const defaults = {
 
-        document.getElementById(
-            "vehicleStatus"
-        ).value =
-            "Under Repair";
+            vehicleDateIn:
+                today(),
 
-        document.getElementById(
-            "vehicleJobType"
-        ).value =
-            "Repair";
+            vehicleStatus:
+                "Under Repair",
 
-        document.getElementById(
-            "vehicleBilled"
-        ).value = 0;
+            vehicleJobType:
+                "Repair",
 
-        document.getElementById(
-            "vehiclePaid"
-        ).value = 0;
+            vehicleBilled:
+                0,
+
+            vehiclePaid:
+                0
+        };
+
+        Object.entries(defaults)
+            .forEach(
+                ([fieldId,value]) => {
+
+                    const field =
+                        document.getElementById(
+                            fieldId
+                        );
+
+                    if (field)
+                        field.value =
+                            value;
+                }
+            );
     }
 
     openModal(
@@ -1610,17 +2259,18 @@ function(id = null) {
 window.editVehicle =
 function(id) {
 
-    /*
-       IMPORTANT:
-       Edit Vehicle is an intentional form action.
-       Normal vehicle click never comes here.
-    */
-
     closeModal(
         "vehicleExpensePreviewModal"
     );
 
-    window.openVehicleModal(id);
+    selectedVehicleId =
+        id;
+
+    updateVehicleActionBar();
+
+    window.openVehicleModal(
+        id
+    );
 };
 
 /* =========================================================
@@ -1638,67 +2288,73 @@ document
             const id =
                 document.getElementById(
                     "vehicleId"
-                ).value;
+                )?.value;
+
+            const value =
+                id =>
+                    document.getElementById(
+                        id
+                    )?.value || "";
 
             const payload = {
 
                 registration:
-                    document.getElementById(
+                    value(
                         "vehicleRegistration"
-                    ).value.trim(),
+                    ).trim(),
 
                 customer:
-                    document.getElementById(
+                    value(
                         "vehicleCustomer"
-                    ).value.trim(),
+                    ).trim(),
 
                 date_in:
-                    document.getElementById(
+                    value(
                         "vehicleDateIn"
-                    ).value,
+                    ),
 
                 date_out:
-                    document.getElementById(
+                    value(
                         "vehicleDateOut"
-                    ).value || null,
+                    ) || null,
 
                 job_type:
-                    document.getElementById(
+                    value(
                         "vehicleJobType"
-                    ).value.trim(),
+                    ).trim(),
 
                 status:
-                    document.getElementById(
+                    value(
                         "vehicleStatus"
-                    ).value,
+                    ),
 
                 released_to:
-                    document.getElementById(
+                    value(
                         "vehicleReleasedTo"
-                    ).value.trim(),
+                    ).trim(),
 
                 released_contact:
-                    document.getElementById(
+                    value(
                         "vehicleReleasedContact"
-                    ).value.trim(),
+                    ).trim(),
 
                 description:
-                    document.getElementById(
+                    value(
                         "vehicleDescription"
-                    ).value.trim(),
+                    ).trim(),
 
                 billed:
                     number(
-                        document.getElementById(
+                        value(
                             "vehicleBilled"
-                        ).value
+                        )
                     ),
 
                 paid:
                     number(
-                        document.getElementById(
+                        value(
                             "vehiclePaid"
-                        ).value
+                        )
                     )
             };
 
@@ -1708,15 +2364,22 @@ document
 
                 result =
                     await supabase
-                        .from(TABLES.vehicles)
+                        .from(
+                            TABLES.vehicles
+                        )
                         .update(payload)
-                        .eq("id", id);
+                        .eq(
+                            "id",
+                            id
+                        );
 
             } else {
 
                 result =
                     await supabase
-                        .from(TABLES.vehicles)
+                        .from(
+                            TABLES.vehicles
+                        )
                         .insert([
                             payload
                         ]);
@@ -1741,25 +2404,21 @@ document
                     : "Vehicle added successfully."
             );
 
-            await loadAllData();
+            if (id)
+                selectedVehicleId =
+                    id;
 
-            /*
-               After updating a vehicle,
-               return to its workspace rather
-               than leaving the user in a form.
-            */
+            await loadAllData();
 
             if (id) {
 
-                selectedVehicleId = id;
-
-                setTimeout(() => {
-
-                    window.openVehicleWorkspace(
-                        id
-                    );
-
-                }, 150);
+                setTimeout(
+                    () =>
+                        window.openVehicleWorkspace(
+                            id
+                        ),
+                    150
+                );
             }
         }
     );
@@ -1771,9 +2430,17 @@ document
 window.deleteVehicle =
 async function(id) {
 
+    const vehicle =
+        vehicles.find(
+            v => v.id === id
+        );
+
+    if (!vehicle)
+        return;
+
     if (
         !confirm(
-            "Delete this vehicle record?"
+            `Delete vehicle ${vehicle.registration}?`
         )
     )
         return;
@@ -1782,9 +2449,14 @@ async function(id) {
         error
     } =
         await supabase
-            .from(TABLES.vehicles)
+            .from(
+                TABLES.vehicles
+            )
             .delete()
-            .eq("id", id);
+            .eq(
+                "id",
+                id
+            );
 
     if (error) {
 
@@ -1793,9 +2465,13 @@ async function(id) {
     }
 
     if (
-        selectedVehicleId === id
+        selectedVehicleId ===
+        id
     ) {
-        selectedVehicleId = null;
+
+        selectedVehicleId =
+            null;
+
         closeModal(
             "vehicleExpensePreviewModal"
         );
@@ -1819,7 +2495,8 @@ function renderExpenses() {
             "expensesTableBody"
         );
 
-    if (!tbody) return;
+    if (!tbody)
+        return;
 
     const search =
         String(
@@ -1845,22 +2522,28 @@ function renderExpenses() {
 
             const matchesSearch =
                 !search ||
-                String(e.description || "")
-                    .toLowerCase()
-                    .includes(search) ||
+                String(
+                    e.description || ""
+                )
+                .toLowerCase()
+                .includes(search) ||
 
                 vehicle
                     .toLowerCase()
                     .includes(search) ||
 
-                String(e.category || "")
-                    .toLowerCase()
-                    .includes(search);
+                String(
+                    e.category || ""
+                )
+                .toLowerCase()
+                .includes(search);
 
             const matchesCategory =
                 !category ||
-                String(e.category || "")
-                    .toLowerCase() ===
+                String(
+                    e.category || ""
+                )
+                .toLowerCase() ===
                 category;
 
             return (
@@ -1874,18 +2557,22 @@ function renderExpenses() {
     if (!filtered.length) {
 
         tbody.innerHTML = `
-        <tr>
-            <td
-                colspan="6"
-                style="
-                    text-align:center;
-                    padding:35px;
-                    color:#94a3b8
-                "
-            >
-                No expenses found.
-            </td>
-        </tr>
+
+            <tr>
+
+                <td
+                    colspan="6"
+                    style="
+                        text-align:center;
+                        padding:35px;
+                        color:#94a3b8
+                    "
+                >
+                    No expenses found.
+                </td>
+
+            </tr>
+
         `;
 
         return;
@@ -1894,67 +2581,65 @@ function renderExpenses() {
     tbody.innerHTML =
         filtered.map(e => `
 
-        <tr>
+            <tr>
 
-            <td>
-                ${escapeHtml(
-                    e.expense_date || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        e.expense_date || ""
+                    )}
+                </td>
 
-            <td>
-                ${escapeHtml(
-                    vehicleName(
-                        e.vehicle_id
-                    )
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        vehicleName(
+                            e.vehicle_id
+                        )
+                    )}
+                </td>
 
-            <td>
-                ${escapeHtml(
-                    e.description || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        e.description || ""
+                    )}
+                </td>
 
-            <td>
-                ${escapeHtml(
-                    e.category || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        e.category || ""
+                    )}
+                </td>
 
-            <td>
-                <strong>
-                    ${money(e.amount)}
-                </strong>
-            </td>
+                <td>
+                    <strong>
+                        ${money(
+                            e.amount
+                        )}
+                    </strong>
+                </td>
 
-            <td>
+                <td>
 
-                <div class="table-actions">
+                    <div class="table-actions">
 
-                    <button
-                        class="action-btn"
-                        onclick="
-                            editExpense('${e.id}')
-                        "
-                    >
-                        ✏️
-                    </button>
+                        <button
+                            class="action-btn"
+                            onclick="editExpense('${e.id}')"
+                        >
+                            ✏️
+                        </button>
 
-                    <button
-                        class="action-btn"
-                        onclick="
-                            deleteExpense('${e.id}')
-                        "
-                    >
-                        🗑
-                    </button>
+                        <button
+                            class="action-btn"
+                            onclick="deleteExpense('${e.id}')"
+                        >
+                            🗑
+                        </button>
 
-                </div>
+                    </div>
 
-            </td>
+                </td>
 
-        </tr>
+            </tr>
 
         `).join("");
 }
@@ -1966,7 +2651,8 @@ function populateExpenseCategories() {
             "expenseCategoryFilter"
         );
 
-    if (!select) return;
+    if (!select)
+        return;
 
     const current =
         select.value;
@@ -1975,7 +2661,10 @@ function populateExpenseCategories() {
         [
             ...new Set(
                 expenses
-                    .map(e => e.category)
+                    .map(
+                        e =>
+                            e.category
+                    )
                     .filter(Boolean)
             )
         ];
@@ -2014,22 +2703,30 @@ function(id = null) {
     if (form)
         form.reset();
 
-    document.getElementById(
-        "expenseId"
-    ).value =
-        id || "";
+    const idField =
+        document.getElementById(
+            "expenseId"
+        );
 
-    document.getElementById(
-        "expenseModalTitle"
-    ).textContent =
+    if (idField)
+        idField.value =
+            id || "";
+
+    setText(
+        "expenseModalTitle",
         id
             ? "Edit Expense"
-            : "Add Expense";
+            : "Add Expense"
+    );
 
-    document.getElementById(
-        "expenseDate"
-    ).value =
-        today();
+    const date =
+        document.getElementById(
+            "expenseDate"
+        );
+
+    if (date)
+        date.value =
+            today();
 
     populateVehicleSelects();
 
@@ -2040,33 +2737,42 @@ function(id = null) {
                 x => x.id === id
             );
 
-        if (!e) return;
+        if (!e)
+            return;
 
-        document.getElementById(
-            "expenseVehicle"
-        ).value =
-            e.vehicle_id || "";
+        const fields = {
 
-        document.getElementById(
-            "expenseDate"
-        ).value =
-            e.expense_date ||
-            today();
+            expenseVehicle:
+                e.vehicle_id || "",
 
-        document.getElementById(
-            "expenseDescription"
-        ).value =
-            e.description || "";
+            expenseDate:
+                e.expense_date ||
+                today(),
 
-        document.getElementById(
-            "expenseCategory"
-        ).value =
-            e.category || "";
+            expenseDescription:
+                e.description || "",
 
-        document.getElementById(
-            "expenseAmount"
-        ).value =
-            e.amount || 0;
+            expenseCategory:
+                e.category || "",
+
+            expenseAmount:
+                e.amount || 0
+        };
+
+        Object.entries(fields)
+            .forEach(
+                ([fieldId,value]) => {
+
+                    const field =
+                        document.getElementById(
+                            fieldId
+                        );
+
+                    if (field)
+                        field.value =
+                            value;
+                }
+            );
     }
 
     openModal(
@@ -2097,12 +2803,13 @@ document
             const id =
                 document.getElementById(
                     "expenseId"
-                ).value;
+                )?.value;
 
             const vehicleId =
                 document.getElementById(
                     "expenseVehicle"
-                ).value || null;
+                )?.value ||
+                null;
 
             const payload = {
 
@@ -2112,23 +2819,25 @@ document
                 expense_date:
                     document.getElementById(
                         "expenseDate"
-                    ).value,
+                    )?.value,
 
                 description:
                     document.getElementById(
                         "expenseDescription"
-                    ).value.trim(),
+                    )?.value
+                    .trim(),
 
                 category:
                     document.getElementById(
                         "expenseCategory"
-                    ).value.trim(),
+                    )?.value
+                    .trim(),
 
                 amount:
                     number(
                         document.getElementById(
                             "expenseAmount"
-                        ).value
+                        )?.value
                     )
             };
 
@@ -2138,15 +2847,22 @@ document
 
                 result =
                     await supabase
-                        .from(TABLES.expenses)
+                        .from(
+                            TABLES.expenses
+                        )
                         .update(payload)
-                        .eq("id", id);
+                        .eq(
+                            "id",
+                            id
+                        );
 
             } else {
 
                 result =
                     await supabase
-                        .from(TABLES.expenses)
+                        .from(
+                            TABLES.expenses
+                        )
                         .insert([
                             payload
                         ]);
@@ -2173,23 +2889,18 @@ document
 
             await loadAllData();
 
-            /*
-               Return to the vehicle workspace
-               after adding/updating its expense.
-            */
-
             if (vehicleId) {
 
                 selectedVehicleId =
                     vehicleId;
 
-                setTimeout(() => {
-
-                    window.openVehicleWorkspace(
-                        vehicleId
-                    );
-
-                }, 150);
+                setTimeout(
+                    () =>
+                        window.openVehicleWorkspace(
+                            vehicleId
+                        ),
+                    150
+                );
             }
         }
     );
@@ -2212,9 +2923,14 @@ async function(id) {
         error
     } =
         await supabase
-            .from(TABLES.expenses)
+            .from(
+                TABLES.expenses
+            )
             .delete()
-            .eq("id", id);
+            .eq(
+                "id",
+                id
+            );
 
     if (error) {
 
@@ -2230,6 +2946,40 @@ async function(id) {
 };
 
 /* =========================================================
+   VEHICLE EXPENSE COMPATIBILITY
+   ========================================================= */
+
+window.openExpenseModalForVehicle =
+function(vehicleId) {
+
+    selectedVehicleId =
+        vehicleId;
+
+    closeModal(
+        "vehicleExpensePreviewModal"
+    );
+
+    window.openExpenseModal();
+
+    const select =
+        document.getElementById(
+            "expenseVehicle"
+        );
+
+    if (select)
+        select.value =
+            vehicleId;
+};
+
+window.previewVehicleExpenses =
+function(vehicleId) {
+
+    window.openVehicleWorkspace(
+        vehicleId
+    );
+};
+
+/* =========================================================
    PETTY CASH
    ========================================================= */
 
@@ -2240,7 +2990,8 @@ function renderPettyCash() {
             "pettyTableBody"
         );
 
-    if (!tbody) return;
+    if (!tbody)
+        return;
 
     const search =
         String(
@@ -2263,11 +3014,13 @@ function renderPettyCash() {
                 `${p.description || ""}
                  ${p.paid_to || ""}
                  ${p.category || ""}`
-                    .toLowerCase();
+                .toLowerCase();
 
             return (
                 (!search ||
-                    text.includes(search)) &&
+                    text.includes(
+                        search
+                    )) &&
 
                 (!category ||
                     String(
@@ -2282,18 +3035,22 @@ function renderPettyCash() {
     if (!filtered.length) {
 
         tbody.innerHTML = `
-        <tr>
-            <td
-                colspan="7"
-                style="
-                    text-align:center;
-                    padding:35px;
-                    color:#94a3b8
-                "
-            >
-                No petty cash records found.
-            </td>
-        </tr>
+
+            <tr>
+
+                <td
+                    colspan="7"
+                    style="
+                        text-align:center;
+                        padding:35px;
+                        color:#94a3b8
+                    "
+                >
+                    No petty cash records found.
+                </td>
+
+            </tr>
+
         `;
 
         return;
@@ -2302,71 +3059,67 @@ function renderPettyCash() {
     tbody.innerHTML =
         filtered.map(p => `
 
-        <tr>
+            <tr>
 
-            <td>
-                ${escapeHtml(
-                    p.cash_date || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        p.cash_date || ""
+                    )}
+                </td>
 
-            <td>
-                ${escapeHtml(
-                    p.description || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        p.description || ""
+                    )}
+                </td>
 
-            <td>
-                ${escapeHtml(
-                    p.paid_to || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        p.paid_to || ""
+                    )}
+                </td>
 
-            <td>
-                ${escapeHtml(
-                    p.category || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        p.category || ""
+                    )}
+                </td>
 
-            <td>
-                <strong>
-                    ${money(p.amount)}
-                </strong>
-            </td>
+                <td>
+                    <strong>
+                        ${money(p.amount)}
+                    </strong>
+                </td>
 
-            <td>
-                ${escapeHtml(
-                    p.notes || ""
-                )}
-            </td>
+                <td>
+                    ${escapeHtml(
+                        p.notes || ""
+                    )}
+                </td>
 
-            <td>
+                <td>
 
-                <div class="table-actions">
+                    <div class="table-actions">
 
-                    <button
-                        class="action-btn"
-                        onclick="
-                            editPetty('${p.id}')
-                        "
-                    >
-                        ✏️
-                    </button>
+                        <button
+                            class="action-btn"
+                            onclick="editPetty('${p.id}')"
+                        >
+                            ✏️
+                        </button>
 
-                    <button
-                        class="action-btn"
-                        onclick="
-                            deletePetty('${p.id}')
-                        "
-                    >
-                        🗑
-                    </button>
+                        <button
+                            class="action-btn"
+                            onclick="deletePetty('${p.id}')"
+                        >
+                            🗑
+                        </button>
 
-                </div>
+                    </div>
 
-            </td>
+                </td>
 
-        </tr>
+            </tr>
 
         `).join("");
 }
@@ -2378,7 +3131,8 @@ function populatePettyCategories() {
             "pettyCategoryFilter"
         );
 
-    if (!select) return;
+    if (!select)
+        return;
 
     const current =
         select.value;
@@ -2387,7 +3141,10 @@ function populatePettyCategories() {
         [
             ...new Set(
                 pettyCash
-                    .map(p => p.category)
+                    .map(
+                        p =>
+                            p.category
+                    )
                     .filter(Boolean)
             )
         ];
@@ -2431,12 +3188,12 @@ function(id = null) {
     ).value =
         id || "";
 
-    document.getElementById(
-        "pettyModalTitle"
-    ).textContent =
+    setText(
+        "pettyModalTitle",
         id
             ? "Edit Petty Cash"
-            : "Add Petty Cash";
+            : "Add Petty Cash"
+    );
 
     document.getElementById(
         "pettyDate"
@@ -2450,38 +3207,45 @@ function(id = null) {
                 x => x.id === id
             );
 
-        if (!p) return;
+        if (!p)
+            return;
 
-        document.getElementById(
-            "pettyDate"
-        ).value =
-            p.cash_date ||
-            today();
+        const fields = {
 
-        document.getElementById(
-            "pettyDescription"
-        ).value =
-            p.description || "";
+            pettyDate:
+                p.cash_date ||
+                today(),
 
-        document.getElementById(
-            "pettyPaidTo"
-        ).value =
-            p.paid_to || "";
+            pettyDescription:
+                p.description || "",
 
-        document.getElementById(
-            "pettyCategory"
-        ).value =
-            p.category || "";
+            pettyPaidTo:
+                p.paid_to || "",
 
-        document.getElementById(
-            "pettyAmount"
-        ).value =
-            p.amount || 0;
+            pettyCategory:
+                p.category || "",
 
-        document.getElementById(
-            "pettyNotes"
-        ).value =
-            p.notes || "";
+            pettyAmount:
+                p.amount || 0,
+
+            pettyNotes:
+                p.notes || ""
+        };
+
+        Object.entries(fields)
+            .forEach(
+                ([fieldId,value]) => {
+
+                    const field =
+                        document.getElementById(
+                            fieldId
+                        );
+
+                    if (field)
+                        field.value =
+                            value;
+                }
+            );
     }
 
     openModal(
@@ -2512,41 +3276,45 @@ document
             const id =
                 document.getElementById(
                     "pettyId"
-                ).value;
+                )?.value;
 
             const payload = {
 
                 cash_date:
                     document.getElementById(
                         "pettyDate"
-                    ).value,
+                    )?.value,
 
                 description:
                     document.getElementById(
                         "pettyDescription"
-                    ).value.trim(),
+                    )?.value
+                    .trim(),
 
                 paid_to:
                     document.getElementById(
                         "pettyPaidTo"
-                    ).value.trim(),
+                    )?.value
+                    .trim(),
 
                 category:
                     document.getElementById(
                         "pettyCategory"
-                    ).value.trim(),
+                    )?.value
+                    .trim(),
 
                 amount:
                     number(
                         document.getElementById(
                             "pettyAmount"
-                        ).value
+                        )?.value
                     ),
 
                 notes:
                     document.getElementById(
                         "pettyNotes"
-                    ).value.trim()
+                    )?.value
+                    .trim()
             };
 
             let result;
@@ -2555,15 +3323,22 @@ document
 
                 result =
                     await supabase
-                        .from(TABLES.petty)
+                        .from(
+                            TABLES.petty
+                        )
                         .update(payload)
-                        .eq("id", id);
+                        .eq(
+                            "id",
+                            id
+                        );
 
             } else {
 
                 result =
                     await supabase
-                        .from(TABLES.petty)
+                        .from(
+                            TABLES.petty
+                        )
                         .insert([
                             payload
                         ]);
@@ -2610,9 +3385,14 @@ async function(id) {
         error
     } =
         await supabase
-            .from(TABLES.petty)
+            .from(
+                TABLES.petty
+            )
             .delete()
-            .eq("id", id);
+            .eq(
+                "id",
+                id
+            );
 
     if (error) {
 
@@ -2638,7 +3418,8 @@ function renderRequisitions() {
             "requisitionsTableBody"
         );
 
-    if (!tbody) return;
+    if (!tbody)
+        return;
 
     const search =
         String(
@@ -2662,11 +3443,13 @@ function renderRequisitions() {
                  ${r.requested_by || ""}
                  ${r.item_description || ""}
                  ${vehicleName(r.vehicle_id)}`
-                    .toLowerCase();
+                .toLowerCase();
 
             return (
                 (!search ||
-                    text.includes(search)) &&
+                    text.includes(
+                        search
+                    )) &&
 
                 (!status ||
                     String(
@@ -2678,7 +3461,7 @@ function renderRequisitions() {
 
     const total =
         requisitions.reduce(
-            (sum, r) =>
+            (sum,r) =>
                 sum +
                 number(
                     r.total_amount
@@ -2694,18 +3477,22 @@ function renderRequisitions() {
     if (!filtered.length) {
 
         tbody.innerHTML = `
-        <tr>
-            <td
-                colspan="11"
-                style="
-                    text-align:center;
-                    padding:35px;
-                    color:#94a3b8
-                "
-            >
-                No requisitions found.
-            </td>
-        </tr>
+
+            <tr>
+
+                <td
+                    colspan="11"
+                    style="
+                        text-align:center;
+                        padding:35px;
+                        color:#94a3b8
+                    "
+                >
+                    No requisitions found.
+                </td>
+
+            </tr>
+
         `;
 
         return;
@@ -2714,1667 +3501,62 @@ function renderRequisitions() {
     tbody.innerHTML =
         filtered.map(r => `
 
-        <tr>
-
-            <td>
-                <strong>
-                    ${escapeHtml(
-                        r.req_no || ""
-                    )}
-                </strong>
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.req_date || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.requested_by || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    vehicleName(
-                        r.vehicle_id
-                    )
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.item_description || ""
-                )}
-            </td>
-
-            <td>
-                ${number(r.quantity)}
-            </td>
-
-            <td>
-                ${money(r.unit_cost)}
-            </td>
-
-            <td>
-                <strong>
-                    ${money(
-                        r.total_amount
-                    )}
-                </strong>
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.expense_type || ""
-                )}
-            </td>
-
-            <td>
-                <span
-                    class="status ${statusClass(r.status)}"
-                >
-                    ${escapeHtml(
-                        r.status || ""
-                    )}
-                </span>
-            </td>
-
-            <td>
-
-                <div class="table-actions">
-
-                    <button
-                        class="action-btn"
-                        onclick="
-                            event.stopPropagation();
-                            previewReq('${r.id}')
-                        "
-                    >
-                        👁
-                    </button>
-
-                    <button
-                        class="action-btn"
-                        onclick="
-                            event.stopPropagation();
-                            editReq('${r.id}')
-                        "
-                    >
-                        ✏️
-                    </button>
-
-                    <button
-                        class="action-btn"
-                        onclick="
-                            event.stopPropagation();
-                            deleteReq('${r.id}')
-                        "
-                    >
-                        🗑
-                    </button>
-
-                </div>
-
-            </td>
-
-        </tr>
-
-        `).join("");
-}
-
-/* =========================================================
-   REQUISITION MODAL
-   ========================================================= */
-
-window.openReqModal =
-function(id = null) {
-
-    const form =
-        document.getElementById(
-            "reqForm"
-        );
-
-    if (form)
-        form.reset();
-
-    document.getElementById(
-        "reqId"
-    ).value =
-        id || "";
-
-    document.getElementById(
-        "reqModalTitle"
-    ).textContent =
-        id
-            ? "Edit Requisition"
-            : "New Requisition";
-
-    document.getElementById(
-        "reqDate"
-    ).value =
-        today();
-
-    populateVehicleSelects();
-
-    if (!id) {
-
-        document.getElementById(
-            "reqStatus"
-        ).value =
-            "Pending";
-
-        document.getElementById(
-            "reqQuantity"
-        ).value =
-            1;
-
-        document.getElementById(
-            "reqUnitCost"
-        ).value =
-            0;
-
-        calculateReqTotal();
-
-    } else {
-
-        const r =
-            requisitions.find(
-                x => x.id === id
-            );
-
-        if (!r) return;
-
-        document.getElementById(
-            "reqNo"
-        ).value =
-            r.req_no || "";
-
-        document.getElementById(
-            "reqDate"
-        ).value =
-            r.req_date ||
-            today();
-
-        document.getElementById(
-            "reqRequestedBy"
-        ).value =
-            r.requested_by || "";
-
-        document.getElementById(
-            "reqVehicle"
-        ).value =
-            r.vehicle_id || "";
-
-        document.getElementById(
-            "reqItemDescription"
-        ).value =
-            r.item_description || "";
-
-        document.getElementById(
-            "reqQuantity"
-        ).value =
-            r.quantity || 0;
-
-        document.getElementById(
-            "reqUnitCost"
-        ).value =
-            r.unit_cost || 0;
-
-        document.getElementById(
-            "reqTotal"
-        ).value =
-            r.total_amount || 0;
-
-        document.getElementById(
-            "reqStatus"
-        ).value =
-            r.status ||
-            "Pending";
-
-        document.getElementById(
-            "reqNotes"
-        ).value =
-            r.notes || "";
-
-        document.getElementById(
-            "reqCategory"
-        ).value =
-            r.category || "";
-
-        document.getElementById(
-            "reqExpenseType"
-        ).value =
-            r.expense_type || "";
-    }
-
-    openModal(
-        "reqModal"
-    );
-};
-
-window.editReq =
-function(id) {
-
-    window.openReqModal(
-        id
-    );
-};
-
-function calculateReqTotal() {
-
-    const qty =
-        number(
-            document.getElementById(
-                "reqQuantity"
-            )?.value
-        );
-
-    const unit =
-        number(
-            document.getElementById(
-                "reqUnitCost"
-            )?.value
-        );
-
-    const total =
-        qty * unit;
-
-    const field =
-        document.getElementById(
-            "reqTotal"
-        );
-
-    if (field)
-        field.value =
-            total;
-}
-
-document
-    .getElementById(
-        "reqQuantity"
-    )
-    ?.addEventListener(
-        "input",
-        calculateReqTotal
-    );
-
-document
-    .getElementById(
-        "reqUnitCost"
-    )
-    ?.addEventListener(
-        "input",
-        calculateReqTotal
-    );
-
-/* =========================================================
-   SAVE REQUISITION
-   ========================================================= */
-
-document
-    .getElementById("reqForm")
-    ?.addEventListener(
-        "submit",
-        async e => {
-
-            e.preventDefault();
-
-            const id =
-                document.getElementById(
-                    "reqId"
-                ).value;
-
-            const quantity =
-                number(
-                    document.getElementById(
-                        "reqQuantity"
-                    ).value
-                );
-
-            const unitCost =
-                number(
-                    document.getElementById(
-                        "reqUnitCost"
-                    ).value
-                );
-
-            const total =
-                quantity *
-                unitCost;
-
-            const payload = {
-
-                req_no:
-                    document.getElementById(
-                        "reqNo"
-                    ).value.trim(),
-
-                req_date:
-                    document.getElementById(
-                        "reqDate"
-                    ).value,
-
-                requested_by:
-                    document.getElementById(
-                        "reqRequestedBy"
-                    ).value.trim(),
-
-                vehicle_id:
-                    document.getElementById(
-                        "reqVehicle"
-                    ).value ||
-                    null,
-
-                item_description:
-                    document.getElementById(
-                        "reqItemDescription"
-                    ).value.trim(),
-
-                quantity,
-
-                unit_cost:
-                    unitCost,
-
-                total_amount:
-                    total,
-
-                status:
-                    document.getElementById(
-                        "reqStatus"
-                    ).value,
-
-                notes:
-                    document.getElementById(
-                        "reqNotes"
-                    ).value.trim(),
-
-                category:
-                    document.getElementById(
-                        "reqCategory"
-                    ).value.trim(),
-
-                expense_type:
-                    document.getElementById(
-                        "reqExpenseType"
-                    ).value.trim()
-            };
-
-            let result;
-
-            if (id) {
-
-                result =
-                    await supabase
-                        .from(
-                            TABLES.requisitions
-                        )
-                        .update(payload)
-                        .eq("id", id);
-
-            } else {
-
-                result =
-                    await supabase
-                        .from(
-                            TABLES.requisitions
-                        )
-                        .insert([
-                            payload
-                        ]);
-            }
-
-            if (result.error) {
-
-                supabaseError(
-                    result.error
-                );
-
-                return;
-            }
-
-            closeModal(
-                "reqModal"
-            );
-
-            showToast(
-                id
-                    ? "Requisition updated."
-                    : "Requisition created."
-            );
-
-            await loadAllData();
-        }
-    );
-
-/* =========================================================
-   DELETE REQUISITION
-   ========================================================= */
-
-window.deleteReq =
-async function(id) {
-
-    if (
-        !confirm(
-            "Delete this requisition?"
-        )
-    )
-        return;
-
-    const {
-        error
-    } =
-        await supabase
-            .from(
-                TABLES.requisitions
-            )
-            .delete()
-            .eq("id", id);
-
-    if (error) {
-
-        supabaseError(error);
-        return;
-    }
-
-    showToast(
-        "Requisition deleted."
-    );
-
-    await loadAllData();
-};
-
-/* =========================================================
-   REQUISITION PREVIEW
-   ========================================================= */
-
-window.previewReq =
-function(id) {
-
-    selectedReqId = id;
-
-    const r =
-        requisitions.find(
-            x => x.id === id
-        );
-
-    if (!r) return;
-
-    const content =
-        document.getElementById(
-            "reqPreviewContent"
-        );
-
-    if (!content) return;
-
-    content.innerHTML = `
-
-    <div
-        style="
-            font-family:Arial,sans-serif;
-        "
-    >
-
-        <div
-            style="
-                border-bottom:2px solid #0f172a;
-                padding-bottom:14px;
-                margin-bottom:18px;
-            "
-        >
-
-            <h2
-                style="
-                    margin-bottom:5px;
-                "
-            >
-                GARAGE OPERATIONS PRO
-            </h2>
-
-            <div
-                style="
-                    color:#64748b;
-                    font-size:12px;
-                "
-            >
-                Workshop Requisition
-            </div>
-
-        </div>
-
-        <table
-            style="
-                width:100%;
-                min-width:0;
-                border-collapse:collapse;
-            "
-        >
-
             <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Requisition No.
+
+                <td>
+                    <strong>
+                        ${escapeHtml(
+                            r.req_no || ""
+                        )}
+                    </strong>
                 </td>
 
-                <td style="padding:8px 0">
-                    ${escapeHtml(
-                        r.req_no || ""
-                    )}
-                </td>
-            </tr>
-
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Date
-                </td>
-
-                <td style="padding:8px 0">
+                <td>
                     ${escapeHtml(
                         r.req_date || ""
                     )}
                 </td>
-            </tr>
 
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Requested By
-                </td>
-
-                <td style="padding:8px 0">
+                <td>
                     ${escapeHtml(
                         r.requested_by || ""
                     )}
                 </td>
-            </tr>
 
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Vehicle
-                </td>
-
-                <td style="padding:8px 0">
+                <td>
                     ${escapeHtml(
                         vehicleName(
                             r.vehicle_id
                         )
                     )}
                 </td>
-            </tr>
 
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Item
-                </td>
-
-                <td style="padding:8px 0">
+                <td>
                     ${escapeHtml(
                         r.item_description || ""
                     )}
                 </td>
-            </tr>
 
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Quantity
-                </td>
-
-                <td style="padding:8px 0">
+                <td>
                     ${number(
                         r.quantity
                     )}
                 </td>
-            </tr>
 
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Unit Cost
-                </td>
-
-                <td style="padding:8px 0">
+                <td>
                     ${money(
                         r.unit_cost
                     )}
                 </td>
-            </tr>
 
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Total
+                <td>
+                    <strong>
+                        ${money(
+                            r.total_amount
+                        )}
+                    </strong>
                 </td>
 
-                <td style="padding:8px 0;font-weight:bold">
-                    ${money(
-                        r.total_amount
-                    )}
-                </td>
-            </tr>
-
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Expense Type
-                </td>
-
-                <td style="padding:8px 0">
+                <td>
                     ${escapeHtml(
-                        r.expense_type || ""
-                    )}
-                </td>
-            </tr>
-
-            <tr>
-                <td style="padding:8px 0;font-weight:bold">
-                    Status
-                </td>
-
-                <td style="padding:8px 0">
-                    ${escapeHtml(
-                        r.status || ""
-                    )}
-                </td>
-            </tr>
-
-        </table>
-
-    </div>
-
-    `;
-
-    openModal(
-        "reqPreviewModal"
-    );
-};
-
-window.previewSelectedReq =
-function() {
-
-    if (!requisitions.length) {
-
-        showToast(
-            "There are no requisitions."
-        );
-
-        return;
-    }
-
-    if (!selectedReqId) {
-
-        previewReq(
-            requisitions[0].id
-        );
-
-    } else {
-
-        previewReq(
-            selectedReqId
-        );
-    }
-};
-
-/* =========================================================
-   PRINT
-   ========================================================= */
-
-function printHtml(
-    title,
-    html
-) {
-
-    const win =
-        window.open(
-            "",
-            "_blank",
-            "width=1000,height=700"
-        );
-
-    if (!win) {
-
-        showToast(
-            "Please allow pop-ups to print."
-        );
-
-        return;
-    }
-
-    win.document.write(`
-    <!DOCTYPE html>
-
-    <html>
-
-    <head>
-
-        <title>
-            ${escapeHtml(title)}
-        </title>
-
-        <style>
-
-            body{
-                font-family:Arial,sans-serif;
-                padding:30px;
-                color:#111827;
-            }
-
-            h1,h2,h3{
-                margin-top:0;
-            }
-
-            table{
-                width:100%;
-                border-collapse:collapse;
-                margin-top:20px;
-            }
-
-            th,td{
-                border:1px solid #d1d5db;
-                padding:9px;
-                text-align:left;
-                font-size:12px;
-            }
-
-            th{
-                background:#f3f4f6;
-            }
-
-            .header{
-                border-bottom:2px solid #111827;
-                padding-bottom:15px;
-                margin-bottom:20px;
-            }
-
-        </style>
-
-    </head>
-
-    <body>
-
-        ${html}
-
-    </body>
-
-    </html>
-    `);
-
-    win.document.close();
-
-    win.focus();
-
-    setTimeout(
-        () => {
-            win.print();
-        },
-        300
-    );
-}
-
-window.printVehicles =
-function() {
-
-    const rows =
-        vehicles.map(v => `
-
-        <tr>
-
-            <td>
-                ${escapeHtml(
-                    v.registration
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    v.customer
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    v.date_in || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    v.job_type || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    v.status || ""
-                )}
-            </td>
-
-            <td>
-                ${money(v.billed)}
-            </td>
-
-            <td>
-                ${money(v.paid)}
-            </td>
-
-            <td>
-                ${money(
-                    number(v.billed) -
-                    number(v.paid)
-                )}
-            </td>
-
-        </tr>
-
-        `).join("");
-
-    printHtml(
-        "Garage Vehicles",
-        `
-
-        <div class="header">
-
-            <h1>
-                Garage Operations Pro
-            </h1>
-
-            <h3>
-                Vehicle Register
-            </h3>
-
-        </div>
-
-        <table>
-
-            <thead>
-
-                <tr>
-                    <th>Registration</th>
-                    <th>Customer</th>
-                    <th>Date In</th>
-                    <th>Job Type</th>
-                    <th>Status</th>
-                    <th>Billed</th>
-                    <th>Paid</th>
-                    <th>Outstanding</th>
-                </tr>
-
-            </thead>
-
-            <tbody>
-                ${rows}
-            </tbody>
-
-        </table>
-
-        `
-    );
-};
-
-window.printExpenses =
-function() {
-
-    const rows =
-        expenses.map(e => `
-
-        <tr>
-
-            <td>
-                ${escapeHtml(
-                    e.expense_date || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    vehicleName(
-                        e.vehicle_id
-                    )
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    e.description || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    e.category || ""
-                )}
-            </td>
-
-            <td>
-                ${money(e.amount)}
-            </td>
-
-        </tr>
-
-        `).join("");
-
-    printHtml(
-        "Garage Expenses",
-        `
-
-        <div class="header">
-
-            <h1>
-                Garage Operations Pro
-            </h1>
-
-            <h3>
-                Expenses
-            </h3>
-
-        </div>
-
-        <table>
-
-            <thead>
-
-                <tr>
-                    <th>Date</th>
-                    <th>Vehicle</th>
-                    <th>Description</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                </tr>
-
-            </thead>
-
-            <tbody>
-                ${rows}
-            </tbody>
-
-        </table>
-
-        `
-    );
-};
-
-window.printPettyCash =
-function() {
-
-    const rows =
-        pettyCash.map(p => `
-
-        <tr>
-
-            <td>
-                ${escapeHtml(
-                    p.cash_date || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    p.description || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    p.paid_to || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    p.category || ""
-                )}
-            </td>
-
-            <td>
-                ${money(p.amount)}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    p.notes || ""
-                )}
-            </td>
-
-        </tr>
-
-        `).join("");
-
-    printHtml(
-        "Garage Petty Cash",
-        `
-
-        <div class="header">
-
-            <h1>
-                Garage Operations Pro
-            </h1>
-
-            <h3>
-                Petty Cash
-            </h3>
-
-        </div>
-
-        <table>
-
-            <thead>
-
-                <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Paid To</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Notes</th>
-                </tr>
-
-            </thead>
-
-            <tbody>
-                ${rows}
-            </tbody>
-
-        </table>
-
-        `
-    );
-};
-
-window.printRequisitions =
-function() {
-
-    const rows =
-        requisitions.map(r => `
-
-        <tr>
-
-            <td>
-                ${escapeHtml(
-                    r.req_no || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.req_date || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.requested_by || ""
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    vehicleName(
-                        r.vehicle_id
-                    )
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.item_description || ""
-                )}
-            </td>
-
-            <td>
-                ${number(
-                    r.quantity
-                )}
-            </td>
-
-            <td>
-                ${money(
-                    r.unit_cost
-                )}
-            </td>
-
-            <td>
-                ${money(
-                    r.total_amount
-                )}
-            </td>
-
-            <td>
-                ${escapeHtml(
-                    r.status || ""
-                )}
-            </td>
-
-        </tr>
-
-        `).join("");
-
-    printHtml(
-        "Garage Requisitions",
-        `
-
-        <div class="header">
-
-            <h1>
-                Garage Operations Pro
-            </h1>
-
-            <h3>
-                Requisitions
-            </h3>
-
-        </div>
-
-        <table>
-
-            <thead>
-
-                <tr>
-                    <th>Req No.</th>
-                    <th>Date</th>
-                    <th>Requested By</th>
-                    <th>Vehicle</th>
-                    <th>Description</th>
-                    <th>Qty</th>
-                    <th>Unit Cost</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                </tr>
-
-            </thead>
-
-            <tbody>
-                ${rows}
-            </tbody>
-
-        </table>
-
-        `
-    );
-};
-
-window.printSelectedReq =
-function() {
-
-    if (!selectedReqId) {
-
-        showToast(
-            "Select a requisition first."
-        );
-
-        return;
-    }
-
-    const r =
-        requisitions.find(
-            x => x.id === selectedReqId
-        );
-
-    if (!r) return;
-
-    const content =
-        document.getElementById(
-            "reqPreviewContent"
-        );
-
-    printHtml(
-        "Requisition " +
-            r.req_no,
-        content.innerHTML
-    );
-};
-
-window.printVehicleExpensePreview =
-function() {
-
-    if (!selectedVehicleId)
-        return;
-
-    const content =
-        document.getElementById(
-            "vehicleExpensePreviewContent"
-        );
-
-    if (!content) return;
-
-    printHtml(
-        "Vehicle Expense Summary",
-        content.innerHTML
-    );
-};
-
-/* =========================================================
-   SHARE
-   ========================================================= */
-
-async function shareText(
-    title,
-    text
-) {
-
-    if (navigator.share) {
-
-        try {
-
-            await navigator.share({
-                title,
-                text
-            });
-
-        } catch (error) {
-
-            console.log(error);
-        }
-
-    } else {
-
-        try {
-
-            await navigator.clipboard
-                .writeText(text);
-
-            showToast(
-                "Details copied to clipboard."
-            );
-
-        } catch (error) {
-
-            showToast(
-                "Sharing is not supported on this device."
-            );
-        }
-    }
-}
-
-window.shareVehicle =
-function(id) {
-
-    const v =
-        vehicles.find(
-            x => x.id === id
-        );
-
-    if (!v) return;
-
-    shareText(
-        "Vehicle " +
-            v.registration,
-
-        `
-Vehicle: ${v.registration}
-Customer: ${v.customer}
-Date In: ${v.date_in || ""}
-Job Type: ${v.job_type || ""}
-Status: ${v.status || ""}
-Billed: ${money(v.billed)}
-Paid: ${money(v.paid)}
-Outstanding: ${money(
-    number(v.billed) -
-    number(v.paid)
-)}
-        `
-    );
-};
-
-window.shareExpense =
-function(id) {
-
-    const e =
-        expenses.find(
-            x => x.id === id
-        );
-
-    if (!e) return;
-
-    shareText(
-        "Garage Expense",
-
-        `
-Date: ${e.expense_date}
-Vehicle: ${vehicleName(
-    e.vehicle_id
-)}
-Description: ${e.description}
-Category: ${e.category}
-Amount: ${money(e.amount)}
-        `
-    );
-};
-
-window.sharePetty =
-function(id) {
-
-    const p =
-        pettyCash.find(
-            x => x.id === id
-        );
-
-    if (!p) return;
-
-    shareText(
-        "Petty Cash",
-
-        `
-Date: ${p.cash_date}
-Description: ${p.description}
-Paid To: ${p.paid_to}
-Category: ${p.category}
-Amount: ${money(p.amount)}
-Notes: ${p.notes || ""}
-        `
-    );
-};
-
-window.shareReq =
-function(id) {
-
-    const r =
-        requisitions.find(
-            x => x.id === id
-        );
-
-    if (!r) return;
-
-    shareText(
-        "Requisition " +
-            r.req_no,
-
-        `
-Requisition: ${r.req_no}
-Date: ${r.req_date}
-Requested By: ${r.requested_by}
-Vehicle: ${vehicleName(
-    r.vehicle_id
-)}
-Item: ${r.item_description}
-Quantity: ${r.quantity}
-Unit Cost: ${money(
-    r.unit_cost
-)}
-Total: ${money(
-    r.total_amount
-)}
-Status: ${r.status}
-        `
-    );
-};
-
-/* =========================================================
-   DASHBOARD CARD NAVIGATION
-   ========================================================= */
-
-function setupDashboardCards() {
-
-    /*
-       We deliberately attach navigation to the
-       existing dashboard KPI elements rather than
-       changing their HTML.
-
-       Clicking a vehicle KPI -> Vehicles
-       Clicking repair KPI -> Vehicles
-       Clicking expense KPI -> Expenses
-       Clicking petty KPI -> Petty Cash
-       Clicking requisition KPI -> Requisitions
-    */
-
-    const mappings = [
-
-        {
-            ids: ["dashVehicles"],
-            section: "vehicles"
-        },
-
-        {
-            ids: ["dashRepair"],
-            section: "vehicles"
-        },
-
-        {
-            ids: [
-                "dashBilled",
-                "dashPaid",
-                "dashOutstanding"
-            ],
-            section: "vehicles"
-        },
-
-        {
-            ids: ["dashExpenses"],
-            section: "expenses"
-        },
-
-        {
-            ids: ["dashPetty"],
-            section: "pettyCash"
-        },
-
-        {
-            ids: [
-                "dashReq",
-                "dashReqCount",
-                "dashReqTotal",
-                "reqOverallTotal"
-            ],
-            section: "requisitions"
-        }
-
-    ];
-
-    mappings.forEach(item => {
-
-        item.ids.forEach(id => {
-
-            const element =
-                document.getElementById(id);
-
-            if (!element) return;
-
-            /*
-               Find the dashboard card itself.
-            */
-
-            const card =
-                element.closest(
-                    ".dashboard-card,.stat-card,.kpi-card,.card"
-                ) ||
-                element.parentElement;
-
-            if (!card) return;
-
-            if (
-                card.dataset.garageCardReady
-            )
-                return;
-
-            card.dataset.garageCardReady =
-                "true";
-
-            card.style.cursor =
-                "pointer";
-
-            card.addEventListener(
-                "click",
-                event => {
-
-                    /*
-                       Don't interfere with buttons
-                       or links inside the card.
-                    */
-
-                    if (
-                        event.target.closest(
-                            "button,a"
-                        )
-                    )
-                        return;
-
-                    window.showSection(
-                        item.section
-                    );
-                }
-            );
-        });
-    });
-}
-
-/* =========================================================
-   SEARCH / FILTER EVENTS
-   ========================================================= */
-
-[
-    "vehicleSearch",
-    "vehicleStatusFilter"
-].forEach(id => {
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "input",
-            renderVehicles
-        );
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "change",
-            renderVehicles
-        );
-});
-
-[
-    "expenseSearch",
-    "expenseCategoryFilter"
-].forEach(id => {
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "input",
-            renderExpenses
-        );
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "change",
-            renderExpenses
-        );
-});
-
-[
-    "pettySearch",
-    "pettyCategoryFilter"
-].forEach(id => {
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "input",
-            renderPettyCash
-        );
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "change",
-            renderPettyCash
-        );
-});
-
-[
-    "reqSearch",
-    "reqStatusFilter"
-].forEach(id => {
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "input",
-            renderRequisitions
-        );
-
-    document
-        .getElementById(id)
-        ?.addEventListener(
-            "change",
-            renderRequisitions
-        );
-});
-
-/* =========================================================
-   MODAL OUTSIDE CLICK
-   ========================================================= */
-
-document.addEventListener(
-    "click",
-    e => {
-
-        if (
-            e.target.classList.contains(
-                "modal"
-            )
-        ) {
-
-            e.target.classList.remove(
-                "show"
-            );
-        }
-    }
-);
-
-/* =========================================================
-   ESCAPE KEY
-   ========================================================= */
-
-document.addEventListener(
-    "keydown",
-    e => {
-
-        if (e.key === "Escape") {
-
-            document
-                .querySelectorAll(
-                    ".modal.show"
-                )
-                .forEach(modal => {
-
-                    modal.classList.remove(
-                        "show"
-                    );
-                });
-        }
-    }
-);
-
-/* =========================================================
-   GLOBAL ERROR HANDLING
-   ========================================================= */
-
-window.addEventListener(
-    "error",
-    e => {
-
-        console.error(
-            "Application error:",
-            e.error ||
-            e.message
-        );
-    }
-);
-
-/* =========================================================
-   START
-   ========================================================= */
-
-async function startApp() {
-
-    await loadAllData();
-
-    /*
-       Give the existing dashboard HTML
-       a moment to finish rendering before
-       connecting its cards.
-    */
-
-    setTimeout(
-        setupDashboardCards,
-        100
-    );
-}
-
-startApp();
+                       
