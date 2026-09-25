@@ -4,6 +4,7 @@ from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 /* =========================================================
    GARAGE OPERATIONS PRO
    PREMIUM GRAPHITE / STEEL EDITION
+   REQUISITION ACCOUNTING SEPARATION
    ========================================================= */
 
 /* =========================================================
@@ -46,6 +47,13 @@ let selectedReqId = null;
 let selectedVehicleExpenseId = null;
 let selectedVehicleId = null;
 
+/*
+   True when petty_cash.req_no exists and can be used.
+   This is important because older databases may not yet
+   have the new column.
+*/
+let pettyCashHasReqNo = false;
+
 /* =========================================================
    PREMIUM APP STYLE
    ========================================================= */
@@ -63,11 +71,6 @@ function injectPremiumStyles() {
 
     style.textContent = `
 
-    /* ==============================================
-       GARAGE OPERATIONS PRO
-       GRAPHITE / STEEL / WHITE
-       ============================================== */
-
     :root{
         --gop-bg:#111416;
         --gop-panel:#181c1f;
@@ -82,8 +85,6 @@ function injectPremiumStyles() {
         --gop-danger:#c77979;
         --gop-shadow:0 18px 50px rgba(0,0,0,.28);
     }
-
-    /* Vehicle table */
 
     #vehiclesSection .table-actions{
         display:flex !important;
@@ -136,30 +137,20 @@ function injectPremiumStyles() {
         color:#e0b2b2;
     }
 
-    /* ==============================================
-       VEHICLE PAGE TOOLBAR
-       ============================================== */
-
     #vehiclePageActionBar{
         position:sticky;
         bottom:12px;
         z-index:30;
-
         display:flex;
         align-items:center;
         justify-content:space-between;
         gap:18px;
-
         margin-top:22px;
         padding:13px 15px;
-
         background:rgba(24,28,31,.96);
         border:1px solid #343b40;
         border-radius:16px;
-
-        box-shadow:
-            0 18px 45px rgba(0,0,0,.35);
-
+        box-shadow:0 18px 45px rgba(0,0,0,.35);
         backdrop-filter:blur(14px);
         -webkit-backdrop-filter:blur(14px);
     }
@@ -198,19 +189,14 @@ function injectPremiumStyles() {
     .gop-toolbar-btn{
         min-height:36px;
         padding:0 13px;
-
         border:1px solid #3a4248;
         border-radius:9px;
-
         background:#202529;
         color:#e9edef;
-
         font-size:11px;
         font-weight:800;
-
         cursor:pointer;
         white-space:nowrap;
-
         transition:
             background .18s ease,
             border-color .18s ease,
@@ -238,10 +224,6 @@ function injectPremiumStyles() {
         background:#eef2f4;
         border-color:#eef2f4;
     }
-
-    /* ==============================================
-       VEHICLE WORKSPACE
-       ============================================== */
 
     .gop-vehicle-workspace{
         color:#e9edef;
@@ -289,8 +271,7 @@ function injectPremiumStyles() {
 
     .gop-vw-grid{
         display:grid;
-        grid-template-columns:
-            repeat(5,minmax(0,1fr));
+        grid-template-columns:repeat(5,minmax(0,1fr));
         gap:9px;
         margin-bottom:22px;
     }
@@ -353,8 +334,7 @@ function injectPremiumStyles() {
 
     .gop-vw-info{
         display:grid;
-        grid-template-columns:
-            repeat(3,minmax(0,1fr));
+        grid-template-columns:repeat(3,minmax(0,1fr));
         gap:9px;
         margin-bottom:22px;
     }
@@ -446,9 +426,101 @@ function injectPremiumStyles() {
         background:#2d3439;
     }
 
-    /* ==============================================
-       MOBILE
-       ============================================== */
+    /* =====================================================
+       REQUISITION FINANCIAL CARDS
+       ===================================================== */
+
+    .gop-req-finance{
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:10px;
+        margin:16px 0 18px;
+    }
+
+    .gop-req-finance-card{
+        padding:14px;
+        border:1px solid #30363b;
+        background:#181c1f;
+        border-radius:13px;
+    }
+
+    .gop-req-finance-label{
+        font-size:9px;
+        letter-spacing:1px;
+        text-transform:uppercase;
+        color:#7f8990;
+        font-weight:800;
+    }
+
+    .gop-req-finance-value{
+        margin-top:6px;
+        font-size:18px;
+        font-weight:900;
+        color:#f2f4f5;
+    }
+
+    .gop-req-finance-note{
+        margin-top:4px;
+        font-size:10px;
+        color:#7f8990;
+    }
+
+    .gop-req-search-highlight{
+        border:1px solid #3a4248;
+        background:#1b2023;
+        border-radius:14px;
+        padding:15px;
+        margin:12px 0;
+    }
+
+    .gop-req-search-title{
+        font-size:18px;
+        font-weight:900;
+        color:#f1f4f5;
+    }
+
+    .gop-req-search-sub{
+        margin-top:4px;
+        color:#8c969d;
+        font-size:11px;
+    }
+
+    .gop-req-balance{
+        font-weight:900;
+    }
+
+    .gop-req-balance-zero{
+        color:#a8c1ad;
+    }
+
+    .gop-req-balance-due{
+        color:#e0c1a1;
+    }
+
+    .gop-req-payment{
+        font-size:10px;
+        color:#8e989f;
+        margin-top:3px;
+    }
+
+    /* Dynamically created requisition selector */
+
+    .gop-req-field{
+        margin-top:12px;
+    }
+
+    .gop-req-field label{
+        display:block;
+        margin-bottom:5px;
+        font-size:11px;
+        font-weight:700;
+    }
+
+    .gop-req-field select,
+    .gop-req-field input{
+        width:100%;
+        box-sizing:border-box;
+    }
 
     @media(max-width:900px){
 
@@ -473,13 +545,11 @@ function injectPremiumStyles() {
         }
 
         .gop-vw-grid{
-            grid-template-columns:
-                repeat(2,minmax(0,1fr));
+            grid-template-columns:repeat(2,minmax(0,1fr));
         }
 
         .gop-vw-info{
-            grid-template-columns:
-                repeat(2,minmax(0,1fr));
+            grid-template-columns:repeat(2,minmax(0,1fr));
         }
 
         .gop-expense-list{
@@ -491,6 +561,9 @@ function injectPremiumStyles() {
             min-width:620px;
         }
 
+        .gop-req-finance{
+            grid-template-columns:1fr;
+        }
     }
 
     @media(max-width:560px){
@@ -521,7 +594,6 @@ function injectPremiumStyles() {
         .gop-toolbar-buttons{
             grid-template-columns:repeat(2,1fr);
         }
-
     }
 
     `;
@@ -568,6 +640,13 @@ function escapeHtml(value) {
         .replace(/>/g,"&gt;")
         .replace(/"/g,"&quot;")
         .replace(/'/g,"&#039;");
+}
+
+function normalizeReqNo(value) {
+
+    return String(value || "")
+        .trim()
+        .toUpperCase();
 }
 
 function vehicleName(id) {
@@ -658,6 +737,149 @@ function supabaseError(error) {
     showToast(
         error?.message ||
         "Something went wrong."
+    );
+}
+
+/* =========================================================
+   REQUISITION FINANCIAL CALCULATION
+   ========================================================= */
+
+/*
+   IMPORTANT:
+
+   A requisition is identified by its EXACT req_no.
+
+   Example:
+
+   REQ-001 -> only payments where req_no = REQ-001
+   REQ-002 -> only payments where req_no = REQ-002
+
+   There is deliberately NO global petty cash calculation here.
+*/
+
+function getRequisitionPayments(reqNo) {
+
+    const target =
+        normalizeReqNo(reqNo);
+
+    if (!target)
+        return [];
+
+    return pettyCash.filter(p => {
+
+        const paymentReqNo =
+            normalizeReqNo(
+                p.req_no
+            );
+
+        return (
+            paymentReqNo &&
+            paymentReqNo === target
+        );
+    });
+}
+
+function getRequisitionReceived(reqNo) {
+
+    const payments =
+        getRequisitionPayments(
+            reqNo
+        );
+
+    return payments.reduce(
+        (sum,p) =>
+            sum +
+            number(p.amount),
+        0
+    );
+}
+
+function getRequisitionFinancials(req) {
+
+    if (!req) {
+
+        return {
+            requested:0,
+            received:0,
+            balance:0,
+            payments:[]
+        };
+    }
+
+    const requested =
+        number(
+            req.total_amount
+        );
+
+    const payments =
+        getRequisitionPayments(
+            req.req_no
+        );
+
+    const received =
+        payments.reduce(
+            (sum,p) =>
+                sum +
+                number(p.amount),
+            0
+        );
+
+    const balance =
+        Math.max(
+            requested - received,
+            0
+        );
+
+    return {
+        requested,
+        received,
+        balance,
+        payments
+    };
+}
+
+/*
+   Used for the overall dashboard total.
+
+   This is ONLY the sum of each requisition's own
+   requested amount. It is NOT used to calculate an
+   individual requisition's balance.
+*/
+
+function getTotalRequisitionRequested() {
+
+    return requisitions.reduce(
+        (sum,r) =>
+            sum +
+            number(r.total_amount),
+        0
+    );
+}
+
+function getTotalRequisitionReceived() {
+
+    /*
+       Only petty cash entries that actually have
+       a requisition number are considered here.
+    */
+
+    return pettyCash.reduce(
+        (sum,p) => {
+
+            const reqNo =
+                normalizeReqNo(
+                    p.req_no
+                );
+
+            if (!reqNo)
+                return sum;
+
+            return (
+                sum +
+                number(p.amount)
+            );
+        },
+        0
     );
 }
 
@@ -819,6 +1041,184 @@ function populateVehicleSelects() {
 }
 
 /* =========================================================
+   REQUISITION SELECT
+   ========================================================= */
+
+function populateRequisitionSelect(select) {
+
+    if (!select)
+        return;
+
+    const current =
+        normalizeReqNo(
+            select.value
+        );
+
+    select.innerHTML =
+        `<option value="">
+            No Requisition
+        </option>`;
+
+    [...requisitions]
+        .sort(
+            (a,b) =>
+                normalizeReqNo(a.req_no)
+                    .localeCompare(
+                        normalizeReqNo(b.req_no)
+                    )
+        )
+        .forEach(r => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                normalizeReqNo(
+                    r.req_no
+                );
+
+            option.textContent =
+                normalizeReqNo(
+                    r.req_no
+                );
+
+            select.appendChild(
+                option
+            );
+        });
+
+    if (
+        [...select.options]
+            .some(
+                o =>
+                    normalizeReqNo(o.value) ===
+                    current
+            )
+    ) {
+
+        select.value =
+            current;
+    }
+}
+
+/* =========================================================
+   DYNAMIC PETTY CASH REQUISITION FIELD
+   ========================================================= */
+
+function ensurePettyRequisitionField() {
+
+    const form =
+        document.getElementById(
+            "pettyForm"
+        );
+
+    if (!form)
+        return null;
+
+    /*
+       If the HTML already has pettyReqNo,
+       use it and do not create another.
+    */
+
+    let existing =
+        document.getElementById(
+            "pettyReqNo"
+        );
+
+    if (existing) {
+
+        pettyCashHasReqNo = true;
+
+        populateRequisitionSelect(
+            existing
+        );
+
+        return existing;
+    }
+
+    /*
+       If database does not yet have req_no,
+       still create the field visually. Saving
+       will explain what needs to be added.
+    */
+
+    const wrapper =
+        document.createElement(
+            "div"
+        );
+
+    wrapper.className =
+        "gop-req-field";
+
+    wrapper.id =
+        "dynamicPettyReqField";
+
+    wrapper.innerHTML = `
+
+        <label for="pettyReqNo">
+            Requisition No.
+        </label>
+
+        <select id="pettyReqNo">
+
+            <option value="">
+                No Requisition
+            </option>
+
+        </select>
+
+        <small
+            style="
+                display:block;
+                margin-top:5px;
+                color:#8c969d;
+                font-size:10px;
+            "
+        >
+            Link this payment to one exact requisition.
+        </small>
+
+    `;
+
+    /*
+       Put it before the first submit button,
+       or at the end if no button exists.
+    */
+
+    const submit =
+        form.querySelector(
+            'button[type="submit"],input[type="submit"]'
+        );
+
+    if (submit) {
+
+        form.insertBefore(
+            wrapper,
+            submit
+        );
+
+    } else {
+
+        form.appendChild(
+            wrapper
+        );
+    }
+
+    existing =
+        document.getElementById(
+            "pettyReqNo"
+        );
+
+    populateRequisitionSelect(
+        existing
+    );
+
+    return existing;
+}
+
+/* =========================================================
    LOAD VEHICLES
    ========================================================= */
 
@@ -884,10 +1284,11 @@ async function loadExpenses() {
 
 async function loadPettyCash() {
 
-    const {
-        data,
-        error
-    } =
+    /*
+       First try the new structure with req_no.
+    */
+
+    let result =
         await supabase
             .from(TABLES.petty)
             .select("*")
@@ -898,14 +1299,75 @@ async function loadPettyCash() {
                 }
             );
 
-    if (error) {
+    /*
+       If req_no does not exist, Supabase normally
+       returns a column error. Try loading the old
+       structure so the rest of the application
+       continues working.
+    */
 
-        supabaseError(error);
+    if (
+        result.error &&
+        String(result.error.message || "")
+            .toLowerCase()
+            .includes("req_no")
+    ) {
+
+        console.warn(
+            "petty_cash.req_no is not available yet. " +
+            "Requisition-linked payments require this column."
+        );
+
+        pettyCashHasReqNo =
+            false;
+
+        result =
+            await supabase
+                .from(TABLES.petty)
+                .select("*")
+                .order(
+                    "cash_date",
+                    {
+                        ascending:false
+                    }
+                );
+
+    } else {
+
+        pettyCashHasReqNo =
+            !result.error;
+    }
+
+    if (result.error) {
+
+        supabaseError(
+            result.error
+        );
+
         return;
     }
 
     pettyCash =
-        data || [];
+        dataWithReqNo(
+            result.data || []
+        );
+}
+
+/*
+   Ensures old rows behave as unlinked payments.
+*/
+
+function dataWithReqNo(data) {
+
+    return (data || []).map(
+        row => ({
+            ...row,
+            req_no:
+                normalizeReqNo(
+                    row.req_no
+                )
+        })
+    );
 }
 
 /* =========================================================
@@ -1149,6 +1611,8 @@ async function loadAllData() {
     renderRequisitions();
     renderPremiumDashboard();
 
+    ensurePettyRequisitionField();
+
     ensureVehicleActionBar();
 
     updateVehicleActionBar();
@@ -1224,14 +1688,7 @@ function renderDashboard() {
         );
 
     const reqTotal =
-        requisitions.reduce(
-            (sum,r) =>
-                sum +
-                number(
-                    r.total_amount
-                ),
-            0
-        );
+        getTotalRequisitionRequested();
 
     setText(
         "dashVehicles",
@@ -1456,8 +1913,7 @@ function renderVehicles() {
                 !status ||
                 String(
                     v.status || ""
-                )
-                .toLowerCase() ===
+                ).toLowerCase() ===
                 status;
 
             return (
@@ -1512,13 +1968,11 @@ function renderVehicles() {
             >
 
                 <td>
-
                     <strong>
                         ${escapeHtml(
                             v.registration
                         )}
                     </strong>
-
                 </td>
 
                 <td>
@@ -1546,7 +2000,6 @@ function renderVehicles() {
                 </td>
 
                 <td>
-
                     <span
                         class="status ${statusClass(v.status)}"
                     >
@@ -1554,7 +2007,6 @@ function renderVehicles() {
                             v.status || ""
                         )}
                     </span>
-
                 </td>
 
                 <td>
@@ -1578,7 +2030,6 @@ function renderVehicles() {
                         <button
                             type="button"
                             class="vehicle-action-btn"
-                            title="Edit Vehicle"
                             onclick="editVehicle('${v.id}')"
                         >
                             ✏ Edit
@@ -1587,7 +2038,6 @@ function renderVehicles() {
                         <button
                             type="button"
                             class="vehicle-action-btn vehicle-delete-btn"
-                            title="Delete Vehicle"
                             onclick="deleteVehicle('${v.id}')"
                         >
                             🗑 Delete
@@ -1638,10 +2088,6 @@ function(vehicleId) {
         );
     }
 };
-
-/* =========================================================
-   VEHICLE WORKSPACE RENDER
-   ========================================================= */
 
 function renderVehicleWorkspace(
     vehicleId
@@ -1727,76 +2173,51 @@ function renderVehicleWorkspace(
             <div class="gop-vw-grid">
 
                 <div class="gop-vw-stat">
-
-                    <div class="gop-vw-stat-label">
-                        Job
-                    </div>
-
+                    <div class="gop-vw-stat-label">Job</div>
                     <div class="gop-vw-stat-value">
                         ${escapeHtml(
                             vehicle.job_type ||
                             "Repair"
                         )}
                     </div>
-
                 </div>
 
                 <div class="gop-vw-stat">
-
-                    <div class="gop-vw-stat-label">
-                        Date In
-                    </div>
-
+                    <div class="gop-vw-stat-label">Date In</div>
                     <div class="gop-vw-stat-value">
                         ${escapeHtml(
                             vehicle.date_in ||
                             "-"
                         )}
                     </div>
-
                 </div>
 
                 <div class="gop-vw-stat">
-
-                    <div class="gop-vw-stat-label">
-                        Date Out
-                    </div>
-
+                    <div class="gop-vw-stat-label">Date Out</div>
                     <div class="gop-vw-stat-value">
                         ${escapeHtml(
                             vehicle.date_out ||
                             "-"
                         )}
                     </div>
-
                 </div>
 
                 <div class="gop-vw-stat">
-
-                    <div class="gop-vw-stat-label">
-                        Billed
-                    </div>
-
+                    <div class="gop-vw-stat-label">Billed</div>
                     <div class="gop-vw-stat-value">
                         ${money(
                             vehicle.billed
                         )}
                     </div>
-
                 </div>
 
                 <div class="gop-vw-stat">
-
-                    <div class="gop-vw-stat-label">
-                        Outstanding
-                    </div>
-
+                    <div class="gop-vw-stat-label">Outstanding</div>
                     <div class="gop-vw-stat-value">
                         ${money(
                             outstanding
                         )}
                     </div>
-
                 </div>
 
             </div>
@@ -1804,84 +2225,58 @@ function renderVehicleWorkspace(
             <div class="gop-vw-info">
 
                 <div class="gop-vw-info-item">
-
-                    <span>
-                        Released To
-                    </span>
-
+                    <span>Released To</span>
                     <strong>
                         ${escapeHtml(
                             vehicle.released_to ||
                             "-"
                         )}
                     </strong>
-
                 </div>
 
                 <div class="gop-vw-info-item">
-
-                    <span>
-                        Release Contact
-                    </span>
-
+                    <span>Release Contact</span>
                     <strong>
                         ${escapeHtml(
                             vehicle.released_contact ||
                             "-"
                         )}
                     </strong>
-
                 </div>
 
                 <div class="gop-vw-info-item">
-
-                    <span>
-                        Total Vehicle Expenses
-                    </span>
-
+                    <span>Total Vehicle Expenses</span>
                     <strong>
                         ${money(total)}
                     </strong>
-
                 </div>
 
-                <div class="gop-vw-info-item"
-                     style="grid-column:1/-1">
-
-                    <span>
-                        Description
-                    </span>
-
+                <div
+                    class="gop-vw-info-item"
+                    style="grid-column:1/-1"
+                >
+                    <span>Description</span>
                     <strong>
                         ${escapeHtml(
                             vehicle.description ||
                             "No description recorded."
                         )}
                     </strong>
-
                 </div>
 
             </div>
 
-            <div
-                class="gop-vw-section"
-            >
+            <div class="gop-vw-section">
 
-                <div
-                    class="gop-vw-section-head"
-                >
+                <div class="gop-vw-section-head">
 
                     <div>
 
-                        <div
-                            class="gop-vw-section-title"
-                        >
+                        <div class="gop-vw-section-title">
                             Expense History
                         </div>
 
-                        <div
-                            class="gop-vw-section-sub"
-                        >
+                        <div class="gop-vw-section-sub">
                             Expenses recorded against this vehicle
                         </div>
 
@@ -1895,9 +2290,7 @@ function renderVehicleWorkspace(
                         "
                     >
 
-                        <strong
-                            class="gop-vw-total"
-                        >
+                        <strong class="gop-vw-total">
                             ${money(total)}
                         </strong>
 
@@ -1915,30 +2308,23 @@ function renderVehicleWorkspace(
 
                 ${
                     list.length
-
                     ?
-
                     `
-
                     <div class="gop-expense-list">
 
                         <div class="gop-expense-head">
-
                             <div>Date</div>
                             <div>Category</div>
                             <div>Description</div>
                             <div style="text-align:right">
                                 Amount
                             </div>
-
                         </div>
 
                         ${
                             list.map(e => `
 
-                                <div
-                                    class="gop-expense-row"
-                                >
+                                <div class="gop-expense-row">
 
                                     <div>
                                         ${escapeHtml(
@@ -1973,16 +2359,10 @@ function renderVehicleWorkspace(
                         }
 
                     </div>
-
                     `
-
                     :
-
                     `
-
-                    <div
-                        class="gop-expense-empty"
-                    >
+                    <div class="gop-expense-empty">
 
                         <div
                             style="
@@ -2003,14 +2383,11 @@ function renderVehicleWorkspace(
                             No expenses recorded
                         </strong>
 
-                        <span
-                            style="font-size:11px"
-                        >
+                        <span style="font-size:11px">
                             Add the first expense for this vehicle.
                         </span>
 
                     </div>
-
                     `
                 }
 
@@ -2042,7 +2419,7 @@ function renderVehicleWorkspace(
 }
 
 /* =========================================================
-   VEHICLE BOTTOM ACTIONS
+   VEHICLE ACTIONS
    ========================================================= */
 
 window.addVehicle =
@@ -2291,9 +2668,9 @@ document
                 )?.value;
 
             const value =
-                id =>
+                fieldId =>
                     document.getElementById(
-                        id
+                        fieldId
                     )?.value || "";
 
             const payload = {
@@ -2542,8 +2919,7 @@ function renderExpenses() {
                 !category ||
                 String(
                     e.category || ""
-                )
-                .toLowerCase() ===
+                ).toLowerCase() ===
                 category;
 
             return (
@@ -3013,7 +3389,8 @@ function renderPettyCash() {
             const text =
                 `${p.description || ""}
                  ${p.paid_to || ""}
-                 ${p.category || ""}`
+                 ${p.category || ""}
+                 ${p.req_no || ""}`
                 .toLowerCase();
 
             return (
@@ -3039,7 +3416,7 @@ function renderPettyCash() {
             <tr>
 
                 <td
-                    colspan="7"
+                    colspan="8"
                     style="
                         text-align:center;
                         padding:35px;
@@ -3094,6 +3471,12 @@ function renderPettyCash() {
                 <td>
                     ${escapeHtml(
                         p.notes || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        p.req_no || "-"
                     )}
                 </td>
 
@@ -3183,10 +3566,14 @@ function(id = null) {
     if (form)
         form.reset();
 
-    document.getElementById(
-        "pettyId"
-    ).value =
-        id || "";
+    const idField =
+        document.getElementById(
+            "pettyId"
+        );
+
+    if (idField)
+        idField.value =
+            id || "";
 
     setText(
         "pettyModalTitle",
@@ -3195,10 +3582,21 @@ function(id = null) {
             : "Add Petty Cash"
     );
 
-    document.getElementById(
-        "pettyDate"
-    ).value =
-        today();
+    const date =
+        document.getElementById(
+            "pettyDate"
+        );
+
+    if (date)
+        date.value =
+            today();
+
+    const reqSelect =
+        ensurePettyRequisitionField();
+
+    populateRequisitionSelect(
+        reqSelect
+    );
 
     if (id) {
 
@@ -3246,6 +3644,14 @@ function(id = null) {
                             value;
                 }
             );
+
+        if (reqSelect) {
+
+            reqSelect.value =
+                normalizeReqNo(
+                    p.req_no
+                );
+        }
     }
 
     openModal(
@@ -3278,7 +3684,17 @@ document
                     "pettyId"
                 )?.value;
 
-            const payload = {
+            const reqField =
+                document.getElementById(
+                    "pettyReqNo"
+                );
+
+            const reqNo =
+                normalizeReqNo(
+                    reqField?.value
+                );
+
+            const basePayload = {
 
                 cash_date:
                     document.getElementById(
@@ -3317,6 +3733,35 @@ document
                     .trim()
             };
 
+            /*
+               If req_no is available in the database,
+               save the exact requisition number.
+            */
+
+            let payload = {
+                ...basePayload
+            };
+
+            if (pettyCashHasReqNo) {
+
+                payload.req_no =
+                    reqNo || null;
+
+            } else if (reqNo) {
+
+                /*
+                   Do not silently create a payment that
+                   looks linked when the database cannot
+                   store the link.
+                */
+
+                showToast(
+                    "Add the req_no column to petty_cash before linking a payment."
+                );
+
+                return;
+            }
+
             let result;
 
             if (id) {
@@ -3344,6 +3789,50 @@ document
                         ]);
             }
 
+            /*
+               If the column was thought to exist but
+               Supabase rejects it, retry without it only
+               for unlinked records.
+            */
+
+            if (
+                result.error &&
+                pettyCashHasReqNo &&
+                String(
+                    result.error.message || ""
+                )
+                .toLowerCase()
+                .includes("req_no")
+            ) {
+
+                pettyCashHasReqNo =
+                    false;
+
+                if (!reqNo) {
+
+                    result =
+                        await supabase
+                            .from(
+                                TABLES.petty
+                            )
+                            .update(
+                                basePayload
+                            )
+                            .eq(
+                                "id",
+                                id
+                            );
+
+                } else {
+
+                    showToast(
+                        "The database needs petty_cash.req_no to link this payment."
+                    );
+
+                    return;
+                }
+            }
+
             if (result.error) {
 
                 supabaseError(
@@ -3364,6 +3853,36 @@ document
             );
 
             await loadAllData();
+
+            /*
+               If payment was linked, show the affected
+               requisition immediately.
+            */
+
+            if (reqNo) {
+
+                const affected =
+                    requisitions.find(
+                        r =>
+                            normalizeReqNo(
+                                r.req_no
+                            ) === reqNo
+                    );
+
+                if (affected) {
+
+                    selectedReqId =
+                        affected.id;
+
+                    setTimeout(
+                        () =>
+                            previewReq(
+                                affected.id
+                            ),
+                        150
+                    );
+                }
+            }
         }
     );
 
@@ -3373,6 +3892,11 @@ document
 
 window.deletePetty =
 async function(id) {
+
+    const payment =
+        pettyCash.find(
+            p => p.id === id
+        );
 
     if (
         !confirm(
@@ -3405,6 +3929,36 @@ async function(id) {
     );
 
     await loadAllData();
+
+    /*
+       Refresh the requisition whose payment was
+       deleted.
+    */
+
+    if (payment?.req_no) {
+
+        const affected =
+            requisitions.find(
+                r =>
+                    normalizeReqNo(
+                        r.req_no
+                    ) ===
+                    normalizeReqNo(
+                        payment.req_no
+                    )
+            );
+
+        if (affected) {
+
+            setTimeout(
+                () =>
+                    previewReq(
+                        affected.id
+                    ),
+                150
+            );
+        }
+    }
 };
 
 /* =========================================================
@@ -3421,12 +3975,15 @@ function renderRequisitions() {
     if (!tbody)
         return;
 
-    const search =
+    const rawSearch =
         String(
             document.getElementById(
                 "reqSearch"
             )?.value || ""
-        ).toLowerCase();
+        ).trim();
+
+    const search =
+        rawSearch.toLowerCase();
 
     const status =
         String(
@@ -3438,40 +3995,77 @@ function renderRequisitions() {
     const filtered =
         requisitions.filter(r => {
 
-            const text =
-                `${r.req_no || ""}
-                 ${r.requested_by || ""}
-                 ${r.item_description || ""}
-                 ${vehicleName(r.vehicle_id)}`
-                .toLowerCase();
+            /*
+               Exact requisition search is given
+               priority when the search looks like
+               REQ-001 / REQ-002.
+            */
+
+            const reqNo =
+                normalizeReqNo(
+                    r.req_no
+                );
+
+            const exactReqSearch =
+                normalizeReqNo(
+                    rawSearch
+                );
+
+            const isReqSearch =
+                /^REQ-\d+$/i.test(
+                    rawSearch
+                );
+
+            let matchesSearch;
+
+            if (isReqSearch) {
+
+                matchesSearch =
+                    reqNo ===
+                    exactReqSearch;
+
+            } else {
+
+                const text =
+                    `${r.req_no || ""}
+                     ${r.requested_by || ""}
+                     ${r.item_description || ""}
+                     ${vehicleName(r.vehicle_id)}`
+                    .toLowerCase();
+
+                matchesSearch =
+                    !search ||
+                    text.includes(search);
+            }
+
+            const matchesStatus =
+                !status ||
+                String(
+                    r.status || ""
+                ).toLowerCase() ===
+                status;
 
             return (
-                (!search ||
-                    text.includes(
-                        search
-                    )) &&
-
-                (!status ||
-                    String(
-                        r.status || ""
-                    ).toLowerCase() ===
-                    status)
+                matchesSearch &&
+                matchesStatus
             );
         });
 
     const total =
-        requisitions.reduce(
-            (sum,r) =>
-                sum +
-                number(
-                    r.total_amount
-                ),
-            0
-        );
+        getTotalRequisitionRequested();
 
     setText(
         "reqOverallTotal",
         money(total)
+    );
+
+    /*
+       If the user searched an exact requisition,
+       render its financial summary.
+    */
+
+    renderSelectedRequisitionSearchSummary(
+        rawSearch
     );
 
     if (!filtered.length) {
@@ -3499,7 +4093,19 @@ function renderRequisitions() {
     }
 
     tbody.innerHTML =
-        filtered.map(r => `
+        filtered.map(r => {
+
+            const financial =
+                getRequisitionFinancials(
+                    r
+                );
+
+            const balanceClass =
+                financial.balance <= 0
+                    ? "gop-req-balance gop-req-balance-zero"
+                    : "gop-req-balance gop-req-balance-due";
+
+            return `
 
             <tr>
 
@@ -3552,15 +4158,37 @@ function renderRequisitions() {
                 <td>
                     <strong>
                         ${money(
-                            r.total_amount
+                            financial.requested
                         )}
                     </strong>
                 </td>
 
                 <td>
-                    ${escapeHtml(
-                        r.category || ""
-                    )}
+
+                    <strong>
+                        ${money(
+                            financial.received
+                        )}
+                    </strong>
+
+                    <div class="gop-req-payment">
+                        ${
+                            financial.payments.length
+                            ? `${financial.payments.length} linked payment${financial.payments.length === 1 ? "" : "s"}`
+                            : "No linked payment"
+                        }
+                    </div>
+
+                </td>
+
+                <td>
+
+                    <strong class="${balanceClass}">
+                        ${money(
+                            financial.balance
+                        )}
+                    </strong>
+
                 </td>
 
                 <td>
@@ -3615,7 +4243,152 @@ function renderRequisitions() {
 
             </tr>
 
-        `).join("");
+            `;
+
+        }).join("");
+}
+
+/* =========================================================
+   EXACT REQUISITION SEARCH SUMMARY
+   ========================================================= */
+
+function renderSelectedRequisitionSearchSummary(
+    searchValue
+) {
+
+    const existing =
+        document.getElementById(
+            "gopReqSearchSummary"
+        );
+
+    if (existing)
+        existing.remove();
+
+    if (
+        !/^REQ-\d+$/i.test(
+            String(searchValue || "").trim()
+        )
+    )
+        return;
+
+    const target =
+        normalizeReqNo(
+            searchValue
+        );
+
+    const req =
+        requisitions.find(
+            r =>
+                normalizeReqNo(
+                    r.req_no
+                ) === target
+        );
+
+    if (!req)
+        return;
+
+    const financial =
+        getRequisitionFinancials(
+            req
+        );
+
+    const tbody =
+        document.getElementById(
+            "requisitionsTableBody"
+        );
+
+    if (!tbody)
+        return;
+
+    const table =
+        tbody.closest(
+            "table"
+        );
+
+    if (!table)
+        return;
+
+    const summary =
+        document.createElement(
+            "div"
+        );
+
+    summary.id =
+        "gopReqSearchSummary";
+
+    summary.className =
+        "gop-req-search-highlight";
+
+    summary.innerHTML = `
+
+        <div class="gop-req-search-title">
+            ${escapeHtml(
+                normalizeReqNo(req.req_no)
+            )}
+        </div>
+
+        <div class="gop-req-search-sub">
+            Financial position for this requisition only
+        </div>
+
+        <div class="gop-req-finance">
+
+            <div class="gop-req-finance-card">
+
+                <div class="gop-req-finance-label">
+                    Requested
+                </div>
+
+                <div class="gop-req-finance-value">
+                    ${money(
+                        financial.requested
+                    )}
+                </div>
+
+            </div>
+
+            <div class="gop-req-finance-card">
+
+                <div class="gop-req-finance-label">
+                    Received
+                </div>
+
+                <div class="gop-req-finance-value">
+                    ${money(
+                        financial.received
+                    )}
+                </div>
+
+                <div class="gop-req-finance-note">
+                    Only payments linked to ${escapeHtml(
+                        normalizeReqNo(req.req_no)
+                    )}
+                </div>
+
+            </div>
+
+            <div class="gop-req-finance-card">
+
+                <div class="gop-req-finance-label">
+                    Balance
+                </div>
+
+                <div class="gop-req-finance-value">
+                    ${money(
+                        financial.balance
+                    )}
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+    table.parentNode.insertBefore(
+        summary,
+        table
+    );
 }
 
 /* =========================================================
@@ -3633,10 +4406,14 @@ function(id = null) {
     if (form)
         form.reset();
 
-    document.getElementById(
-        "reqId"
-    ).value =
-        id || "";
+    const idField =
+        document.getElementById(
+            "reqId"
+        );
+
+    if (idField)
+        idField.value =
+            id || "";
 
     setText(
         "reqModalTitle",
@@ -3645,29 +4422,45 @@ function(id = null) {
             : "New Requisition"
     );
 
-    document.getElementById(
-        "reqDate"
-    ).value =
-        today();
+    const date =
+        document.getElementById(
+            "reqDate"
+        );
+
+    if (date)
+        date.value =
+            today();
 
     populateVehicleSelects();
 
     if (!id) {
 
-        document.getElementById(
-            "reqStatus"
-        ).value =
-            "Pending";
+        const status =
+            document.getElementById(
+                "reqStatus"
+            );
 
-        document.getElementById(
-            "reqQuantity"
-        ).value =
-            1;
+        if (status)
+            status.value =
+                "Pending";
 
-        document.getElementById(
-            "reqUnitCost"
-        ).value =
-            0;
+        const quantity =
+            document.getElementById(
+                "reqQuantity"
+            );
+
+        if (quantity)
+            quantity.value =
+                1;
+
+        const unit =
+            document.getElementById(
+                "reqUnitCost"
+            );
+
+        if (unit)
+            unit.value =
+                0;
 
         calculateReqTotal();
 
@@ -3843,19 +4636,53 @@ document
                 quantity *
                 unitCost;
 
+            const reqNo =
+                normalizeReqNo(
+                    document.getElementById(
+                        "reqNo"
+                    )?.value
+                );
+
             /*
                IMPORTANT:
-               Only fields known to exist in the
-               current requisitions table are sent.
+
+               Requisition number remains an independent
+               identifier.
+
+               REQ-001 is never merged with REQ-002.
             */
+
+            if (!reqNo) {
+
+                showToast(
+                    "Requisition number is required."
+                );
+
+                return;
+            }
+
+            const duplicate =
+                requisitions.some(
+                    r =>
+                        normalizeReqNo(
+                            r.req_no
+                        ) === reqNo &&
+                        r.id !== id
+                );
+
+            if (duplicate) {
+
+                showToast(
+                    `${reqNo} already exists. Use a different requisition number.`
+                );
+
+                return;
+            }
 
             const payload = {
 
                 req_no:
-                    document.getElementById(
-                        "reqNo"
-                    )?.value
-                    .trim(),
+                    reqNo,
 
                 req_date:
                     document.getElementById(
@@ -3942,11 +4769,37 @@ document
 
             showToast(
                 id
-                    ? "Requisition updated."
-                    : "Requisition created."
+                    ? `${reqNo} updated.`
+                    : `${reqNo} created.`
             );
 
             await loadAllData();
+
+            /*
+               Open the exact requisition after saving.
+            */
+
+            const saved =
+                requisitions.find(
+                    r =>
+                        normalizeReqNo(
+                            r.req_no
+                        ) === reqNo
+                );
+
+            if (saved) {
+
+                selectedReqId =
+                    saved.id;
+
+                setTimeout(
+                    () =>
+                        previewReq(
+                            saved.id
+                        ),
+                    150
+                );
+            }
         }
     );
 
@@ -3957,9 +4810,14 @@ document
 window.deleteReq =
 async function(id) {
 
+    const req =
+        requisitions.find(
+            r => r.id === id
+        );
+
     if (
         !confirm(
-            "Delete this requisition?"
+            `Delete ${req?.req_no || "this requisition"}?`
         )
     )
         return;
@@ -3981,6 +4839,14 @@ async function(id) {
 
         supabaseError(error);
         return;
+    }
+
+    if (
+        selectedReqId === id
+    ) {
+
+        selectedReqId =
+            null;
     }
 
     showToast(
@@ -4016,6 +4882,51 @@ function(id) {
     if (!content)
         return;
 
+    const financial =
+        getRequisitionFinancials(
+            r
+        );
+
+    const paymentRows =
+        financial.payments
+            .map(p => `
+
+                <tr>
+
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            p.cash_date || "-"
+                        )}
+                    </td>
+
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            p.description || "-"
+                        )}
+                    </td>
+
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            p.paid_to || "-"
+                        )}
+                    </td>
+
+                    <td
+                        style="
+                            padding:8px;
+                            text-align:right;
+                        "
+                    >
+                        ${money(
+                            p.amount
+                        )}
+                    </td>
+
+                </tr>
+
+            `)
+            .join("");
+
     content.innerHTML = `
 
         <div
@@ -4046,6 +4957,24 @@ function(id) {
                     Workshop Requisition
                 </div>
 
+            </div>
+
+            <h2 style="margin-bottom:4px">
+                ${escapeHtml(
+                    normalizeReqNo(
+                        r.req_no
+                    )
+                )}
+            </h2>
+
+            <div
+                style="
+                    color:#64748b;
+                    font-size:11px;
+                    margin-bottom:15px;
+                "
+            >
+                This financial summary belongs to this requisition only.
             </div>
 
             <table
@@ -4134,29 +5063,183 @@ function(id) {
                     </td>
                 </tr>
 
-                <tr>
-                    <td style="padding:8px;font-weight:bold">
-                        Total
-                    </td>
-                    <td style="padding:8px;font-weight:bold">
-                        ${money(
-                            r.total_amount
-                        )}
-                    </td>
-                </tr>
+            </table>
 
-                <tr>
-                    <td style="padding:8px;font-weight:bold">
-                        Status
-                    </td>
-                    <td style="padding:8px">
-                        ${escapeHtml(
-                            r.status || ""
+            <div
+                style="
+                    display:grid;
+                    grid-template-columns:repeat(3,1fr);
+                    gap:10px;
+                    margin-top:20px;
+                "
+            >
+
+                <div
+                    style="
+                        border:1px solid #d1d5db;
+                        padding:12px;
+                    "
+                >
+                    <div
+                        style="
+                            font-size:10px;
+                            color:#64748b;
+                        "
+                    >
+                        REQUESTED
+                    </div>
+
+                    <strong>
+                        ${money(
+                            financial.requested
                         )}
-                    </td>
-                </tr>
+                    </strong>
+                </div>
+
+                <div
+                    style="
+                        border:1px solid #d1d5db;
+                        padding:12px;
+                    "
+                >
+                    <div
+                        style="
+                            font-size:10px;
+                            color:#64748b;
+                        "
+                    >
+                        RECEIVED
+                    </div>
+
+                    <strong>
+                        ${money(
+                            financial.received
+                        )}
+                    </strong>
+                </div>
+
+                <div
+                    style="
+                        border:1px solid #d1d5db;
+                        padding:12px;
+                    "
+                >
+                    <div
+                        style="
+                            font-size:10px;
+                            color:#64748b;
+                        "
+                    >
+                        BALANCE
+                    </div>
+
+                    <strong>
+                        ${money(
+                            financial.balance
+                        )}
+                    </strong>
+                </div>
+
+            </div>
+
+            <h3 style="margin-top:30px">
+                Linked Payments
+            </h3>
+
+            <table
+                style="
+                    width:100%;
+                    border-collapse:collapse;
+                "
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th
+                            style="
+                                padding:8px;
+                                border:1px solid #d1d5db;
+                                text-align:left;
+                            "
+                        >
+                            Date
+                        </th>
+
+                        <th
+                            style="
+                                padding:8px;
+                                border:1px solid #d1d5db;
+                                text-align:left;
+                            "
+                        >
+                            Description
+                        </th>
+
+                        <th
+                            style="
+                                padding:8px;
+                                border:1px solid #d1d5db;
+                                text-align:left;
+                            "
+                        >
+                            Paid To
+                        </th>
+
+                        <th
+                            style="
+                                padding:8px;
+                                border:1px solid #d1d5db;
+                                text-align:right;
+                            "
+                        >
+                            Amount
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    ${
+                        paymentRows ||
+                        `
+                        <tr>
+                            <td
+                                colspan="4"
+                                style="
+                                    padding:12px;
+                                    border:1px solid #d1d5db;
+                                "
+                            >
+                                No payments linked to ${escapeHtml(
+                                    r.req_no
+                                )}.
+                            </td>
+                        </tr>
+                        `
+                    }
+
+                </tbody>
 
             </table>
+
+            <div
+                style="
+                    margin-top:20px;
+                    padding-top:14px;
+                    border-top:1px solid #d1d5db;
+                    font-size:11px;
+                    color:#64748b;
+                "
+            >
+                Only petty cash records with the exact requisition
+                number <strong>${escapeHtml(
+                    normalizeReqNo(r.req_no)
+                )}</strong> are included in Received.
+            </div>
 
         </div>
 
@@ -4611,6 +5694,10 @@ function() {
     );
 };
 
+/* =========================================================
+   PRINT SELECTED REQUISITION
+   ========================================================= */
+
 window.printSelectedReq =
 function() {
 
@@ -4631,18 +5718,181 @@ function() {
     if (!r)
         return;
 
-    const content =
-        document.getElementById(
-            "reqPreviewContent"
+    const financial =
+        getRequisitionFinancials(
+            r
         );
 
-    if (!content)
-        return;
+    const paymentRows =
+        financial.payments.map(
+            p => `
+
+                <tr>
+
+                    <td>
+                        ${escapeHtml(
+                            p.cash_date || "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            p.description || "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${money(
+                            p.amount
+                        )}
+                    </td>
+
+                </tr>
+
+            `
+        ).join("");
 
     printHtml(
         "Requisition " +
         r.req_no,
-        content.innerHTML
+        `
+
+            <div class="header">
+
+                <h1>
+                    Garage Operations Pro
+                </h1>
+
+                <h2>
+                    Requisition ${escapeHtml(
+                        r.req_no
+                    )}
+                </h2>
+
+            </div>
+
+            <table>
+
+                <tr>
+                    <th>Requisition No.</th>
+                    <td>
+                        ${escapeHtml(
+                            r.req_no
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Date</th>
+                    <td>
+                        ${escapeHtml(
+                            r.req_date
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Requested By</th>
+                    <td>
+                        ${escapeHtml(
+                            r.requested_by
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Vehicle</th>
+                    <td>
+                        ${escapeHtml(
+                            vehicleName(
+                                r.vehicle_id
+                            )
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Item</th>
+                    <td>
+                        ${escapeHtml(
+                            r.item_description
+                        )}
+                    </td>
+                </tr>
+
+            </table>
+
+            <h3>
+                Financial Summary
+            </h3>
+
+            <table>
+
+                <tr>
+                    <th>Requested</th>
+                    <td>
+                        ${money(
+                            financial.requested
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Received</th>
+                    <td>
+                        ${money(
+                            financial.received
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Balance</th>
+                    <td>
+                        ${money(
+                            financial.balance
+                        )}
+                    </td>
+                </tr>
+
+            </table>
+
+            <h3>
+                Linked Payments
+            </h3>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    ${
+                        paymentRows ||
+                        `
+                        <tr>
+                            <td colspan="3">
+                                No payments linked to ${escapeHtml(
+                                    r.req_no
+                                )}.
+                            </td>
+                        </tr>
+                        `
+                    }
+
+                </tbody>
+
+            </table>
+
+        `
     );
 };
 
@@ -4774,6 +6024,12 @@ function() {
 
                 <td>
                     ${escapeHtml(
+                        p.req_no || "-"
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
                         p.notes || ""
                     )}
                 </td>
@@ -4808,6 +6064,7 @@ function() {
                         <th>Paid To</th>
                         <th>Category</th>
                         <th>Amount</th>
+                        <th>Requisition</th>
                         <th>Notes</th>
                     </tr>
 
@@ -4831,69 +6088,83 @@ window.printRequisitions =
 function() {
 
     const rows =
-        requisitions.map(r => `
+        requisitions.map(r => {
 
-            <tr>
+            const financial =
+                getRequisitionFinancials(
+                    r
+                );
 
-                <td>
-                    ${escapeHtml(
-                        r.req_no || ""
-                    )}
-                </td>
+            return `
 
-                <td>
-                    ${escapeHtml(
-                        r.req_date || ""
-                    )}
-                </td>
+                <tr>
 
-                <td>
-                    ${escapeHtml(
-                        r.requested_by || ""
-                    )}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            r.req_no || ""
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(
-                        vehicleName(
-                            r.vehicle_id
-                        )
-                    )}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            r.req_date || ""
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(
-                        r.item_description || ""
-                    )}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            r.requested_by || ""
+                        )}
+                    </td>
 
-                <td>
-                    ${number(
-                        r.quantity
-                    )}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            vehicleName(
+                                r.vehicle_id
+                            )
+                        )}
+                    </td>
 
-                <td>
-                    ${money(
-                        r.unit_cost
-                    )}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            r.item_description || ""
+                        )}
+                    </td>
 
-                <td>
-                    ${money(
-                        r.total_amount
-                    )}
-                </td>
+                    <td>
+                        ${number(
+                            r.quantity
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(
-                        r.status || ""
-                    )}
-                </td>
+                    <td>
+                        ${money(
+                            financial.requested
+                        )}
+                    </td>
 
-            </tr>
+                    <td>
+                        ${money(
+                            financial.received
+                        )}
+                    </td>
 
-        `).join("");
+                    <td>
+                        ${money(
+                            financial.balance
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            r.status || ""
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+        }).join("");
 
     printHtml(
         "Garage Requisitions",
@@ -4922,8 +6193,9 @@ function() {
                         <th>Vehicle</th>
                         <th>Description</th>
                         <th>Qty</th>
-                        <th>Unit Cost</th>
-                        <th>Total</th>
+                        <th>Requested</th>
+                        <th>Received</th>
+                        <th>Balance</th>
                         <th>Status</th>
                     </tr>
 
@@ -5088,6 +6360,7 @@ Description: ${p.description}
 Paid To: ${p.paid_to}
 Category: ${p.category}
 Amount: ${money(p.amount)}
+Requisition: ${p.req_no || "Not linked"}
 Notes: ${p.notes || ""}
         `
     );
@@ -5104,11 +6377,18 @@ function(id) {
     if (!r)
         return;
 
+    const financial =
+        getRequisitionFinancials(
+            r
+        );
+
     shareText(
         "Requisition " +
         r.req_no,
 
         `
+GARAGE OPERATIONS PRO
+
 Requisition: ${r.req_no}
 Date: ${r.req_date}
 Requested By: ${r.requested_by}
@@ -5116,13 +6396,19 @@ Vehicle: ${vehicleName(
     r.vehicle_id
 )}
 Item: ${r.item_description}
-Quantity: ${r.quantity}
-Unit Cost: ${money(
-    r.unit_cost
+
+Requested: ${money(
+    financial.requested
 )}
-Total: ${money(
-    r.total_amount
+
+Received for ${r.req_no}: ${money(
+    financial.received
 )}
+
+Balance for ${r.req_no}: ${money(
+    financial.balance
+)}
+
 Status: ${r.status}
         `
     );
@@ -5394,6 +6680,8 @@ async function startApp() {
     injectPremiumStyles();
 
     await loadAllData();
+
+    ensurePettyRequisitionField();
 
     setTimeout(
         setupDashboardCards,
