@@ -3559,4 +3559,1846 @@ function renderRequisitions() {
 
                 <td>
                     ${escapeHtml(
-                       
+                        r.category || ""
+                    )}
+                </td>
+
+                <td>
+
+                    <span
+                        class="status ${statusClass(r.status)}"
+                    >
+                        ${escapeHtml(
+                            r.status || ""
+                        )}
+                    </span>
+
+                </td>
+
+                <td>
+
+                    <div class="table-actions">
+
+                        <button
+                            class="action-btn"
+                            onclick="
+                                event.stopPropagation();
+                                previewReq('${r.id}')
+                            "
+                        >
+                            👁
+                        </button>
+
+                        <button
+                            class="action-btn"
+                            onclick="
+                                event.stopPropagation();
+                                editReq('${r.id}')
+                            "
+                        >
+                            ✏️
+                        </button>
+
+                        <button
+                            class="action-btn"
+                            onclick="
+                                event.stopPropagation();
+                                deleteReq('${r.id}')
+                            "
+                        >
+                            🗑
+                        </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+        `).join("");
+}
+
+/* =========================================================
+   REQUISITION MODAL
+   ========================================================= */
+
+window.openReqModal =
+function(id = null) {
+
+    const form =
+        document.getElementById(
+            "reqForm"
+        );
+
+    if (form)
+        form.reset();
+
+    document.getElementById(
+        "reqId"
+    ).value =
+        id || "";
+
+    setText(
+        "reqModalTitle",
+        id
+            ? "Edit Requisition"
+            : "New Requisition"
+    );
+
+    document.getElementById(
+        "reqDate"
+    ).value =
+        today();
+
+    populateVehicleSelects();
+
+    if (!id) {
+
+        document.getElementById(
+            "reqStatus"
+        ).value =
+            "Pending";
+
+        document.getElementById(
+            "reqQuantity"
+        ).value =
+            1;
+
+        document.getElementById(
+            "reqUnitCost"
+        ).value =
+            0;
+
+        calculateReqTotal();
+
+    } else {
+
+        const r =
+            requisitions.find(
+                x => x.id === id
+            );
+
+        if (!r)
+            return;
+
+        const fields = {
+
+            reqNo:
+                r.req_no || "",
+
+            reqDate:
+                r.req_date ||
+                today(),
+
+            reqRequestedBy:
+                r.requested_by ||
+                "",
+
+            reqVehicle:
+                r.vehicle_id ||
+                "",
+
+            reqItemDescription:
+                r.item_description ||
+                "",
+
+            reqQuantity:
+                r.quantity ||
+                0,
+
+            reqUnitCost:
+                r.unit_cost ||
+                0,
+
+            reqTotal:
+                r.total_amount ||
+                0,
+
+            reqStatus:
+                r.status ||
+                "Pending",
+
+            reqNotes:
+                r.notes ||
+                "",
+
+            reqCategory:
+                r.category ||
+                "",
+
+            reqExpenseType:
+                r.expense_type ||
+                ""
+        };
+
+        Object.entries(fields)
+            .forEach(
+                ([fieldId,value]) => {
+
+                    const field =
+                        document.getElementById(
+                            fieldId
+                        );
+
+                    if (field)
+                        field.value =
+                            value;
+                }
+            );
+    }
+
+    openModal(
+        "reqModal"
+    );
+};
+
+window.editReq =
+function(id) {
+
+    window.openReqModal(
+        id
+    );
+};
+
+function calculateReqTotal() {
+
+    const qty =
+        number(
+            document.getElementById(
+                "reqQuantity"
+            )?.value
+        );
+
+    const unit =
+        number(
+            document.getElementById(
+                "reqUnitCost"
+            )?.value
+        );
+
+    const total =
+        qty *
+        unit;
+
+    const field =
+        document.getElementById(
+            "reqTotal"
+        );
+
+    if (field)
+        field.value =
+            total;
+}
+
+document
+    .getElementById(
+        "reqQuantity"
+    )
+    ?.addEventListener(
+        "input",
+        calculateReqTotal
+    );
+
+document
+    .getElementById(
+        "reqUnitCost"
+    )
+    ?.addEventListener(
+        "input",
+        calculateReqTotal
+    );
+
+/* =========================================================
+   SAVE REQUISITION
+   ========================================================= */
+
+document
+    .getElementById("reqForm")
+    ?.addEventListener(
+        "submit",
+        async e => {
+
+            e.preventDefault();
+
+            const id =
+                document.getElementById(
+                    "reqId"
+                )?.value;
+
+            const quantity =
+                number(
+                    document.getElementById(
+                        "reqQuantity"
+                    )?.value
+                );
+
+            const unitCost =
+                number(
+                    document.getElementById(
+                        "reqUnitCost"
+                    )?.value
+                );
+
+            const total =
+                quantity *
+                unitCost;
+
+            /*
+               IMPORTANT:
+               Only fields known to exist in the
+               current requisitions table are sent.
+            */
+
+            const payload = {
+
+                req_no:
+                    document.getElementById(
+                        "reqNo"
+                    )?.value
+                    .trim(),
+
+                req_date:
+                    document.getElementById(
+                        "reqDate"
+                    )?.value,
+
+                requested_by:
+                    document.getElementById(
+                        "reqRequestedBy"
+                    )?.value
+                    .trim(),
+
+                vehicle_id:
+                    document.getElementById(
+                        "reqVehicle"
+                    )?.value ||
+                    null,
+
+                item_description:
+                    document.getElementById(
+                        "reqItemDescription"
+                    )?.value
+                    .trim(),
+
+                quantity,
+
+                unit_cost:
+                    unitCost,
+
+                total_amount:
+                    total,
+
+                status:
+                    document.getElementById(
+                        "reqStatus"
+                    )?.value,
+
+                notes:
+                    document.getElementById(
+                        "reqNotes"
+                    )?.value
+                    .trim()
+            };
+
+            let result;
+
+            if (id) {
+
+                result =
+                    await supabase
+                        .from(
+                            TABLES.requisitions
+                        )
+                        .update(payload)
+                        .eq(
+                            "id",
+                            id
+                        );
+
+            } else {
+
+                result =
+                    await supabase
+                        .from(
+                            TABLES.requisitions
+                        )
+                        .insert([
+                            payload
+                        ]);
+            }
+
+            if (result.error) {
+
+                supabaseError(
+                    result.error
+                );
+
+                return;
+            }
+
+            closeModal(
+                "reqModal"
+            );
+
+            showToast(
+                id
+                    ? "Requisition updated."
+                    : "Requisition created."
+            );
+
+            await loadAllData();
+        }
+    );
+
+/* =========================================================
+   DELETE REQUISITION
+   ========================================================= */
+
+window.deleteReq =
+async function(id) {
+
+    if (
+        !confirm(
+            "Delete this requisition?"
+        )
+    )
+        return;
+
+    const {
+        error
+    } =
+        await supabase
+            .from(
+                TABLES.requisitions
+            )
+            .delete()
+            .eq(
+                "id",
+                id
+            );
+
+    if (error) {
+
+        supabaseError(error);
+        return;
+    }
+
+    showToast(
+        "Requisition deleted."
+    );
+
+    await loadAllData();
+};
+
+/* =========================================================
+   REQUISITION PREVIEW
+   ========================================================= */
+
+window.previewReq =
+function(id) {
+
+    selectedReqId =
+        id;
+
+    const r =
+        requisitions.find(
+            x => x.id === id
+        );
+
+    if (!r)
+        return;
+
+    const content =
+        document.getElementById(
+            "reqPreviewContent"
+        );
+
+    if (!content)
+        return;
+
+    content.innerHTML = `
+
+        <div
+            style="
+                font-family:Arial,sans-serif;
+                color:#111827;
+            "
+        >
+
+            <div
+                style="
+                    border-bottom:2px solid #202529;
+                    padding-bottom:14px;
+                    margin-bottom:18px;
+                "
+            >
+
+                <h2>
+                    GARAGE OPERATIONS PRO
+                </h2>
+
+                <div
+                    style="
+                        color:#64748b;
+                        font-size:12px;
+                    "
+                >
+                    Workshop Requisition
+                </div>
+
+            </div>
+
+            <table
+                style="
+                    width:100%;
+                    border-collapse:collapse;
+                "
+            >
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Requisition No.
+                    </td>
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            r.req_no || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Date
+                    </td>
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            r.req_date || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Requested By
+                    </td>
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            r.requested_by || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Vehicle
+                    </td>
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            vehicleName(
+                                r.vehicle_id
+                            )
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Item
+                    </td>
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            r.item_description || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Quantity
+                    </td>
+                    <td style="padding:8px">
+                        ${number(
+                            r.quantity
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Unit Cost
+                    </td>
+                    <td style="padding:8px">
+                        ${money(
+                            r.unit_cost
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Total
+                    </td>
+                    <td style="padding:8px;font-weight:bold">
+                        ${money(
+                            r.total_amount
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px;font-weight:bold">
+                        Status
+                    </td>
+                    <td style="padding:8px">
+                        ${escapeHtml(
+                            r.status || ""
+                        )}
+                    </td>
+                </tr>
+
+            </table>
+
+        </div>
+
+    `;
+
+    openModal(
+        "reqPreviewModal"
+    );
+};
+
+window.previewSelectedReq =
+function() {
+
+    if (!requisitions.length) {
+
+        showToast(
+            "There are no requisitions."
+        );
+
+        return;
+    }
+
+    if (!selectedReqId) {
+
+        previewReq(
+            requisitions[0].id
+        );
+
+    } else {
+
+        previewReq(
+            selectedReqId
+        );
+    }
+};
+
+/* =========================================================
+   PRINT ENGINE
+   ========================================================= */
+
+function printHtml(
+    title,
+    html
+) {
+
+    const win =
+        window.open(
+            "",
+            "_blank",
+            "width=1000,height=700"
+        );
+
+    if (!win) {
+
+        showToast(
+            "Please allow pop-ups to print."
+        );
+
+        return;
+    }
+
+    win.document.write(`
+
+        <!DOCTYPE html>
+
+        <html>
+
+        <head>
+
+            <title>
+                ${escapeHtml(title)}
+            </title>
+
+            <style>
+
+                body{
+                    font-family:Arial,sans-serif;
+                    padding:30px;
+                    color:#111827;
+                }
+
+                h1,h2,h3{
+                    margin-top:0;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                    margin-top:20px;
+                }
+
+                th,td{
+                    border:1px solid #d1d5db;
+                    padding:9px;
+                    text-align:left;
+                    font-size:12px;
+                }
+
+                th{
+                    background:#f1f3f4;
+                }
+
+                .header{
+                    border-bottom:2px solid #202529;
+                    padding-bottom:15px;
+                    margin-bottom:20px;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${html}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.focus();
+
+    setTimeout(
+        () => win.print(),
+        300
+    );
+}
+
+/* =========================================================
+   PRINT VEHICLES
+   ========================================================= */
+
+window.printVehicles =
+function() {
+
+    const rows =
+        vehicles.map(v => `
+
+            <tr>
+
+                <td>
+                    ${escapeHtml(
+                        v.registration
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        v.customer
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        v.date_in || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        v.date_out || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        v.job_type || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        v.status || ""
+                    )}
+                </td>
+
+                <td>
+                    ${money(v.billed)}
+                </td>
+
+                <td>
+                    ${money(v.paid)}
+                </td>
+
+                <td>
+                    ${money(
+                        number(v.billed) -
+                        number(v.paid)
+                    )}
+                </td>
+
+            </tr>
+
+        `).join("");
+
+    printHtml(
+        "Garage Vehicles",
+        `
+
+            <div class="header">
+
+                <h1>
+                    Garage Operations Pro
+                </h1>
+
+                <h3>
+                    Vehicle Register
+                </h3>
+
+            </div>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Registration</th>
+                        <th>Customer</th>
+                        <th>Date In</th>
+                        <th>Date Out</th>
+                        <th>Job Type</th>
+                        <th>Status</th>
+                        <th>Billed</th>
+                        <th>Paid</th>
+                        <th>Outstanding</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+
+            </table>
+
+        `
+    );
+};
+
+/* =========================================================
+   PRINT SELECTED VEHICLE
+   ========================================================= */
+
+function printVehicleReport(
+    vehicleId
+) {
+
+    const v =
+        vehicles.find(
+            x => x.id === vehicleId
+        );
+
+    if (!v)
+        return;
+
+    const list =
+        expenses.filter(
+            e =>
+                e.vehicle_id ===
+                vehicleId
+        );
+
+    const expenseRows =
+        list.map(e => `
+
+            <tr>
+
+                <td>
+                    ${escapeHtml(
+                        e.expense_date || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        e.category || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        e.description || ""
+                    )}
+                </td>
+
+                <td>
+                    ${money(e.amount)}
+                </td>
+
+            </tr>
+
+        `).join("");
+
+    const expenseTotal =
+        list.reduce(
+            (sum,e) =>
+                sum +
+                number(e.amount),
+            0
+        );
+
+    printHtml(
+        `Vehicle ${v.registration}`,
+        `
+
+            <div class="header">
+
+                <h1>
+                    Garage Operations Pro
+                </h1>
+
+                <h2>
+                    Vehicle Report
+                </h2>
+
+                <strong>
+                    ${escapeHtml(
+                        v.registration
+                    )}
+                </strong>
+
+            </div>
+
+            <table>
+
+                <tr>
+                    <th>Customer</th>
+                    <td>
+                        ${escapeHtml(
+                            v.customer || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Date In</th>
+                    <td>
+                        ${escapeHtml(
+                            v.date_in || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Date Out</th>
+                    <td>
+                        ${escapeHtml(
+                            v.date_out || "-"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Job Type</th>
+                    <td>
+                        ${escapeHtml(
+                            v.job_type || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Status</th>
+                    <td>
+                        ${escapeHtml(
+                            v.status || ""
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Billed</th>
+                    <td>
+                        ${money(v.billed)}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Paid</th>
+                    <td>
+                        ${money(v.paid)}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Outstanding</th>
+                    <td>
+                        ${money(
+                            number(v.billed) -
+                            number(v.paid)
+                        )}
+                    </td>
+                </tr>
+
+            </table>
+
+            <h3 style="margin-top:30px">
+                Expense History
+            </h3>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    ${
+                        expenseRows ||
+                        `
+                        <tr>
+                            <td colspan="4">
+                                No expenses recorded.
+                            </td>
+                        </tr>
+                        `
+                    }
+
+                </tbody>
+
+            </table>
+
+            <h3>
+                Total Vehicle Expenses:
+                ${money(expenseTotal)}
+            </h3>
+
+        `
+    );
+}
+
+window.printVehicleExpensePreview =
+function() {
+
+    if (!selectedVehicleId)
+        return;
+
+    printVehicleReport(
+        selectedVehicleId
+    );
+};
+
+window.printSelectedReq =
+function() {
+
+    if (!selectedReqId) {
+
+        showToast(
+            "Select a requisition first."
+        );
+
+        return;
+    }
+
+    const r =
+        requisitions.find(
+            x => x.id === selectedReqId
+        );
+
+    if (!r)
+        return;
+
+    const content =
+        document.getElementById(
+            "reqPreviewContent"
+        );
+
+    if (!content)
+        return;
+
+    printHtml(
+        "Requisition " +
+        r.req_no,
+        content.innerHTML
+    );
+};
+
+/* =========================================================
+   PRINT EXPENSES
+   ========================================================= */
+
+window.printExpenses =
+function() {
+
+    const rows =
+        expenses.map(e => `
+
+            <tr>
+
+                <td>
+                    ${escapeHtml(
+                        e.expense_date || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        vehicleName(
+                            e.vehicle_id
+                        )
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        e.description || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        e.category || ""
+                    )}
+                </td>
+
+                <td>
+                    ${money(e.amount)}
+                </td>
+
+            </tr>
+
+        `).join("");
+
+    printHtml(
+        "Garage Expenses",
+        `
+
+            <div class="header">
+
+                <h1>
+                    Garage Operations Pro
+                </h1>
+
+                <h3>
+                    Expenses
+                </h3>
+
+            </div>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Date</th>
+                        <th>Vehicle</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+
+            </table>
+
+        `
+    );
+};
+
+/* =========================================================
+   PRINT PETTY CASH
+   ========================================================= */
+
+window.printPettyCash =
+function() {
+
+    const rows =
+        pettyCash.map(p => `
+
+            <tr>
+
+                <td>
+                    ${escapeHtml(
+                        p.cash_date || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        p.description || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        p.paid_to || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        p.category || ""
+                    )}
+                </td>
+
+                <td>
+                    ${money(p.amount)}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        p.notes || ""
+                    )}
+                </td>
+
+            </tr>
+
+        `).join("");
+
+    printHtml(
+        "Garage Petty Cash",
+        `
+
+            <div class="header">
+
+                <h1>
+                    Garage Operations Pro
+                </h1>
+
+                <h3>
+                    Petty Cash
+                </h3>
+
+            </div>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Paid To</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Notes</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+
+            </table>
+
+        `
+    );
+};
+
+/* =========================================================
+   PRINT REQUISITIONS
+   ========================================================= */
+
+window.printRequisitions =
+function() {
+
+    const rows =
+        requisitions.map(r => `
+
+            <tr>
+
+                <td>
+                    ${escapeHtml(
+                        r.req_no || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        r.req_date || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        r.requested_by || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        vehicleName(
+                            r.vehicle_id
+                        )
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        r.item_description || ""
+                    )}
+                </td>
+
+                <td>
+                    ${number(
+                        r.quantity
+                    )}
+                </td>
+
+                <td>
+                    ${money(
+                        r.unit_cost
+                    )}
+                </td>
+
+                <td>
+                    ${money(
+                        r.total_amount
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        r.status || ""
+                    )}
+                </td>
+
+            </tr>
+
+        `).join("");
+
+    printHtml(
+        "Garage Requisitions",
+        `
+
+            <div class="header">
+
+                <h1>
+                    Garage Operations Pro
+                </h1>
+
+                <h3>
+                    Requisitions
+                </h3>
+
+            </div>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Req No.</th>
+                        <th>Date</th>
+                        <th>Requested By</th>
+                        <th>Vehicle</th>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit Cost</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+
+            </table>
+
+        `
+    );
+};
+
+/* =========================================================
+   SHARE
+   ========================================================= */
+
+async function shareText(
+    title,
+    text
+) {
+
+    if (
+        navigator.share
+    ) {
+
+        try {
+
+            await navigator.share({
+                title,
+                text
+            });
+
+        } catch (error) {
+
+            console.log(error);
+        }
+
+    } else {
+
+        try {
+
+            await navigator.clipboard
+                .writeText(text);
+
+            showToast(
+                "Details copied to clipboard."
+            );
+
+        } catch (error) {
+
+            showToast(
+                "Sharing is not supported on this device."
+            );
+        }
+    }
+}
+
+/* =========================================================
+   SHARE VEHICLE
+   ========================================================= */
+
+window.shareVehicle =
+function(id) {
+
+    const v =
+        vehicles.find(
+            x => x.id === id
+        );
+
+    if (!v)
+        return;
+
+    const list =
+        expenses.filter(
+            e =>
+                e.vehicle_id ===
+                id
+        );
+
+    const expenseTotal =
+        list.reduce(
+            (sum,e) =>
+                sum +
+                number(e.amount),
+            0
+        );
+
+    shareText(
+        "Vehicle " +
+        v.registration,
+
+        `
+GARAGE OPERATIONS PRO
+
+Vehicle: ${v.registration}
+Customer: ${v.customer || ""}
+Date In: ${v.date_in || ""}
+Date Out: ${v.date_out || ""}
+Job Type: ${v.job_type || ""}
+Status: ${v.status || ""}
+
+Billed: ${money(v.billed)}
+Paid: ${money(v.paid)}
+Outstanding: ${money(
+    number(v.billed) -
+    number(v.paid)
+)}
+
+Vehicle Expenses: ${money(
+    expenseTotal
+)}
+        `
+    );
+};
+
+window.shareExpense =
+function(id) {
+
+    const e =
+        expenses.find(
+            x => x.id === id
+        );
+
+    if (!e)
+        return;
+
+    shareText(
+        "Garage Expense",
+
+        `
+Date: ${e.expense_date}
+Vehicle: ${vehicleName(
+    e.vehicle_id
+)}
+Description: ${e.description}
+Category: ${e.category}
+Amount: ${money(e.amount)}
+        `
+    );
+};
+
+window.sharePetty =
+function(id) {
+
+    const p =
+        pettyCash.find(
+            x => x.id === id
+        );
+
+    if (!p)
+        return;
+
+    shareText(
+        "Petty Cash",
+
+        `
+Date: ${p.cash_date}
+Description: ${p.description}
+Paid To: ${p.paid_to}
+Category: ${p.category}
+Amount: ${money(p.amount)}
+Notes: ${p.notes || ""}
+        `
+    );
+};
+
+window.shareReq =
+function(id) {
+
+    const r =
+        requisitions.find(
+            x => x.id === id
+        );
+
+    if (!r)
+        return;
+
+    shareText(
+        "Requisition " +
+        r.req_no,
+
+        `
+Requisition: ${r.req_no}
+Date: ${r.req_date}
+Requested By: ${r.requested_by}
+Vehicle: ${vehicleName(
+    r.vehicle_id
+)}
+Item: ${r.item_description}
+Quantity: ${r.quantity}
+Unit Cost: ${money(
+    r.unit_cost
+)}
+Total: ${money(
+    r.total_amount
+)}
+Status: ${r.status}
+        `
+    );
+};
+
+/* =========================================================
+   DASHBOARD CARD NAVIGATION
+   ========================================================= */
+
+function setupDashboardCards() {
+
+    const mappings = [
+
+        {
+            ids:[
+                "dashVehicles"
+            ],
+            section:"vehicles"
+        },
+
+        {
+            ids:[
+                "dashRepair"
+            ],
+            section:"vehicles"
+        },
+
+        {
+            ids:[
+                "dashBilled",
+                "dashPaid",
+                "dashOutstanding"
+            ],
+            section:"vehicles"
+        },
+
+        {
+            ids:[
+                "dashExpenses"
+            ],
+            section:"expenses"
+        },
+
+        {
+            ids:[
+                "dashPetty"
+            ],
+            section:"pettyCash"
+        },
+
+        {
+            ids:[
+                "dashReq",
+                "dashReqCount",
+                "dashReqTotal",
+                "reqOverallTotal"
+            ],
+            section:"requisitions"
+        }
+
+    ];
+
+    mappings.forEach(item => {
+
+        item.ids.forEach(id => {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+            if (!element)
+                return;
+
+            const card =
+                element.closest(
+                    ".dashboard-card,.stat-card,.kpi-card,.card"
+                ) ||
+                element.parentElement;
+
+            if (!card)
+                return;
+
+            if (
+                card.dataset.garageCardReady
+            )
+                return;
+
+            card.dataset.garageCardReady =
+                "true";
+
+            card.style.cursor =
+                "pointer";
+
+            card.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target.closest(
+                            "button,a"
+                        )
+                    )
+                        return;
+
+                    window.showSection(
+                        item.section
+                    );
+                }
+            );
+        });
+    });
+}
+
+/* =========================================================
+   SEARCH / FILTER
+   ========================================================= */
+
+[
+    "vehicleSearch",
+    "vehicleStatusFilter"
+].forEach(id => {
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "input",
+            renderVehicles
+        );
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "change",
+            renderVehicles
+        );
+});
+
+[
+    "expenseSearch",
+    "expenseCategoryFilter"
+].forEach(id => {
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "input",
+            renderExpenses
+        );
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "change",
+            renderExpenses
+        );
+});
+
+[
+    "pettySearch",
+    "pettyCategoryFilter"
+].forEach(id => {
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "input",
+            renderPettyCash
+        );
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "change",
+            renderPettyCash
+        );
+});
+
+[
+    "reqSearch",
+    "reqStatusFilter"
+].forEach(id => {
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "input",
+            renderRequisitions
+        );
+
+    document
+        .getElementById(id)
+        ?.addEventListener(
+            "change",
+            renderRequisitions
+        );
+});
+
+/* =========================================================
+   MODAL OUTSIDE CLICK
+   ========================================================= */
+
+document.addEventListener(
+    "click",
+    e => {
+
+        if (
+            e.target.classList.contains(
+                "modal"
+            )
+        ) {
+
+            e.target.classList.remove(
+                "show"
+            );
+        }
+    }
+);
+
+/* =========================================================
+   ESCAPE KEY
+   ========================================================= */
+
+document.addEventListener(
+    "keydown",
+    e => {
+
+        if (
+            e.key ===
+            "Escape"
+        ) {
+
+            document
+                .querySelectorAll(
+                    ".modal.show"
+                )
+                .forEach(modal => {
+
+                    modal.classList.remove(
+                        "show"
+                    );
+                });
+        }
+    }
+);
+
+/* =========================================================
+   GLOBAL ERROR HANDLING
+   ========================================================= */
+
+window.addEventListener(
+    "error",
+    e => {
+
+        console.error(
+            "Application error:",
+            e.error ||
+            e.message
+        );
+    }
+);
+
+/* =========================================================
+   START
+   ========================================================= */
+
+async function startApp() {
+
+    injectPremiumStyles();
+
+    await loadAllData();
+
+    setTimeout(
+        setupDashboardCards,
+        100
+    );
+}
+
+startApp();
