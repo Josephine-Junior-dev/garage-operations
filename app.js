@@ -1,10 +1,13 @@
 /* =========================================================
-   =========================================================
    GARAGE OPERATIONS PRO
    COMPLETE APP.JS
-   =========================================================
+   MATCHES THE CURRENT index.html
+   ========================================================= */
+
+
+/* =========================================================
    PART 1 START HERE
-   SUPABASE + GLOBALS + HELPERS + DASHBOARD
+   SUPABASE + GLOBALS + HELPERS + NAVIGATION
    ========================================================= */
 
 import {
@@ -43,140 +46,90 @@ let editingExpenseId = null;
 let editingPettyId = null;
 let editingReqId = null;
 
-let selectedVehicleExpenseId = null;
-let selectedReqNo = null;
+let selectedReqForPrint = null;
+let selectedVehicleExpenseForPrint = null;
 
 
 /* =========================================================
-   OPTIONS
-   ========================================================= */
-
-const VEHICLE_JOB_TYPES = [
-  "Repair",
-  "Storage"
-];
-
-const VEHICLE_STATUSES = [
-  "Storage",
-  "Under Repair",
-  "Completed",
-  "Released"
-];
-
-const EXPENSE_CATEGORIES = [
-  "Parts",
-  "Materials",
-  "Labour"
-];
-
-const PETTY_CATEGORIES = [
-  "Parts",
-  "Materials",
-  "Labour",
-  "Transport",
-  "Other"
-];
-
-const REQ_STATUSES = [
-  "Pending",
-  "Approved",
-  "Purchased",
-  "Completed",
-  "Rejected"
-];
-
-
-/* =========================================================
-   BASIC HELPERS
+   DOM HELPER
    ========================================================= */
 
 function $(id) {
   return document.getElementById(id);
 }
 
-function num(value) {
-  const n =
-    Number(
-      String(value ?? "")
-        .replace(/,/g, "")
-        .trim()
-    );
 
+/* =========================================================
+   NUMBER HELPERS
+   ========================================================= */
+
+function num(value) {
+  const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
+
 function money(value) {
-  return (
-    "KSh " +
+
+  return "KSh " +
     num(value).toLocaleString(
       "en-KE",
       {
-        minimumFractionDigits: 2,
+        minimumFractionDigits: 0,
         maximumFractionDigits: 2
       }
-    )
-  );
+    );
+
 }
 
+
+/* =========================================================
+   HTML ESCAPE
+   ========================================================= */
+
 function escapeHtml(value) {
+
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+
 }
+
+
+/* =========================================================
+   DATE HELPERS
+   ========================================================= */
 
 function today() {
+
   const d = new Date();
 
-  return (
-    d.getFullYear() +
-    "-" +
-    String(
-      d.getMonth() + 1
-    ).padStart(2, "0") +
-    "-" +
-    String(
-      d.getDate()
-    ).padStart(2, "0")
-  );
+  const year = d.getFullYear();
+
+  const month =
+    String(d.getMonth() + 1)
+      .padStart(2, "0");
+
+  const day =
+    String(d.getDate())
+      .padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+
 }
 
+
 function formatDate(value) {
-  if (!value) {
-    return "—";
-  }
 
-  const text = String(value);
-
-  if (
-    /^\d{4}-\d{2}-\d{2}$/.test(text)
-  ) {
-    const parts =
-      text.split("-").map(Number);
-
-    const d =
-      new Date(
-        parts[0],
-        parts[1] - 1,
-        parts[2]
-      );
-
-    return d.toLocaleDateString(
-      "en-KE",
-      {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-      }
-    );
-  }
+  if (!value) return "—";
 
   const d = new Date(value);
 
   if (Number.isNaN(d.getTime())) {
-    return text;
+    return escapeHtml(value);
   }
 
   return d.toLocaleDateString(
@@ -187,12 +140,7 @@ function formatDate(value) {
       day: "numeric"
     }
   );
-}
 
-function normalizeStatus(value) {
-  return String(value || "")
-    .trim()
-    .replace(/\s+/g, " ");
 }
 
 
@@ -200,84 +148,99 @@ function normalizeStatus(value) {
    STORAGE DAYS
    ========================================================= */
 
-function dateOnly(value) {
-  if (!value) return null;
+function getStorageDays(dateIn, dateOut) {
 
-  const text = String(value);
+  if (!dateIn) return 0;
 
-  if (
-    /^\d{4}-\d{2}-\d{2}$/.test(text)
-  ) {
-    const p =
-      text.split("-").map(Number);
-
-    return new Date(
-      p[0],
-      p[1] - 1,
-      p[2]
-    );
-  }
-
-  const d = new Date(value);
-
-  if (Number.isNaN(d.getTime())) {
-    return null;
-  }
-
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate()
-  );
-}
-
-function calculateStorageDays(
-  dateIn,
-  dateOut = null
-) {
   const start =
-    dateOnly(dateIn);
-
-  if (!start) return 0;
+    new Date(`${dateIn}T00:00:00`);
 
   const end =
-    dateOnly(dateOut) ||
-    dateOnly(today());
+    dateOut
+      ? new Date(`${dateOut}T00:00:00`)
+      : new Date();
 
-  if (!end) return 0;
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime())
+  ) {
+    return 0;
+  }
 
-  return Math.max(
-    0,
-    Math.floor(
-      (
-        end.getTime() -
-        start.getTime()
-      ) /
-      86400000
-    )
-  );
-}
-
-function updateVehicleStorageDays() {
-  const dateIn =
-    $("vehicleDateIn")?.value || "";
-
-  const dateOut =
-    $("vehicleDateOut")?.value || "";
+  const difference =
+    end.getTime() - start.getTime();
 
   const days =
-    calculateStorageDays(
-      dateIn,
-      dateOut
+    Math.floor(
+      difference /
+      (1000 * 60 * 60 * 24)
     );
 
-  const el =
-    $("vehicleStorageDays");
+  return Math.max(0, days);
 
-  if (el) {
-    el.textContent =
-      `${days} day${days === 1 ? "" : "s"}`;
+}
+
+
+/* =========================================================
+   STATUS NORMALIZATION
+   ========================================================= */
+
+function normalizeStatus(status) {
+
+  return String(status || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+
+}
+
+
+function statusBadge(status) {
+
+  if (!status) {
+    return `<span class="status status-default">—</span>`;
   }
+
+  const normalized =
+    normalizeStatus(status);
+
+  let className =
+    "status-default";
+
+  if (normalized === "under-repair") {
+    className = "status-under-repair";
+  }
+
+  if (normalized === "completed") {
+    className = "status-completed";
+  }
+
+  if (normalized === "pending") {
+    className = "status-pending";
+  }
+
+  if (normalized === "approved") {
+    className = "status-approved";
+  }
+
+  if (normalized === "purchased") {
+    className = "status-purchased";
+  }
+
+  if (normalized === "rejected") {
+    className = "status-rejected";
+  }
+
+  if (normalized === "released") {
+    className = "status-completed";
+  }
+
+  return `
+    <span class="status ${className}">
+      ${escapeHtml(status)}
+    </span>
+  `;
+
 }
 
 
@@ -285,40 +248,31 @@ function updateVehicleStorageDays() {
    TOAST
    ========================================================= */
 
-function showToast(
-  message,
-  type = "success"
-) {
+function showToast(message, type = "success") {
+
   const toast = $("toast");
 
-  if (!toast) {
-    console.log(message);
-    return;
-  }
+  if (!toast) return;
 
   toast.textContent = message;
+
   toast.style.display = "block";
 
   if (type === "error") {
-    toast.style.background =
-      "#dc2626";
-  } else if (type === "warning") {
-    toast.style.background =
-      "#f59e0b";
+    toast.style.background = "#991b1b";
   } else {
-    toast.style.background =
-      "#07111f";
+    toast.style.background = "#07111f";
   }
 
   clearTimeout(
-    window.garageToastTimer
+    window.__garageToastTimer
   );
 
-  window.garageToastTimer =
+  window.__garageToastTimer =
     setTimeout(() => {
-      toast.style.display =
-        "none";
-    }, 3500);
+      toast.style.display = "none";
+    }, 2800);
+
 }
 
 
@@ -327,235 +281,316 @@ function showToast(
    ========================================================= */
 
 function openModal(id) {
+
   const modal = $(id);
 
   if (!modal) return;
 
   modal.classList.add("show");
-  modal.style.display = "flex";
+
 }
 
+
 function closeModal(id) {
+
   const modal = $(id);
 
   if (!modal) return;
 
   modal.classList.remove("show");
-  modal.style.display = "none";
+
 }
 
 
 /* =========================================================
-   STATUS BADGE
+   SECTION NAVIGATION
    ========================================================= */
 
-function statusBadge(status) {
-  const value =
-    normalizeStatus(status) || "—";
+function showSection(sectionId, clickedButton = null) {
 
-  let cls = "status-default";
-
-  if (value === "Under Repair") {
-    cls = "status-under-repair";
-  }
-
-  if (value === "Completed") {
-    cls = "status-completed";
-  }
-
-  if (value === "Pending") {
-    cls = "status-pending";
-  }
-
-  if (value === "Approved") {
-    cls = "status-approved";
-  }
-
-  if (value === "Purchased") {
-    cls = "status-purchased";
-  }
-
-  if (value === "Rejected") {
-    cls = "status-rejected";
-  }
-
-  return `
-    <span class="status ${cls}">
-      ${escapeHtml(value)}
-    </span>
-  `;
-}
-
-
-/* =========================================================
-   NAVIGATION
-   ========================================================= */
-
-function showSection(
-  sectionId,
-  clickedButton = null
-) {
   document
     .querySelectorAll(".app-section")
     .forEach(section => {
+
       section.style.display =
         section.id === sectionId
           ? "block"
           : "none";
+
     });
+
 
   document
     .querySelectorAll(
       ".nav-btn, .mobile-nav-btn"
     )
     .forEach(button => {
-      button.classList.remove(
-        "active"
-      );
+
+      button.classList.remove("active");
+
     });
 
+
   if (clickedButton) {
-    clickedButton.classList.add(
-      "active"
-    );
+
+    clickedButton.classList.add("active");
+
   } else {
+
     document
       .querySelectorAll(
         ".nav-btn, .mobile-nav-btn"
       )
       .forEach(button => {
-        const click =
-          button.getAttribute(
-            "onclick"
-          ) || "";
+
+        const onclick =
+          button.getAttribute("onclick") || "";
 
         if (
-          click.includes(
+          onclick.includes(
             `showSection('${sectionId}'`
           )
         ) {
-          button.classList.add(
-            "active"
-          );
+          button.classList.add("active");
         }
+
       });
+
   }
+
+
+  const titles = {
+
+    dashboard: "Dashboard",
+
+    vehicles: "Vehicles",
+
+    expenses: "Expenses",
+
+    pettyCash: "Petty Cash",
+
+    requisitions: "Requisitions"
+
+  };
+
+
+  const topbarTitle =
+    document.querySelector(
+      ".topbar-title strong"
+    );
+
+  if (topbarTitle) {
+
+    topbarTitle.textContent =
+      `Garage Operations Pro`;
+
+  }
+
+
+  const topbarSubtitle =
+    document.querySelector(
+      ".topbar-title span"
+    );
+
+  if (topbarSubtitle) {
+
+    topbarSubtitle.textContent =
+      titles[sectionId] ||
+      "Workshop management workspace";
+
+  }
+
 }
 
 
 /* =========================================================
-   LOAD DATA
+   DATABASE ERROR
    ========================================================= */
 
-async function loadTable(table) {
-  let result =
-    await supabase
-      .from(table)
-      .select("*");
+function databaseError(error, action) {
 
-  return result;
+  console.error(
+    `Garage Operations: ${action}`,
+    error
+  );
+
+  const message =
+    error?.message ||
+    "Database operation failed.";
+
+  showToast(
+    `${action}: ${message}`,
+    "error"
+  );
+
 }
+
+
+/* =========================================================
+   GENERIC DELETE CONFIRMATION
+   ========================================================= */
+
+function askDelete(message) {
+
+  return window.confirm(
+    message ||
+    "Are you sure you want to delete this record?"
+  );
+
+}
+
+
+/* =========================================================
+   PART 1 END HERE
+   ========================================================= */
+
+
+
+/* =========================================================
+   PART 2 START HERE
+   DATA LOADING + DASHBOARD + VEHICLES
+   ========================================================= */
+
+
+/* =========================================================
+   LOAD ALL DATA
+   ========================================================= */
 
 async function loadAllData() {
+
   try {
-    const [
-      vehicleResult,
-      expenseResult,
-      pettyResult,
-      reqResult
-    ] = await Promise.all([
-      loadTable("vehicles"),
-      loadTable("expenses"),
-      loadTable("petty_cash"),
-      loadTable("requisitions")
+
+    await Promise.all([
+      loadVehicles(),
+      loadExpenses(),
+      loadPettyCash(),
+      loadRequisitions()
     ]);
 
-    const errors = [];
-
-    if (vehicleResult.error) {
-      errors.push(
-        "Vehicles: " +
-        vehicleResult.error.message
-      );
-    }
-
-    if (expenseResult.error) {
-      errors.push(
-        "Expenses: " +
-        expenseResult.error.message
-      );
-    }
-
-    if (pettyResult.error) {
-      errors.push(
-        "Petty Cash: " +
-        pettyResult.error.message
-      );
-    }
-
-    if (reqResult.error) {
-      errors.push(
-        "Requisitions: " +
-        reqResult.error.message
-      );
-    }
-
-    vehicles =
-      vehicleResult.data || [];
-
-    expenses =
-      expenseResult.data || [];
-
-    pettyCash =
-      pettyResult.data || [];
-
-    requisitions =
-      reqResult.data || [];
-
-    renderAll();
-
     populateVehicleSelects();
-
     populateCategoryFilters();
 
-    if (errors.length) {
-      console.error(
-        "SUPABASE ERRORS:",
-        errors
-      );
+    renderDashboard();
+    renderVehicles();
+    renderExpenses();
+    renderPettyCash();
+    renderRequisitions();
 
-      showToast(
-        errors.join(" | "),
-        "error"
-      );
-    }
+    updateVehicleStorageDays();
 
   } catch (error) {
-    console.error(
-      "LOAD ERROR:",
-      error
+
+    databaseError(
+      error,
+      "Loading data failed"
     );
 
-    showToast(
-      "Unable to load garage data: " +
-      error.message,
-      "error"
-    );
   }
+
 }
 
 
 /* =========================================================
-   RENDER ALL
+   LOAD VEHICLES
    ========================================================= */
 
-function renderAll() {
-  renderDashboard();
-  renderVehicles();
-  renderExpenses();
-  renderPettyCash();
-  renderRequisitions();
-  renderDashboardActivity();
+async function loadVehicles() {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("vehicles")
+    .select("*")
+    .order(
+      "date_in",
+      {
+        ascending: false
+      }
+    );
+
+  if (error) throw error;
+
+  vehicles = data || [];
+
+}
+
+
+/* =========================================================
+   LOAD EXPENSES
+   ========================================================= */
+
+async function loadExpenses() {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("expenses")
+    .select("*")
+    .order(
+      "expense_date",
+      {
+        ascending: false
+      }
+    );
+
+  if (error) throw error;
+
+  expenses = data || [];
+
+}
+
+
+/* =========================================================
+   LOAD PETTY CASH
+   ========================================================= */
+
+async function loadPettyCash() {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("petty_cash")
+    .select("*")
+    .order(
+      "cash_date",
+      {
+        ascending: false
+      }
+    );
+
+  if (error) throw error;
+
+  pettyCash = data || [];
+
+}
+
+
+/* =========================================================
+   LOAD REQUISITIONS
+   ========================================================= */
+
+async function loadRequisitions() {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("requisitions")
+    .select("*")
+    .order(
+      "req_date",
+      {
+        ascending: false
+      }
+    );
+
+  if (error) throw error;
+
+  requisitions = data || [];
+
 }
 
 
@@ -564,61 +599,68 @@ function renderAll() {
    ========================================================= */
 
 function renderDashboard() {
+
   const totalVehicles =
     vehicles.length;
 
-  const repair =
+  const underRepair =
     vehicles.filter(
-      v =>
-        normalizeStatus(
-          v.status
-        ) === "Under Repair"
+      vehicle =>
+        String(vehicle.status || "")
+          .toLowerCase() ===
+        "under repair"
     ).length;
 
-  const billed =
+  const totalBilled =
     vehicles.reduce(
-      (sum, v) =>
-        sum + num(v.billed),
+      (sum, vehicle) =>
+        sum + num(vehicle.billed),
       0
     );
 
-  const paid =
+  const totalPaid =
     vehicles.reduce(
-      (sum, v) =>
-        sum + num(v.paid),
+      (sum, vehicle) =>
+        sum + num(vehicle.paid),
       0
     );
 
   const outstanding =
-    Math.max(
-      0,
-      billed - paid
+    vehicles.reduce(
+      (sum, vehicle) =>
+        sum +
+        Math.max(
+          0,
+          num(vehicle.billed) -
+          num(vehicle.paid)
+        ),
+      0
     );
 
   const totalExpenses =
     expenses.reduce(
-      (sum, e) =>
-        sum + num(e.amount),
+      (sum, item) =>
+        sum + num(item.amount),
       0
     );
 
   const totalPetty =
     pettyCash.reduce(
-      (sum, p) =>
-        sum + num(p.amount),
+      (sum, item) =>
+        sum + num(item.amount),
       0
     );
 
-  const reqCount =
+  const totalReq =
     requisitions.length;
 
-  const reqTotal =
+  const totalReqValue =
     requisitions.reduce(
-      (sum, r) =>
-        sum +
-        num(r.total_amount),
+      (sum, item) =>
+        sum + num(item.total_amount),
       0
     );
+
 
   if ($("dashVehicles")) {
     $("dashVehicles").textContent =
@@ -627,7 +669,7 @@ function renderDashboard() {
 
   if ($("dashRepair")) {
     $("dashRepair").textContent =
-      repair;
+      underRepair;
   }
 
   if ($("dashOutstanding")) {
@@ -637,17 +679,17 @@ function renderDashboard() {
 
   if ($("dashReq")) {
     $("dashReq").textContent =
-      reqCount;
+      totalReq;
   }
 
   if ($("dashBilled")) {
     $("dashBilled").textContent =
-      money(billed);
+      money(totalBilled);
   }
 
   if ($("dashPaid")) {
     $("dashPaid").textContent =
-      money(paid);
+      money(totalPaid);
   }
 
   if ($("dashExpenses")) {
@@ -662,18 +704,21 @@ function renderDashboard() {
 
   if ($("dashReqCount")) {
     $("dashReqCount").textContent =
-      reqCount;
+      totalReq;
   }
 
   if ($("dashReqTotal")) {
     $("dashReqTotal").textContent =
-      money(reqTotal);
+      money(totalReqValue);
   }
 
   if ($("reqOverallTotal")) {
     $("reqOverallTotal").textContent =
-      money(reqTotal);
+      money(totalReqValue);
   }
+
+  renderDashboardActivity();
+
 }
 
 
@@ -682,420 +727,640 @@ function renderDashboard() {
    ========================================================= */
 
 function renderDashboardActivity() {
-  const box =
+
+  const container =
     $("dashboardActivity");
 
-  if (!box) return;
+  if (!container) return;
 
-  const activity = [];
-
-  vehicles.forEach(v => {
-    activity.push({
-      date:
-        v.date_in || "",
-      icon: "🚘",
-      title:
-        v.registration ||
-        "Vehicle",
-      description:
-        `${v.customer || "No customer"} • ${v.status || "—"}`
-    });
-  });
-
-  expenses.forEach(e => {
-    const vehicle =
-      vehicles.find(
-        v =>
-          String(v.id) ===
-          String(e.vehicle_id)
-      );
-
-    activity.push({
-      date:
-        e.expense_date || "",
-      icon: "💳",
-      title:
-        "Expense recorded",
-      description:
-        `${vehicle?.registration || "General"} • ${money(e.amount)}`
-    });
-  });
-
-  requisitions.forEach(r => {
-    activity.push({
-      date:
-        r.req_date || "",
-      icon: "📋",
-      title:
-        r.req_no ||
-        "Requisition",
-      description:
-        `${r.status || "Pending"} • ${money(r.total_amount)}`
-    });
-  });
-
-  activity.sort(
-    (a, b) =>
-      new Date(b.date || 0) -
-      new Date(a.date || 0)
-  );
 
   const recent =
-    activity.slice(0, 6);
+    [...vehicles]
+      .sort(
+        (a, b) =>
+          new Date(
+            b.date_in || 0
+          ) -
+          new Date(
+            a.date_in || 0
+          )
+      )
+      .slice(0, 6);
+
 
   if (!recent.length) {
-    box.innerHTML = `
-      <div class="activity-item">
-        <div class="activity-icon">
-          📊
-        </div>
-        <div class="activity-main">
-          <strong>
-            No activity yet
-          </strong>
-          <span>
-            Your latest activity
-            will appear here.
-          </span>
-        </div>
+
+    container.innerHTML = `
+      <div style="
+        padding:25px 0;
+        text-align:center;
+        color:#94a3b8;
+        font-size:12px;
+      ">
+        No vehicle activity yet.
       </div>
     `;
 
     return;
+
   }
 
-  box.innerHTML =
-    recent.map(item => `
-      <div class="activity-item">
 
-        <div class="activity-icon">
-          ${item.icon}
-        </div>
+  container.innerHTML =
+    recent
+      .map(vehicle => {
 
-        <div class="activity-main">
+        const registration =
+          escapeHtml(
+            vehicle.registration ||
+            "No registration"
+          );
 
-          <strong>
-            ${escapeHtml(
-              item.title
-            )}
-          </strong>
+        const customer =
+          escapeHtml(
+            vehicle.customer ||
+            ""
+          );
 
-          <span>
-            ${escapeHtml(
-              item.description
-            )}
-          </span>
+        return `
+          <div class="activity-item">
 
-        </div>
+            <div class="activity-icon">
+              🚘
+            </div>
 
-      </div>
-    `).join("");
+            <div class="activity-main">
+
+              <strong>
+                ${registration}
+              </strong>
+
+              <span>
+                ${customer}
+                •
+                ${formatDate(vehicle.date_in)}
+              </span>
+
+            </div>
+
+            ${statusBadge(vehicle.status)}
+
+          </div>
+        `;
+
+      })
+      .join("");
+
 }
 
 
 /* =========================================================
-   VEHICLE SELECTS
+   DASHBOARD CARDS
+   THIS MATCHES THE ACTUAL HTML:
+   .kpi-card
+   .financial-item
+   ========================================================= */
+
+function bindDashboardCards() {
+
+  const cardActions = {
+
+    /* TOP KPI CARDS */
+
+    dashVehicles:
+      "vehicles",
+
+    dashRepair:
+      "vehicles",
+
+    dashOutstanding:
+      "vehicles",
+
+    dashReq:
+      "requisitions",
+
+
+    /* FINANCIAL OVERVIEW */
+
+    dashBilled:
+      "vehicles",
+
+    dashPaid:
+      "vehicles",
+
+    dashExpenses:
+      "expenses",
+
+    dashPetty:
+      "pettyCash"
+
+  };
+
+
+  Object.entries(cardActions)
+    .forEach(
+      ([numberId, sectionId]) => {
+
+        const numberElement =
+          $(numberId);
+
+        if (!numberElement) return;
+
+
+        const card =
+          numberElement.closest(
+            ".kpi-card"
+          ) ||
+          numberElement.closest(
+            ".financial-item"
+          );
+
+        if (!card) return;
+
+
+        card.style.cursor =
+          "pointer";
+
+
+        card.title =
+          "Open " +
+          sectionId;
+
+
+        if (
+          card.dataset
+            .dashboardClickBound ===
+          "true"
+        ) {
+          return;
+        }
+
+
+        card.dataset
+          .dashboardClickBound =
+          "true";
+
+
+        card.addEventListener(
+          "click",
+          function () {
+
+            showSection(
+              sectionId
+            );
+
+          }
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   POPULATE VEHICLE SELECTS
    ========================================================= */
 
 function populateVehicleSelects() {
-  [
-    $("expenseVehicle"),
-    $("reqVehicle")
-  ].forEach(field => {
-    if (!field) return;
 
-    const oldValue =
-      field.value || "";
+  const expenseVehicle =
+    $("expenseVehicle");
 
-    const isExpense =
-      field.id ===
-      "expenseVehicle";
-
-    field.innerHTML = `
-      <option value="">
-        ${
-          isExpense
-            ? "General Expense"
-            : "Select Vehicle"
-        }
-      </option>
-    `;
-
-    vehicles.forEach(vehicle => {
-      const option =
-        document.createElement(
-          "option"
-        );
-
-      option.value =
-        vehicle.id;
-
-      option.textContent =
-        `${vehicle.registration || "—"}${vehicle.customer ? " — " + vehicle.customer : ""}`;
-
-      field.appendChild(option);
-    });
-
-    if (
-      oldValue &&
-      [...field.options].some(
-        option =>
-          String(option.value) ===
-          String(oldValue)
-      )
-    ) {
-      field.value =
-        oldValue;
-    }
-  });
-}
+  const reqVehicle =
+    $("reqVehicle");
 
 
-/* =========================================================
-   CATEGORY FILTERS
-   ========================================================= */
+  if (expenseVehicle) {
 
-function populateCategoryFilters() {
-  const expenseFilter =
-    $("expenseCategoryFilter");
+    const current =
+      expenseVehicle.value;
 
-  if (expenseFilter) {
-    const old =
-      expenseFilter.value;
-
-    const list =
-      [
-        ...EXPENSE_CATEGORIES,
-        ...expenses
-          .map(e => e.category)
-          .filter(Boolean)
-      ];
-
-    const unique =
-      [...new Set(list)];
-
-    expenseFilter.innerHTML = `
-      <option value="">
-        All Categories
-      </option>
-      ${unique.map(c => `
-        <option value="${escapeHtml(c)}">
-          ${escapeHtml(c)}
+    expenseVehicle.innerHTML =
+      `
+        <option value="">
+          General Expense
         </option>
-      `).join("")}
-    `;
+      `;
 
-    if (unique.includes(old)) {
-      expenseFilter.value = old;
+    vehicles.forEach(
+      vehicle => {
+
+        expenseVehicle.innerHTML += `
+          <option value="${escapeHtml(vehicle.id)}">
+            ${escapeHtml(
+              vehicle.registration ||
+              "Unnamed vehicle"
+            )}
+          </option>
+        `;
+
+      }
+    );
+
+    if (current) {
+      expenseVehicle.value =
+        current;
     }
+
   }
 
-  const pettyFilter =
-    $("pettyCategoryFilter");
 
-  if (pettyFilter) {
-    const old =
-      pettyFilter.value;
+  if (reqVehicle) {
 
-    const list =
-      [
-        ...PETTY_CATEGORIES,
-        ...pettyCash
-          .map(p => p.category)
-          .filter(Boolean)
-      ];
+    const current =
+      reqVehicle.value;
 
-    const unique =
-      [...new Set(list)];
-
-    pettyFilter.innerHTML = `
-      <option value="">
-        All Categories
-      </option>
-      ${unique.map(c => `
-        <option value="${escapeHtml(c)}">
-          ${escapeHtml(c)}
+    reqVehicle.innerHTML =
+      `
+        <option value="">
+          Select Vehicle
         </option>
-      `).join("")}
-    `;
+      `;
 
-    if (unique.includes(old)) {
-      pettyFilter.value = old;
+    vehicles.forEach(
+      vehicle => {
+
+        reqVehicle.innerHTML += `
+          <option value="${escapeHtml(vehicle.id)}">
+            ${escapeHtml(
+              vehicle.registration ||
+              "Unnamed vehicle"
+            )}
+          </option>
+        `;
+
+      }
+    );
+
+    if (current) {
+      reqVehicle.value =
+        current;
     }
+
   }
+
 }
 
 
 /* =========================================================
-   =========================================================
-   PART 1 END HERE
-   =========================================================
-   PART 2 START HERE
-   VEHICLES
-   =========================================================
+   VEHICLE NAME
    ========================================================= */
 
+function getVehicleRegistration(
+  vehicleId
+) {
 
-/* =========================================================
-   VEHICLE FORM
-   ========================================================= */
-
-function resetVehicleForm() {
-  editingVehicleId = null;
-
-  $("vehicleForm")?.reset();
-
-  if ($("vehicleId")) {
-    $("vehicleId").value = "";
-  }
-
-  if ($("vehicleDateIn")) {
-    $("vehicleDateIn").value =
-      today();
-  }
-
-  if ($("vehicleDateOut")) {
-    $("vehicleDateOut").value =
-      "";
-  }
-
-  if ($("vehicleJobType")) {
-    $("vehicleJobType").value =
-      "Repair";
-  }
-
-  if ($("vehicleStatus")) {
-    $("vehicleStatus").value =
-      "Under Repair";
-  }
-
-  if ($("vehicleBilled")) {
-    $("vehicleBilled").value =
-      "0";
-  }
-
-  if ($("vehiclePaid")) {
-    $("vehiclePaid").value =
-      "0";
-  }
-
-  if ($("vehicleModalTitle")) {
-    $("vehicleModalTitle").textContent =
-      "Add Vehicle";
-  }
-
-  updateVehicleStorageDays();
-}
-
-
-/* =========================================================
-   OPEN VEHICLE
-   ========================================================= */
-
-function openVehicleModal(id = null) {
-  if (!id) {
-    resetVehicleForm();
-
-    openModal("vehicleModal");
-
-    return;
+  if (!vehicleId) {
+    return "General";
   }
 
   const vehicle =
     vehicles.find(
-      v =>
-        String(v.id) ===
-        String(id)
+      item =>
+        String(item.id) ===
+        String(vehicleId)
     );
 
-  if (!vehicle) {
-    showToast(
-      "Vehicle not found.",
-      "error"
+  return vehicle
+    ? (
+        vehicle.registration ||
+        "Unnamed vehicle"
+      )
+    : "Unknown vehicle";
+
+}
+
+
+/* =========================================================
+   VEHICLES RENDER
+   ========================================================= */
+
+function renderVehicles() {
+
+  const body =
+    $("vehiclesTableBody");
+
+  if (!body) return;
+
+
+  const search =
+    (
+      $("vehicleSearch")?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const status =
+    (
+      $("vehicleStatusFilter")?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const filtered =
+    vehicles.filter(
+      vehicle => {
+
+        const registration =
+          String(
+            vehicle.registration ||
+            ""
+          ).toLowerCase();
+
+        const customer =
+          String(
+            vehicle.customer ||
+            ""
+          ).toLowerCase();
+
+        const vehicleStatus =
+          String(
+            vehicle.status ||
+            ""
+          ).toLowerCase();
+
+
+        const matchesSearch =
+          !search ||
+          registration.includes(search) ||
+          customer.includes(search);
+
+
+        const matchesStatus =
+          !status ||
+          vehicleStatus === status;
+
+
+        return (
+          matchesSearch &&
+          matchesStatus
+        );
+
+      }
     );
+
+
+  if (!filtered.length) {
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="9"
+            style="
+              text-align:center;
+              padding:35px;
+              color:#94a3b8;
+            ">
+          No vehicles found.
+        </td>
+      </tr>
+    `;
 
     return;
+
   }
+
+
+  body.innerHTML =
+    filtered
+      .map(
+        vehicle => {
+
+          const billed =
+            num(vehicle.billed);
+
+          const paid =
+            num(vehicle.paid);
+
+          const outstanding =
+            Math.max(
+              0,
+              billed - paid
+            );
+
+
+          const storageDays =
+            getStorageDays(
+              vehicle.date_in,
+              vehicle.date_out
+            );
+
+
+          return `
+            <tr>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    vehicle.registration ||
+                    "—"
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  vehicle.customer ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${formatDate(
+                  vehicle.date_in
+                )}
+
+                <br>
+
+                <small style="
+                  color:#94a3b8;
+                  font-size:10px;
+                ">
+                  ${
+                    vehicle.date_out
+                      ? "Out: " +
+                        formatDate(
+                          vehicle.date_out
+                        )
+                      : "Storage: " +
+                        storageDays +
+                        " day" +
+                        (
+                          storageDays === 1
+                            ? ""
+                            : "s"
+                        )
+                  }
+                </small>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  vehicle.job_type ||
+                  "Repair"
+                )}
+              </td>
+
+              <td>
+                ${statusBadge(
+                  vehicle.status
+                )}
+              </td>
+
+              <td>
+                ${money(billed)}
+              </td>
+
+              <td>
+                ${money(paid)}
+              </td>
+
+              <td>
+                <strong>
+                  ${money(outstanding)}
+                </strong>
+              </td>
+
+              <td>
+
+                <div class="table-actions">
+
+                  <button
+                    class="action-btn"
+                    title="Vehicle expenses"
+                    onclick="previewVehicleExpenses('${escapeHtml(vehicle.id)}')">
+                    💳
+                  </button>
+
+                  <button
+                    class="action-btn"
+                    title="Edit vehicle"
+                    onclick="editVehicle('${escapeHtml(vehicle.id)}')">
+                    ✏️
+                  </button>
+
+                  <button
+                    class="action-btn"
+                    title="Delete vehicle"
+                    onclick="deleteVehicle('${escapeHtml(vehicle.id)}')">
+                    🗑
+                  </button>
+
+                </div>
+
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   UPDATE STORAGE DAYS
+   ========================================================= */
+
+function updateVehicleStorageDays() {
+
+  /*
+   * Storage Days are calculated automatically
+   * from Date In and Date Out.
+   *
+   * No new Supabase column is required.
+   */
+
+  renderVehicles();
+
+}
+
+
+/* =========================================================
+   OPEN VEHICLE MODAL
+   ========================================================= */
+
+function openVehicleModal(
+  vehicle = null
+) {
 
   editingVehicleId =
-    vehicle.id;
+    vehicle?.id || null;
+
 
   if ($("vehicleModalTitle")) {
-    $("vehicleModalTitle").textContent =
-      "Edit Vehicle";
+
+    $("vehicleModalTitle")
+      .textContent =
+      vehicle
+        ? "Edit Vehicle"
+        : "Add Vehicle";
+
   }
 
-  if ($("vehicleId")) {
-    $("vehicleId").value =
-      vehicle.id;
-  }
 
-  if ($("vehicleRegistration")) {
-    $("vehicleRegistration").value =
-      vehicle.registration || "";
-  }
+  $("vehicleId").value =
+    vehicle?.id || "";
 
-  if ($("vehicleCustomer")) {
-    $("vehicleCustomer").value =
-      vehicle.customer || "";
-  }
 
-  if ($("vehicleDateIn")) {
-    $("vehicleDateIn").value =
-      vehicle.date_in || "";
-  }
+  $("vehicleRegistration").value =
+    vehicle?.registration || "";
 
-  if ($("vehicleDateOut")) {
-    $("vehicleDateOut").value =
-      vehicle.date_out || "";
-  }
 
-  if ($("vehicleJobType")) {
-    $("vehicleJobType").value =
-      VEHICLE_JOB_TYPES.includes(
-        vehicle.job_type
-      )
-        ? vehicle.job_type
-        : "Repair";
-  }
+  $("vehicleCustomer").value =
+    vehicle?.customer || "";
 
-  if ($("vehicleStatus")) {
-    $("vehicleStatus").value =
-      VEHICLE_STATUSES.includes(
-        vehicle.status
-      )
-        ? vehicle.status
-        : "Under Repair";
-  }
 
-  if ($("vehicleReleasedTo")) {
-    $("vehicleReleasedTo").value =
-      vehicle.released_to || "";
-  }
+  $("vehicleDateIn").value =
+    vehicle?.date_in ||
+    today();
 
-  if ($("vehicleReleasedContact")) {
-    $("vehicleReleasedContact").value =
-      vehicle.released_contact || "";
-  }
 
-  if ($("vehicleBilled")) {
-    $("vehicleBilled").value =
-      num(vehicle.billed);
-  }
+  $("vehicleDateOut").value =
+    vehicle?.date_out || "";
 
-  if ($("vehiclePaid")) {
-    $("vehiclePaid").value =
-      num(vehicle.paid);
-  }
 
-  if ($("vehicleDescription")) {
-    $("vehicleDescription").value =
-      vehicle.description || "";
-  }
+  $("vehicleJobType").value =
+    vehicle?.job_type ||
+    "Repair";
 
-  updateVehicleStorageDays();
+
+  $("vehicleStatus").value =
+    vehicle?.status ||
+    "Storage";
+
+
+  $("vehicleReleasedTo").value =
+    vehicle?.released_to ||
+    "";
+
+
+  $("vehicleReleasedContact").value =
+    vehicle?.released_contact ||
+    "";
+
+
+  $("vehicleBilled").value =
+    vehicle?.billed ?? 0;
+
+
+  $("vehiclePaid").value =
+    vehicle?.paid ?? 0;
+
+
+  $("vehicleDescription").value =
+    vehicle?.description ||
+    "";
+
 
   openModal("vehicleModal");
+
 }
 
 
@@ -1103,149 +1368,201 @@ function openVehicleModal(id = null) {
    SAVE VEHICLE
    ========================================================= */
 
-async function saveVehicle(event) {
-  event?.preventDefault();
+async function saveVehicle(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const id =
+    $("vehicleId").value ||
+    editingVehicleId;
+
 
   const registration =
     $("vehicleRegistration")
-      ?.value
+      .value
       .trim();
+
 
   const customer =
     $("vehicleCustomer")
-      ?.value
+      .value
       .trim();
 
-  const dateIn =
-    $("vehicleDateIn")
-      ?.value;
-
-  const dateOut =
-    $("vehicleDateOut")
-      ?.value || null;
-
-  const jobType =
-    $("vehicleJobType")
-      ?.value ||
-    "Repair";
-
-  const status =
-    $("vehicleStatus")
-      ?.value ||
-    "Under Repair";
 
   if (!registration) {
+
     showToast(
       "Registration / Chassis No. is required.",
       "error"
     );
 
     return;
+
   }
 
+
   if (!customer) {
+
     showToast(
       "Customer is required.",
       "error"
     );
 
     return;
+
   }
 
-  if (!dateIn) {
-    showToast(
-      "Date In is required.",
-      "error"
-    );
-
-    return;
-  }
 
   const payload = {
+
     registration,
+
     customer,
-    date_in: dateIn,
-    date_out: dateOut,
-    job_type: jobType,
-    status,
+
+    date_in:
+      $("vehicleDateIn").value ||
+      null,
+
+    date_out:
+      $("vehicleDateOut").value ||
+      null,
+
+    job_type:
+      $("vehicleJobType").value ||
+      "Repair",
+
+    status:
+      $("vehicleStatus").value ||
+      "Storage",
+
     released_to:
       $("vehicleReleasedTo")
-        ?.value
-        .trim() || null,
+        .value
+        .trim() ||
+      null,
+
     released_contact:
       $("vehicleReleasedContact")
-        ?.value
-        .trim() || null,
+        .value
+        .trim() ||
+      null,
+
     billed:
       num(
-        $("vehicleBilled")
-          ?.value
+        $("vehicleBilled").value
       ),
+
     paid:
       num(
-        $("vehiclePaid")
-          ?.value
+        $("vehiclePaid").value
       ),
+
     description:
       $("vehicleDescription")
-        ?.value
-        .trim() || null
+        .value
+        .trim() ||
+      null
+
   };
 
+
   try {
+
     let result;
 
-    if (editingVehicleId) {
+
+    if (id) {
+
       result =
         await supabase
           .from("vehicles")
           .update(payload)
-          .eq(
-            "id",
-            editingVehicleId
-          );
+          .eq("id", id);
+
     } else {
+
       result =
         await supabase
           .from("vehicles")
-          .insert([
-            payload
-          ]);
+          .insert(payload);
+
     }
+
 
     if (result.error) {
-      console.error(
-        result.error
-      );
-
-      showToast(
-        result.error.message,
-        "error"
-      );
-
-      return;
+      throw result.error;
     }
 
+
+    closeModal(
+      "vehicleModal"
+    );
+
+
+    editingVehicleId = null;
+
+
+    await loadVehicles();
+
+
+    populateVehicleSelects();
+
+    renderDashboard();
+
+    renderVehicles();
+
+
     showToast(
-      editingVehicleId
+      id
         ? "Vehicle updated successfully."
         : "Vehicle added successfully."
     );
 
-    closeModal("vehicleModal");
-
-    resetVehicleForm();
-
-    await loadAllData();
 
   } catch (error) {
-    console.error(error);
+
+    databaseError(
+      error,
+      "Saving vehicle failed"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EDIT VEHICLE
+   ========================================================= */
+
+function editVehicle(id) {
+
+  const vehicle =
+    vehicles.find(
+      item =>
+        String(item.id) ===
+        String(id)
+    );
+
+  if (!vehicle) {
 
     showToast(
-      "Unable to save vehicle.",
+      "Vehicle not found.",
       "error"
     );
+
+    return;
+
   }
+
+
+  openVehicleModal(
+    vehicle
+  );
+
 }
 
 
@@ -1254,493 +1571,382 @@ async function saveVehicle(event) {
    ========================================================= */
 
 async function deleteVehicle(id) {
+
   const vehicle =
     vehicles.find(
-      v =>
-        String(v.id) ===
+      item =>
+        String(item.id) ===
         String(id)
     );
 
+
   if (!vehicle) return;
 
+
   if (
-    !confirm(
-      `Delete vehicle ${vehicle.registration || ""}?`
+    !askDelete(
+      `Delete vehicle ${
+        vehicle.registration ||
+        ""
+      }?`
     )
   ) {
     return;
   }
 
+
   try {
-    const result =
+
+    const {
+      error
+    } =
       await supabase
         .from("vehicles")
         .delete()
         .eq("id", id);
 
-    if (result.error) {
-      showToast(
-        result.error.message,
-        "error"
-      );
 
-      return;
-    }
+    if (error) throw error;
+
+
+    await loadVehicles();
+
+
+    populateVehicleSelects();
+
+    renderDashboard();
+
+    renderVehicles();
+
 
     showToast(
       "Vehicle deleted successfully."
     );
 
-    await loadAllData();
 
   } catch (error) {
-    console.error(error);
 
-    showToast(
-      "Unable to delete vehicle.",
-      "error"
+    databaseError(
+      error,
+      "Deleting vehicle failed"
     );
+
   }
+
 }
 
 
 /* =========================================================
-   RENDER VEHICLES
-   EXACTLY 9 TABLE COLUMNS
+   PART 2 END HERE
    ========================================================= */
 
-function renderVehicles() {
+
+
+/* =========================================================
+   PART 3 START HERE
+   EXPENSES + PETTY CASH
+   ========================================================= */
+
+
+/* =========================================================
+   CATEGORY FILTERS
+   ========================================================= */
+
+function populateCategoryFilters() {
+
+  const expenseFilter =
+    $("expenseCategoryFilter");
+
+  const pettyFilter =
+    $("pettyCategoryFilter");
+
+
+  if (expenseFilter) {
+
+    const categories =
+      [
+        "Parts",
+        "Materials",
+        "Labour"
+      ];
+
+
+    expenseFilter.innerHTML =
+      `<option value="">
+        All Categories
+      </option>`;
+
+
+    categories.forEach(
+      category => {
+
+        expenseFilter.innerHTML += `
+          <option value="${category}">
+            ${category}
+          </option>
+        `;
+
+      }
+    );
+
+  }
+
+
+  if (pettyFilter) {
+
+    const categories =
+      [
+        "Parts",
+        "Materials",
+        "Labour",
+        "Transport",
+        "Other"
+      ];
+
+
+    pettyFilter.innerHTML =
+      `<option value="">
+        All Categories
+      </option>`;
+
+
+    categories.forEach(
+      category => {
+
+        pettyFilter.innerHTML += `
+          <option value="${category}">
+            ${category}
+          </option>
+        `;
+
+      }
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EXPENSES
+   ========================================================= */
+
+function renderExpenses() {
+
   const body =
-    $("vehiclesTableBody");
+    $("expensesTableBody");
 
   if (!body) return;
 
+
   const search =
     (
-      $("vehicleSearch")
-        ?.value || ""
+      $("expenseSearch")?.value ||
+      ""
     )
       .trim()
       .toLowerCase();
 
-  const statusFilter =
-    $("vehicleStatusFilter")
-      ?.value || "";
+
+  const category =
+    $("expenseCategoryFilter")
+      ?.value ||
+    "";
+
 
   const filtered =
-    vehicles.filter(vehicle => {
-      const text =
-        [
-          vehicle.registration,
-          vehicle.customer,
-          vehicle.job_type,
-          vehicle.status,
-          vehicle.released_to,
-          vehicle.released_contact
+    expenses.filter(
+      expense => {
+
+        const vehicleName =
+          getVehicleRegistration(
+            expense.vehicle_id
+          );
+
+
+        const text = [
+
+          expense.description,
+
+          expense.category,
+
+          vehicleName
+
         ]
           .join(" ")
           .toLowerCase();
 
-      return (
-        (!search ||
-          text.includes(search)) &&
-        (!statusFilter ||
-          normalizeStatus(
-            vehicle.status
-          ) ===
-          statusFilter)
-      );
-    });
+
+        const matchesSearch =
+          !search ||
+          text.includes(search);
+
+
+        const matchesCategory =
+          !category ||
+          expense.category ===
+          category;
+
+
+        return (
+          matchesSearch &&
+          matchesCategory
+        );
+
+      }
+    );
+
 
   if (!filtered.length) {
+
     body.innerHTML = `
       <tr>
-        <td
-          colspan="9"
-          style="text-align:center;padding:30px"
-        >
-          No vehicles found
+        <td colspan="6"
+            style="
+              text-align:center;
+              padding:35px;
+              color:#94a3b8;
+            ">
+          No expenses found.
         </td>
       </tr>
     `;
 
     return;
+
   }
+
 
   body.innerHTML =
-    filtered.map(vehicle => {
-      const billed =
-        num(vehicle.billed);
+    filtered
+      .map(
+        expense => {
 
-      const paid =
-        num(vehicle.paid);
+          return `
+            <tr>
 
-      const outstanding =
-        Math.max(
-          0,
-          billed - paid
-        );
+              <td>
+                ${formatDate(
+                  expense.expense_date
+                )}
+              </td>
 
-      const days =
-        calculateStorageDays(
-          vehicle.date_in,
-          vehicle.date_out
-        );
+              <td>
+                ${escapeHtml(
+                  getVehicleRegistration(
+                    expense.vehicle_id
+                  )
+                )}
+              </td>
 
-      return `
-        <tr>
+              <td>
+                ${escapeHtml(
+                  expense.description ||
+                  "—"
+                )}
+              </td>
 
-          <td>
-            <strong>
-              ${escapeHtml(
-                vehicle.registration ||
-                "—"
-              )}
-            </strong>
-          </td>
+              <td>
+                ${escapeHtml(
+                  expense.category ||
+                  "—"
+                )}
+              </td>
 
-          <td>
-            ${escapeHtml(
-              vehicle.customer ||
-              "—"
-            )}
-          </td>
+              <td>
+                <strong>
+                  ${money(
+                    expense.amount
+                  )}
+                </strong>
+              </td>
 
-          <td>
-            ${escapeHtml(
-              formatDate(
-                vehicle.date_in
-              )
-            )}
+              <td>
 
-            <small
-              style="
-                display:block;
-                color:#94a3b8;
-                margin-top:3px;
-              "
-            >
-              ${
-                vehicle.date_out
-                  ? "Out: " +
-                    formatDate(
-                      vehicle.date_out
-                    ) +
-                    " • "
-                  : ""
-              }
-              Storage: ${days}
-              day${days === 1 ? "" : "s"}
-            </small>
-          </td>
+                <div class="table-actions">
 
-          <td>
-            ${escapeHtml(
-              vehicle.job_type ||
-              "—"
-            )}
-          </td>
+                  <button
+                    class="action-btn"
+                    title="Edit"
+                    onclick="editExpense('${escapeHtml(expense.id)}')">
+                    ✏️
+                  </button>
 
-          <td>
-            ${statusBadge(
-              vehicle.status
-            )}
-          </td>
+                  <button
+                    class="action-btn"
+                    title="Delete"
+                    onclick="deleteExpense('${escapeHtml(expense.id)}')">
+                    🗑
+                  </button>
 
-          <td>
-            ${money(billed)}
-          </td>
+                </div>
 
-          <td>
-            ${money(paid)}
-          </td>
+              </td>
 
-          <td>
-            ${money(outstanding)}
-          </td>
+            </tr>
+          `;
 
-          <td>
-            <div class="table-actions">
+        }
+      )
+      .join("");
 
-              <button
-                class="action-btn"
-                onclick="openVehicleModal('${escapeHtml(vehicle.id)}')"
-                title="Edit"
-              >
-                ✏️
-              </button>
-
-              <button
-                class="action-btn"
-                onclick="openVehicleExpenses('${escapeHtml(vehicle.id)}')"
-                title="Expenses"
-              >
-                💳
-              </button>
-
-              <button
-                class="action-btn"
-                onclick="deleteVehicle('${escapeHtml(vehicle.id)}')"
-                title="Delete"
-              >
-                🗑
-              </button>
-
-            </div>
-          </td>
-
-        </tr>
-      `;
-    }).join("");
 }
 
 
 /* =========================================================
-   VEHICLE EXPENSE PREVIEW
+   OPEN EXPENSE MODAL
    ========================================================= */
 
-function getVehicleExpenses(id) {
-  return expenses.filter(
-    e =>
-      String(e.vehicle_id) ===
-      String(id)
-  );
-}
-
-function openVehicleExpenses(id) {
-  const vehicle =
-    vehicles.find(
-      v =>
-        String(v.id) ===
-        String(id)
-    );
-
-  if (!vehicle) {
-    showToast(
-      "Vehicle not found.",
-      "error"
-    );
-
-    return;
-  }
-
-  selectedVehicleExpenseId =
-    id;
-
-  const list =
-    getVehicleExpenses(id);
-
-  const total =
-    list.reduce(
-      (sum, e) =>
-        sum + num(e.amount),
-      0
-    );
-
-  const content =
-    $("vehicleExpensePreviewContent");
-
-  if (!content) return;
-
-  content.innerHTML = `
-    <h3>
-      ${escapeHtml(
-        vehicle.registration ||
-        "Vehicle"
-      )}
-    </h3>
-
-    <p>
-      ${escapeHtml(
-        vehicle.customer || ""
-      )}
-    </p>
-
-    <div
-      style="
-        padding:14px;
-        background:#f8fafc;
-        border-radius:12px;
-        margin:12px 0;
-      "
-    >
-      <strong>
-        Total Expenses
-      </strong>
-
-      <div
-        style="
-          font-size:22px;
-          font-weight:800;
-          margin-top:5px;
-        "
-      >
-        ${money(total)}
-      </div>
-    </div>
-
-    ${
-      list.length
-        ? list.map(e => `
-          <div
-            style="
-              padding:12px 0;
-              border-bottom:1px solid #e5e7eb;
-            "
-          >
-
-            <strong>
-              ${escapeHtml(
-                e.description ||
-                "Expense"
-              )}
-            </strong>
-
-            <div
-              style="
-                color:#64748b;
-                font-size:12px;
-              "
-            >
-              ${escapeHtml(
-                formatDate(
-                  e.expense_date
-                )
-              )}
-              •
-              ${escapeHtml(
-                e.category || ""
-              )}
-            </div>
-
-            <strong>
-              ${money(e.amount)}
-            </strong>
-
-          </div>
-        `).join("")
-        : `
-          <p>
-            No expenses recorded
-            for this vehicle.
-          </p>
-        `
-    }
-  `;
-
-  openModal(
-    "vehicleExpensePreviewModal"
-  );
-}
-
-
-/* =========================================================
-   =========================================================
-   PART 2 END HERE
-   =========================================================
-   PART 3 START HERE
-   EXPENSES + PETTY CASH
-   =========================================================
-   ========================================================= */
-
-
-/* =========================================================
-   EXPENSE FORM
-   ========================================================= */
-
-function resetExpenseForm() {
-  editingExpenseId = null;
-
-  $("expenseForm")?.reset();
-
-  if ($("expenseId")) {
-    $("expenseId").value = "";
-  }
-
-  if ($("expenseDate")) {
-    $("expenseDate").value =
-      today();
-  }
-
-  if ($("expenseCategory")) {
-    $("expenseCategory").value =
-      "Materials";
-  }
-
-  populateVehicleSelects();
-
-  if ($("expenseModalTitle")) {
-    $("expenseModalTitle").textContent =
-      "Add Expense";
-  }
-}
-
-function openExpenseModal(id = null) {
-  populateVehicleSelects();
-
-  if (!id) {
-    resetExpenseForm();
-
-    openModal("expenseModal");
-
-    return;
-  }
-
-  const expense =
-    expenses.find(
-      e =>
-        String(e.id) ===
-        String(id)
-    );
-
-  if (!expense) {
-    showToast(
-      "Expense not found.",
-      "error"
-    );
-
-    return;
-  }
+function openExpenseModal(
+  expense = null
+) {
 
   editingExpenseId =
-    expense.id;
+    expense?.id || null;
+
 
   if ($("expenseModalTitle")) {
-    $("expenseModalTitle").textContent =
-      "Edit Expense";
+
+    $("expenseModalTitle")
+      .textContent =
+      expense
+        ? "Edit Expense"
+        : "Add Expense";
+
   }
 
-  if ($("expenseId")) {
-    $("expenseId").value =
-      expense.id;
-  }
 
-  if ($("expenseVehicle")) {
-    $("expenseVehicle").value =
-      expense.vehicle_id || "";
-  }
+  $("expenseId").value =
+    expense?.id || "";
 
-  if ($("expenseDate")) {
-    $("expenseDate").value =
-      expense.expense_date || "";
-  }
 
-  if ($("expenseCategory")) {
-    $("expenseCategory").value =
-      expense.category || "Materials";
-  }
+  $("expenseVehicle").value =
+    expense?.vehicle_id || "";
 
-  if ($("expenseAmount")) {
-    $("expenseAmount").value =
-      num(expense.amount);
-  }
 
-  if ($("expenseDescription")) {
-    $("expenseDescription").value =
-      expense.description || "";
-  }
+  $("expenseDate").value =
+    expense?.expense_date ||
+    today();
 
-  openModal("expenseModal");
+
+  $("expenseCategory").value =
+    expense?.category ||
+    "";
+
+
+  $("expenseAmount").value =
+    expense?.amount ?? "";
+
+
+  $("expenseDescription").value =
+    expense?.description ||
+    "";
+
+
+  openModal(
+    "expenseModal"
+  );
+
 }
 
 
@@ -1748,123 +1954,158 @@ function openExpenseModal(id = null) {
    SAVE EXPENSE
    ========================================================= */
 
-async function saveExpense(event) {
-  event?.preventDefault();
+async function saveExpense(
+  event
+) {
 
-  const vehicleId =
-    $("expenseVehicle")
-      ?.value || null;
+  event.preventDefault();
 
-  const expenseDate =
-    $("expenseDate")
-      ?.value ||
-    today();
 
-  const category =
-    $("expenseCategory")
-      ?.value;
+  const id =
+    $("expenseId").value ||
+    editingExpenseId;
+
 
   const amount =
     num(
-      $("expenseAmount")
-        ?.value
+      $("expenseAmount").value
     );
+
 
   const description =
     $("expenseDescription")
-      ?.value
+      .value
       .trim();
 
-  if (!category) {
+
+  if (!amount) {
+
     showToast(
-      "Please select a category.",
+      "Enter an expense amount.",
       "error"
     );
 
     return;
+
   }
+
 
   if (!description) {
+
     showToast(
-      "Description is required.",
+      "Enter an expense description.",
       "error"
     );
 
     return;
+
   }
 
-  if (amount <= 0) {
-    showToast(
-      "Amount must be greater than zero.",
-      "error"
-    );
-
-    return;
-  }
 
   const payload = {
+
     vehicle_id:
-      vehicleId,
+      $("expenseVehicle").value ||
+      null,
+
     expense_date:
-      expenseDate,
-    description:
-      description,
+      $("expenseDate").value ||
+      today(),
+
+    description,
+
     category:
-      category,
-    amount:
-      amount
+      $("expenseCategory").value,
+
+    amount
+
   };
 
+
   try {
+
     let result;
 
-    if (editingExpenseId) {
+
+    if (id) {
+
       result =
         await supabase
           .from("expenses")
           .update(payload)
-          .eq(
-            "id",
-            editingExpenseId
-          );
+          .eq("id", id);
+
     } else {
+
       result =
         await supabase
           .from("expenses")
-          .insert([
-            payload
-          ]);
+          .insert(payload);
+
     }
+
 
     if (result.error) {
-      showToast(
-        result.error.message,
-        "error"
-      );
-
-      return;
+      throw result.error;
     }
 
+
+    closeModal(
+      "expenseModal"
+    );
+
+
+    editingExpenseId = null;
+
+
+    await loadExpenses();
+
+
+    renderExpenses();
+
+    renderDashboard();
+
+
     showToast(
-      editingExpenseId
+      id
         ? "Expense updated successfully."
         : "Expense added successfully."
     );
 
-    closeModal("expenseModal");
-
-    resetExpenseForm();
-
-    await loadAllData();
 
   } catch (error) {
-    console.error(error);
 
-    showToast(
-      "Unable to save expense.",
-      "error"
+    databaseError(
+      error,
+      "Saving expense failed"
     );
+
   }
+
+}
+
+
+/* =========================================================
+   EDIT EXPENSE
+   ========================================================= */
+
+function editExpense(id) {
+
+  const expense =
+    expenses.find(
+      item =>
+        String(item.id) ===
+        String(id)
+    );
+
+
+  if (!expense) return;
+
+
+  openExpenseModal(
+    expense
+  );
+
 }
 
 
@@ -1873,189 +2114,52 @@ async function saveExpense(event) {
    ========================================================= */
 
 async function deleteExpense(id) {
-  const expense =
-    expenses.find(
-      e =>
-        String(e.id) ===
-        String(id)
-    );
-
-  if (!expense) return;
 
   if (
-    !confirm(
-      `Delete expense "${expense.description || ""}"?`
+    !askDelete(
+      "Delete this expense?"
     )
   ) {
     return;
   }
 
+
   try {
-    const result =
+
+    const {
+      error
+    } =
       await supabase
         .from("expenses")
         .delete()
         .eq("id", id);
 
-    if (result.error) {
-      showToast(
-        result.error.message,
-        "error"
-      );
 
-      return;
-    }
+    if (error) throw error;
+
+
+    await loadExpenses();
+
+
+    renderExpenses();
+
+    renderDashboard();
+
 
     showToast(
       "Expense deleted successfully."
     );
 
-    await loadAllData();
 
   } catch (error) {
-    console.error(error);
 
-    showToast(
-      "Unable to delete expense.",
-      "error"
+    databaseError(
+      error,
+      "Deleting expense failed"
     );
-  }
-}
 
-
-/* =========================================================
-   RENDER EXPENSES
-   EXACTLY 6 COLUMNS
-   ========================================================= */
-
-function renderExpenses() {
-  const body =
-    $("expensesTableBody");
-
-  if (!body) return;
-
-  const search =
-    (
-      $("expenseSearch")
-        ?.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const category =
-    $("expenseCategoryFilter")
-      ?.value || "";
-
-  const filtered =
-    expenses.filter(e => {
-      const vehicle =
-        vehicles.find(
-          v =>
-            String(v.id) ===
-            String(e.vehicle_id)
-        );
-
-      const text =
-        [
-          e.description,
-          e.category,
-          vehicle?.registration,
-          vehicle?.customer
-        ]
-          .join(" ")
-          .toLowerCase();
-
-      return (
-        (!search ||
-          text.includes(search)) &&
-        (!category ||
-          e.category === category)
-      );
-    });
-
-  if (!filtered.length) {
-    body.innerHTML = `
-      <tr>
-        <td
-          colspan="6"
-          style="text-align:center;padding:30px"
-        >
-          No expenses found
-        </td>
-      </tr>
-    `;
-
-    return;
   }
 
-  body.innerHTML =
-    filtered.map(e => {
-      const vehicle =
-        vehicles.find(
-          v =>
-            String(v.id) ===
-            String(e.vehicle_id)
-        );
-
-      return `
-        <tr>
-
-          <td>
-            ${escapeHtml(
-              formatDate(
-                e.expense_date
-              )
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              vehicle?.registration ||
-              "General"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              e.description || "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              e.category || "—"
-            )}
-          </td>
-
-          <td>
-            <strong>
-              ${money(e.amount)}
-            </strong>
-          </td>
-
-          <td>
-            <div class="table-actions">
-
-              <button
-                class="action-btn"
-                onclick="openExpenseModal('${escapeHtml(e.id)}')"
-              >
-                ✏️
-              </button>
-
-              <button
-                class="action-btn"
-                onclick="deleteExpense('${escapeHtml(e.id)}')"
-              >
-                🗑
-              </button>
-
-            </div>
-          </td>
-
-        </tr>
-      `;
-    }).join("");
 }
 
 
@@ -2063,100 +2167,221 @@ function renderExpenses() {
    PETTY CASH
    ========================================================= */
 
-function resetPettyForm() {
-  editingPettyId = null;
+function renderPettyCash() {
 
-  $("pettyForm")?.reset();
+  const body =
+    $("pettyTableBody");
 
-  if ($("pettyId")) {
-    $("pettyId").value = "";
+  if (!body) return;
+
+
+  const search =
+    (
+      $("pettySearch")?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const category =
+    $("pettyCategoryFilter")
+      ?.value ||
+    "";
+
+
+  const filtered =
+    pettyCash.filter(
+      item => {
+
+        const text = [
+
+          item.description,
+
+          item.paid_to,
+
+          item.category,
+
+          item.notes
+
+        ]
+          .join(" ")
+          .toLowerCase();
+
+
+        return (
+          (!search ||
+            text.includes(search)) &&
+          (!category ||
+            item.category === category)
+        );
+
+      }
+    );
+
+
+  if (!filtered.length) {
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="7"
+            style="
+              text-align:center;
+              padding:35px;
+              color:#94a3b8;
+            ">
+          No petty cash transactions found.
+        </td>
+      </tr>
+    `;
+
+    return;
+
   }
 
-  if ($("pettyDate")) {
-    $("pettyDate").value =
-      today();
-  }
 
-  if ($("pettyCategory")) {
-    $("pettyCategory").value =
-      "Other";
-  }
+  body.innerHTML =
+    filtered
+      .map(
+        item => {
 
-  if ($("pettyModalTitle")) {
-    $("pettyModalTitle").textContent =
-      "Add Petty Cash";
-  }
+          return `
+            <tr>
+
+              <td>
+                ${formatDate(
+                  item.cash_date
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.description ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.paid_to ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.category ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${money(
+                    item.amount
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.notes ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+
+                <div class="table-actions">
+
+                  <button
+                    class="action-btn"
+                    title="Edit"
+                    onclick="editPetty('${escapeHtml(item.id)}')">
+                    ✏️
+                  </button>
+
+                  <button
+                    class="action-btn"
+                    title="Delete"
+                    onclick="deletePetty('${escapeHtml(item.id)}')">
+                    🗑
+                  </button>
+
+                </div>
+
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
 }
 
-function openPettyModal(id = null) {
-  if (!id) {
-    resetPettyForm();
 
-    openModal("pettyModal");
+/* =========================================================
+   OPEN PETTY CASH MODAL
+   ========================================================= */
 
-    return;
-  }
-
-  const item =
-    pettyCash.find(
-      p =>
-        String(p.id) ===
-        String(id)
-    );
-
-  if (!item) {
-    showToast(
-      "Petty cash entry not found.",
-      "error"
-    );
-
-    return;
-  }
+function openPettyModal(
+  item = null
+) {
 
   editingPettyId =
-    item.id;
+    item?.id || null;
+
 
   if ($("pettyModalTitle")) {
-    $("pettyModalTitle").textContent =
-      "Edit Petty Cash";
+
+    $("pettyModalTitle")
+      .textContent =
+      item
+        ? "Edit Petty Cash"
+        : "Add Petty Cash";
+
   }
 
-  if ($("pettyId")) {
-    $("pettyId").value =
-      item.id;
-  }
 
-  if ($("pettyDate")) {
-    $("pettyDate").value =
-      item.cash_date || "";
-  }
+  $("pettyId").value =
+    item?.id || "";
 
-  if ($("pettyPaidTo")) {
-    $("pettyPaidTo").value =
-      item.paid_to || "";
-  }
 
-  if ($("pettyCategory")) {
-    $("pettyCategory").value =
-      item.category || "Other";
-  }
+  $("pettyDate").value =
+    item?.cash_date ||
+    today();
 
-  if ($("pettyAmount")) {
-    $("pettyAmount").value =
-      num(item.amount);
-  }
 
-  if ($("pettyDescription")) {
-    $("pettyDescription").value =
-      item.description || "";
-  }
+  $("pettyPaidTo").value =
+    item?.paid_to ||
+    "";
 
-  if ($("pettyNotes")) {
-    $("pettyNotes").value =
-      item.notes || "";
-  }
 
-  openModal("pettyModal");
+  $("pettyCategory").value =
+    item?.category ||
+    "";
+
+
+  $("pettyAmount").value =
+    item?.amount ?? "";
+
+
+  $("pettyDescription").value =
+    item?.description ||
+    "";
+
+
+  $("pettyNotes").value =
+    item?.notes ||
+    "";
+
+
+  openModal(
+    "pettyModal"
+  );
+
 }
 
 
@@ -2164,330 +2389,216 @@ function openPettyModal(id = null) {
    SAVE PETTY CASH
    ========================================================= */
 
-async function savePetty(event) {
-  event?.preventDefault();
+async function savePetty(
+  event
+) {
 
-  const cashDate =
-    $("pettyDate")
-      ?.value ||
-    today();
+  event.preventDefault();
 
-  const paidTo =
-    $("pettyPaidTo")
-      ?.value
-      .trim();
 
-  const category =
-    $("pettyCategory")
-      ?.value;
+  const id =
+    $("pettyId").value ||
+    editingPettyId;
+
 
   const amount =
     num(
-      $("pettyAmount")
-        ?.value
+      $("pettyAmount").value
     );
 
-  const description =
-    $("pettyDescription")
-      ?.value
-      .trim();
 
-  const notes =
-    $("pettyNotes")
-      ?.value
-      .trim() || null;
+  if (!amount) {
 
-  if (!paidTo) {
     showToast(
-      "Paid To is required.",
+      "Enter a petty cash amount.",
       "error"
     );
 
     return;
+
   }
 
-  if (!category) {
-    showToast(
-      "Please select a category.",
-      "error"
-    );
-
-    return;
-  }
-
-  if (!description) {
-    showToast(
-      "Description is required.",
-      "error"
-    );
-
-    return;
-  }
-
-  if (amount <= 0) {
-    showToast(
-      "Amount must be greater than zero.",
-      "error"
-    );
-
-    return;
-  }
 
   const payload = {
+
     cash_date:
-      cashDate,
+      $("pettyDate").value ||
+      today(),
+
     description:
-      description,
+      $("pettyDescription")
+        .value
+        .trim(),
+
     paid_to:
-      paidTo,
+      $("pettyPaidTo")
+        .value
+        .trim(),
+
     category:
-      category,
-    amount:
-      amount,
+      $("pettyCategory").value,
+
+    amount,
+
     notes:
-      notes
+      $("pettyNotes")
+        .value
+        .trim() ||
+      null
+
   };
 
+
   try {
+
     let result;
 
-    if (editingPettyId) {
+
+    if (id) {
+
       result =
         await supabase
           .from("petty_cash")
           .update(payload)
-          .eq(
-            "id",
-            editingPettyId
-          );
+          .eq("id", id);
+
     } else {
+
       result =
         await supabase
           .from("petty_cash")
-          .insert([
-            payload
-          ]);
+          .insert(payload);
+
     }
+
 
     if (result.error) {
-      showToast(
-        result.error.message,
-        "error"
-      );
-
-      return;
+      throw result.error;
     }
 
-    showToast(
-      editingPettyId
-        ? "Petty cash updated successfully."
-        : "Petty cash added successfully."
+
+    closeModal(
+      "pettyModal"
     );
 
-    closeModal("pettyModal");
 
-    resetPettyForm();
+    editingPettyId = null;
 
-    await loadAllData();
+
+    await loadPettyCash();
+
+
+    renderPettyCash();
+
+    renderDashboard();
+
+
+    showToast(
+      id
+        ? "Petty cash updated successfully."
+        : "Petty cash transaction added successfully."
+    );
+
 
   } catch (error) {
-    console.error(error);
 
-    showToast(
-      "Unable to save petty cash.",
-      "error"
+    databaseError(
+      error,
+      "Saving petty cash failed"
     );
+
   }
+
 }
 
 
 /* =========================================================
-   DELETE PETTY CASH
+   EDIT PETTY
    ========================================================= */
 
-async function deletePetty(id) {
+function editPetty(id) {
+
   const item =
     pettyCash.find(
-      p =>
-        String(p.id) ===
+      record =>
+        String(record.id) ===
         String(id)
     );
 
+
   if (!item) return;
 
+
+  openPettyModal(
+    item
+  );
+
+}
+
+
+/* =========================================================
+   DELETE PETTY
+   ========================================================= */
+
+async function deletePetty(id) {
+
   if (
-    !confirm(
-      `Delete petty cash "${item.description || ""}"?`
+    !askDelete(
+      "Delete this petty cash transaction?"
     )
   ) {
     return;
   }
 
+
   try {
-    const result =
+
+    const {
+      error
+    } =
       await supabase
         .from("petty_cash")
         .delete()
         .eq("id", id);
 
-    if (result.error) {
-      showToast(
-        result.error.message,
-        "error"
-      );
 
-      return;
-    }
+    if (error) throw error;
+
+
+    await loadPettyCash();
+
+
+    renderPettyCash();
+
+    renderDashboard();
+
 
     showToast(
       "Petty cash deleted successfully."
     );
 
-    await loadAllData();
 
   } catch (error) {
-    console.error(error);
 
-    showToast(
-      "Unable to delete petty cash.",
-      "error"
+    databaseError(
+      error,
+      "Deleting petty cash failed"
     );
+
   }
+
 }
 
 
 /* =========================================================
-   RENDER PETTY CASH
-   EXACTLY 7 COLUMNS
+   PART 3 END HERE
    ========================================================= */
 
-function renderPettyCash() {
-  const body =
-    $("pettyTableBody");
-
-  if (!body) return;
-
-  const search =
-    (
-      $("pettySearch")
-        ?.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const category =
-    $("pettyCategoryFilter")
-      ?.value || "";
-
-  const filtered =
-    pettyCash.filter(p => {
-      const text =
-        [
-          p.description,
-          p.paid_to,
-          p.category,
-          p.notes
-        ]
-          .join(" ")
-          .toLowerCase();
-
-      return (
-        (!search ||
-          text.includes(search)) &&
-        (!category ||
-          p.category === category)
-      );
-    });
-
-  if (!filtered.length) {
-    body.innerHTML = `
-      <tr>
-        <td
-          colspan="7"
-          style="text-align:center;padding:30px"
-        >
-          No petty cash records found
-        </td>
-      </tr>
-    `;
-
-    return;
-  }
-
-  body.innerHTML =
-    filtered.map(p => `
-      <tr>
-
-        <td>
-          ${escapeHtml(
-            formatDate(
-              p.cash_date
-            )
-          )}
-        </td>
-
-        <td>
-          ${escapeHtml(
-            p.description || "—"
-          )}
-        </td>
-
-        <td>
-          ${escapeHtml(
-            p.paid_to || "—"
-          )}
-        </td>
-
-        <td>
-          ${escapeHtml(
-            p.category || "—"
-          )}
-        </td>
-
-        <td>
-          <strong>
-            ${money(p.amount)}
-          </strong>
-        </td>
-
-        <td>
-          ${escapeHtml(
-            p.notes || "—"
-          )}
-        </td>
-
-        <td>
-          <div class="table-actions">
-
-            <button
-              class="action-btn"
-              onclick="openPettyModal('${escapeHtml(p.id)}')"
-            >
-              ✏️
-            </button>
-
-            <button
-              class="action-btn"
-              onclick="deletePetty('${escapeHtml(p.id)}')"
-            >
-              🗑
-            </button>
-
-          </div>
-        </td>
-
-      </tr>
-    `).join("");
-}
 
 
 /* =========================================================
-   =========================================================
-   PART 3 END HERE
-   =========================================================
    PART 4 START HERE
-   REQUISITIONS + PRINTING + STARTUP
-   =========================================================
+   REQUISITIONS + PREVIEWS + PRINTING + EVENTS + STARTUP
    ========================================================= */
 
 
@@ -2495,212 +2606,382 @@ function renderPettyCash() {
    REQUISITIONS
    ========================================================= */
 
-function generateReqNo() {
-  const year =
-    new Date().getFullYear();
+function renderRequisitions() {
 
-  let highest = 0;
+  const body =
+    $("requisitionsTableBody");
 
-  requisitions.forEach(r => {
-    const match =
-      String(
-        r.req_no || ""
-      ).match(/(\d+)$/);
+  if (!body) return;
 
-    if (match) {
-      highest =
-        Math.max(
-          highest,
-          Number(match[1])
+
+  const search =
+    (
+      $("reqSearch")?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const status =
+    $("reqStatusFilter")
+      ?.value ||
+    "";
+
+
+  const filtered =
+    requisitions.filter(
+      req => {
+
+        const vehicleName =
+          getVehicleRegistration(
+            req.vehicle_id
+          );
+
+
+        const text = [
+
+          req.req_no,
+
+          req.requested_by,
+
+          vehicleName,
+
+          req.item_description,
+
+          req.status,
+
+          req.notes,
+
+          req.category,
+
+          req.expense_type
+
+        ]
+          .join(" ")
+          .toLowerCase();
+
+
+        const matchesSearch =
+          !search ||
+          text.includes(search);
+
+
+        const matchesStatus =
+          !status ||
+          req.status === status;
+
+
+        return (
+          matchesSearch &&
+          matchesStatus
         );
-    }
-  });
 
-  return (
-    `REQ-${year}-` +
-    String(
-      highest + 1
-    ).padStart(4, "0")
+      }
+    );
+
+
+  if (!filtered.length) {
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="11"
+            style="
+              text-align:center;
+              padding:35px;
+              color:#94a3b8;
+            ">
+          No requisitions found.
+        </td>
+      </tr>
+    `;
+
+    updateReqTotal(filtered);
+
+    return;
+
+  }
+
+
+  body.innerHTML =
+    filtered
+      .map(
+        req => {
+
+          const expenseType =
+            req.expense_type ||
+            req.category ||
+            "—";
+
+
+          return `
+            <tr>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    req.req_no ||
+                    "—"
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${formatDate(
+                  req.req_date
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  req.requested_by ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  getVehicleRegistration(
+                    req.vehicle_id
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  req.item_description ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${num(
+                  req.quantity
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  req.unit_cost
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${money(
+                    req.total_amount
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expenseType
+                )}
+              </td>
+
+              <td>
+                ${statusBadge(
+                  req.status
+                )}
+              </td>
+
+              <td>
+
+                <div class="table-actions">
+
+                  <button
+                    class="action-btn"
+                    title="Preview"
+                    onclick="previewReq('${escapeHtml(req.id)}')">
+                    👁
+                  </button>
+
+                  <button
+                    class="action-btn"
+                    title="Edit"
+                    onclick="editReq('${escapeHtml(req.id)}')">
+                    ✏️
+                  </button>
+
+                  <button
+                    class="action-btn"
+                    title="Delete"
+                    onclick="deleteReq('${escapeHtml(req.id)}')">
+                    🗑
+                  </button>
+
+                </div>
+
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+
+  updateReqTotal(
+    filtered
   );
+
 }
 
-function resetReqForm() {
-  editingReqId = null;
 
-  $("reqForm")?.reset();
+/* =========================================================
+   REQUISITION TOTAL
+   ========================================================= */
 
-  if ($("reqId")) {
-    $("reqId").value = "";
+function updateReqTotal(
+  list = requisitions
+) {
+
+  const total =
+    list.reduce(
+      (sum, req) =>
+        sum +
+        num(req.total_amount),
+      0
+    );
+
+
+  if ($("reqOverallTotal")) {
+
+    $("reqOverallTotal")
+      .textContent =
+      money(total);
+
   }
 
-  if ($("reqNo")) {
-    $("reqNo").value =
-      generateReqNo();
-  }
+}
 
-  if ($("reqDate")) {
-    $("reqDate").value =
-      today();
-  }
 
-  if ($("reqQuantity")) {
-    $("reqQuantity").value =
-      "1";
-  }
+/* =========================================================
+   OPEN REQUISITION MODAL
+   ========================================================= */
 
-  if ($("reqUnitCost")) {
-    $("reqUnitCost").value =
-      "0";
-  }
+function openReqModal(
+  req = null
+) {
 
-  if ($("reqTotal")) {
-    $("reqTotal").value =
-      "0.00";
-  }
+  editingReqId =
+    req?.id || null;
 
-  if ($("reqStatus")) {
-    $("reqStatus").value =
-      "Pending";
-  }
-
-  populateVehicleSelects();
 
   if ($("reqModalTitle")) {
-    $("reqModalTitle").textContent =
-      "New Requisition";
+
+    $("reqModalTitle")
+      .textContent =
+      req
+        ? "Edit Requisition"
+        : "New Requisition";
+
   }
+
+
+  $("reqId").value =
+    req?.id || "";
+
+
+  $("reqNo").value =
+    req?.req_no ||
+    "";
+
+
+  $("reqDate").value =
+    req?.req_date ||
+    today();
+
+
+  $("reqRequestedBy").value =
+    req?.requested_by ||
+    "";
+
+
+  $("reqVehicle").value =
+    req?.vehicle_id ||
+    "";
+
+
+  $("reqItemDescription").value =
+    req?.item_description ||
+    "";
+
+
+  $("reqQuantity").value =
+    req?.quantity ?? "";
+
+
+  $("reqUnitCost").value =
+    req?.unit_cost ?? "";
+
+
+  $("reqTotal").value =
+    req?.total_amount ??
+    "";
+
+
+  $("reqStatus").value =
+    req?.status ||
+    "Pending";
+
+
+  $("reqCategory").value =
+    req?.category ||
+    "";
+
+
+  $("reqExpenseType").value =
+    req?.expense_type ||
+    "";
+
+
+  $("reqNotes").value =
+    req?.notes ||
+    "";
+
+
+  calculateReqTotal();
+
+
+  openModal(
+    "reqModal"
+  );
+
 }
 
+
+/* =========================================================
+   CALCULATE REQUISITION TOTAL
+   ========================================================= */
+
 function calculateReqTotal() {
+
   const quantity =
     num(
-      $("reqQuantity")
-        ?.value
+      $("reqQuantity")?.value
     );
+
 
   const unitCost =
     num(
-      $("reqUnitCost")
-        ?.value
+      $("reqUnitCost")?.value
     );
+
 
   const total =
     quantity * unitCost;
 
+
   if ($("reqTotal")) {
+
     $("reqTotal").value =
       total.toFixed(2);
+
   }
 
-  return total;
-}
-
-function openReqModal(
-  reqNo = null
-) {
-  populateVehicleSelects();
-
-  if (!reqNo) {
-    resetReqForm();
-
-    openModal("reqModal");
-
-    return;
-  }
-
-  const rows =
-    requisitions.filter(
-      r =>
-        String(r.req_no) ===
-        String(reqNo)
-    );
-
-  if (!rows.length) {
-    showToast(
-      "Requisition not found.",
-      "error"
-    );
-
-    return;
-  }
-
-  const r = rows[0];
-
-  editingReqId =
-    r.id;
-
-  if ($("reqModalTitle")) {
-    $("reqModalTitle").textContent =
-      "Edit Requisition";
-  }
-
-  if ($("reqId")) {
-    $("reqId").value =
-      r.id;
-  }
-
-  if ($("reqNo")) {
-    $("reqNo").value =
-      r.req_no || "";
-  }
-
-  if ($("reqDate")) {
-    $("reqDate").value =
-      r.req_date || "";
-  }
-
-  if ($("reqRequestedBy")) {
-    $("reqRequestedBy").value =
-      r.requested_by || "";
-  }
-
-  if ($("reqVehicle")) {
-    $("reqVehicle").value =
-      r.vehicle_id || "";
-  }
-
-  if ($("reqItemDescription")) {
-    $("reqItemDescription").value =
-      r.item_description || "";
-  }
-
-  if ($("reqQuantity")) {
-    $("reqQuantity").value =
-      num(r.quantity);
-  }
-
-  if ($("reqUnitCost")) {
-    $("reqUnitCost").value =
-      num(r.unit_cost);
-  }
-
-  if ($("reqTotal")) {
-    $("reqTotal").value =
-      num(r.total_amount)
-        .toFixed(2);
-  }
-
-  if ($("reqStatus")) {
-    $("reqStatus").value =
-      r.status || "Pending";
-  }
-
-  if ($("reqCategory")) {
-    $("reqCategory").value =
-      r.category || "";
-  }
-
-  if ($("reqExpenseType")) {
-    $("reqExpenseType").value =
-      r.expense_type || "";
-  }
-
-  if ($("reqNotes")) {
-    $("reqNotes").value =
-      r.notes || "";
-  }
-
-  openModal("reqModal");
 }
 
 
@@ -2708,179 +2989,206 @@ function openReqModal(
    SAVE REQUISITION
    ========================================================= */
 
-async function saveReq(event) {
-  event?.preventDefault();
+async function saveReq(
+  event
+) {
 
-  const reqNo =
-    $("reqNo")
-      ?.value
-      .trim() ||
-    generateReqNo();
+  event.preventDefault();
 
-  const reqDate =
-    $("reqDate")
-      ?.value ||
-    today();
 
-  const requestedBy =
-    $("reqRequestedBy")
-      ?.value
-      .trim();
+  const id =
+    $("reqId").value ||
+    editingReqId;
 
-  const vehicleId =
-    $("reqVehicle")
-      ?.value ||
-    null;
-
-  const itemDescription =
-    $("reqItemDescription")
-      ?.value
-      .trim();
 
   const quantity =
     num(
-      $("reqQuantity")
-        ?.value
+      $("reqQuantity").value
     );
+
 
   const unitCost =
     num(
-      $("reqUnitCost")
-        ?.value
+      $("reqUnitCost").value
     );
 
-  const totalAmount =
+
+  const total =
     quantity * unitCost;
 
-  const status =
-    $("reqStatus")
-      ?.value ||
-    "Pending";
 
-  const notes =
-    $("reqNotes")
-      ?.value
-      .trim() ||
-    null;
+  if (
+    !$("reqNo").value.trim()
+  ) {
 
-  if (!requestedBy) {
+    showToast(
+      "Requisition number is required.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !$("reqRequestedBy")
+      .value
+      .trim()
+  ) {
+
     showToast(
       "Requested By is required.",
       "error"
     );
 
     return;
+
   }
 
-  if (!itemDescription) {
+
+  if (!quantity) {
+
     showToast(
-      "Item Description is required.",
+      "Enter a quantity.",
       "error"
     );
 
     return;
+
   }
 
-  if (quantity <= 0) {
-    showToast(
-      "Quantity must be greater than zero.",
-      "error"
-    );
 
-    return;
-  }
-
-  /*
-   * Only the known existing Supabase
-   * requisitions columns are sent.
-   *
-   * This prevents reqCategory /
-   * reqExpenseType from breaking
-   * the save if those columns do
-   * not exist in Supabase.
-   */
   const payload = {
+
     req_no:
-      reqNo,
+      $("reqNo")
+        .value
+        .trim(),
 
     req_date:
-      reqDate,
+      $("reqDate").value ||
+      today(),
 
     requested_by:
-      requestedBy,
+      $("reqRequestedBy")
+        .value
+        .trim(),
 
     vehicle_id:
-      vehicleId,
+      $("reqVehicle").value ||
+      null,
 
     item_description:
-      itemDescription,
+      $("reqItemDescription")
+        .value
+        .trim(),
 
-    quantity:
-      quantity,
+    quantity,
 
     unit_cost:
       unitCost,
 
     total_amount:
-      totalAmount,
+      total,
 
     status:
-      status,
+      $("reqStatus").value ||
+      "Pending",
 
     notes:
-      notes
+      $("reqNotes")
+        .value
+        .trim() ||
+      null
+
   };
 
+
   try {
+
     let result;
 
-    if (editingReqId) {
+
+    if (id) {
+
       result =
         await supabase
           .from("requisitions")
           .update(payload)
-          .eq(
-            "id",
-            editingReqId
-          );
+          .eq("id", id);
+
     } else {
+
       result =
         await supabase
           .from("requisitions")
-          .insert([
-            payload
-          ]);
+          .insert(payload);
+
     }
+
 
     if (result.error) {
-      showToast(
-        result.error.message,
-        "error"
-      );
-
-      return;
+      throw result.error;
     }
 
+
+    closeModal(
+      "reqModal"
+    );
+
+
+    editingReqId = null;
+
+
+    await loadRequisitions();
+
+
+    renderRequisitions();
+
+    renderDashboard();
+
+
     showToast(
-      editingReqId
+      id
         ? "Requisition updated successfully."
         : "Requisition created successfully."
     );
 
-    closeModal("reqModal");
-
-    resetReqForm();
-
-    await loadAllData();
 
   } catch (error) {
-    console.error(error);
 
-    showToast(
-      "Unable to save requisition.",
-      "error"
+    databaseError(
+      error,
+      "Saving requisition failed"
     );
+
   }
+
+}
+
+
+/* =========================================================
+   EDIT REQUISITION
+   ========================================================= */
+
+function editReq(id) {
+
+  const req =
+    requisitions.find(
+      item =>
+        String(item.id) ===
+        String(id)
+    );
+
+
+  if (!req) return;
+
+
+  openReqModal(
+    req
+  );
+
 }
 
 
@@ -2888,469 +3196,557 @@ async function saveReq(event) {
    DELETE REQUISITION
    ========================================================= */
 
-async function deleteReq(reqNo) {
-  if (!reqNo) return;
+async function deleteReq(id) {
 
   if (
-    !confirm(
-      `Delete requisition ${reqNo}?`
+    !askDelete(
+      "Delete this requisition?"
     )
   ) {
     return;
   }
 
+
   try {
-    const result =
+
+    const {
+      error
+    } =
       await supabase
         .from("requisitions")
         .delete()
-        .eq(
-          "req_no",
-          reqNo
-        );
+        .eq("id", id);
 
-    if (result.error) {
-      showToast(
-        result.error.message,
-        "error"
-      );
 
-      return;
-    }
+    if (error) throw error;
+
+
+    await loadRequisitions();
+
+
+    renderRequisitions();
+
+    renderDashboard();
+
 
     showToast(
       "Requisition deleted successfully."
     );
 
-    await loadAllData();
 
   } catch (error) {
-    console.error(error);
 
-    showToast(
-      "Unable to delete requisition.",
-      "error"
+    databaseError(
+      error,
+      "Deleting requisition failed"
     );
+
   }
+
 }
 
 
 /* =========================================================
-   RENDER REQUISITIONS
-   EXACTLY 11 COLUMNS
+   PREVIEW REQUISITION
    ========================================================= */
 
-function renderRequisitions() {
-  const body =
-    $("requisitionsTableBody");
+function previewReq(id) {
 
-  if (!body) return;
-
-  const search =
-    (
-      $("reqSearch")
-        ?.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const statusFilter =
-    $("reqStatusFilter")
-      ?.value || "";
-
-  const groups = {};
-
-  requisitions.forEach(r => {
-    const key =
-      r.req_no ||
-      r.id;
-
-    if (!groups[key]) {
-      groups[key] = [];
-    }
-
-    groups[key].push(r);
-  });
-
-  let rows =
-    Object.entries(groups)
-      .map(
-        ([reqNo, items]) => {
-          const first =
-            items[0];
-
-          const vehicle =
-            vehicles.find(
-              v =>
-                String(v.id) ===
-                String(
-                  first.vehicle_id
-                )
-            );
-
-          const total =
-            items.reduce(
-              (sum, item) =>
-                sum +
-                num(
-                  item.total_amount
-                ),
-              0
-            );
-
-          const statuses =
-            [
-              ...new Set(
-                items.map(
-                  i =>
-                    normalizeStatus(
-                      i.status
-                    )
-                )
-              )
-            ];
-
-          const status =
-            statuses.length === 1
-              ? statuses[0]
-              : "Mixed";
-
-          return {
-            reqNo,
-            items,
-            first,
-            vehicle,
-            total,
-            status
-          };
-        }
-      );
-
-  rows =
-    rows.filter(row => {
-      const text =
-        [
-          row.reqNo,
-          row.first.req_date,
-          row.first.requested_by,
-          row.first.item_description,
-          row.vehicle?.registration,
-          row.status
-        ]
-          .join(" ")
-          .toLowerCase();
-
-      return (
-        (!search ||
-          text.includes(search)) &&
-        (
-          !statusFilter ||
-          row.status ===
-            statusFilter ||
-          row.items.some(
-            i =>
-              normalizeStatus(
-                i.status
-              ) ===
-              statusFilter
-          )
-        )
-      );
-    });
-
-  if (!rows.length) {
-    body.innerHTML = `
-      <tr>
-        <td
-          colspan="11"
-          style="text-align:center;padding:30px"
-        >
-          No requisitions found
-        </td>
-      </tr>
-    `;
-
-    return;
-  }
-
-  body.innerHTML =
-    rows.map(row => {
-      const r =
-        row.first;
-
-      return `
-        <tr>
-
-          <td>
-            <strong>
-              ${escapeHtml(
-                row.reqNo
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHtml(
-              formatDate(
-                r.req_date
-              )
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              r.requested_by ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              row.vehicle
-                ?.registration ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              r.item_description ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              r.quantity ??
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${money(
-              r.unit_cost
-            )}
-          </td>
-
-          <td>
-            <strong>
-              ${money(
-                row.total
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHtml(
-              r.expense_type ||
-              r.category ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${statusBadge(
-              row.status
-            )}
-          </td>
-
-          <td>
-            <div class="table-actions">
-
-              <button
-                class="action-btn"
-                onclick="openReqModal('${escapeHtml(row.reqNo)}')"
-                title="Edit"
-              >
-                ✏️
-              </button>
-
-              <button
-                class="action-btn"
-                onclick="deleteReq('${escapeHtml(row.reqNo)}')"
-                title="Delete"
-              >
-                🗑
-              </button>
-
-              <button
-                class="action-btn"
-                onclick="printReq('${escapeHtml(row.reqNo)}')"
-                title="Print"
-              >
-                🖨
-              </button>
-
-            </div>
-          </td>
-
-        </tr>
-      `;
-    }).join("");
-
-  const total =
-    requisitions.reduce(
-      (sum, r) =>
-        sum +
-        num(r.total_amount),
-      0
+  const req =
+    requisitions.find(
+      item =>
+        String(item.id) ===
+        String(id)
     );
 
-  if ($("reqOverallTotal")) {
-    $("reqOverallTotal").textContent =
-      money(total);
-  }
-}
 
+  if (!req) {
 
-/* =========================================================
-   REQUISITION PREVIEW
-   ========================================================= */
-
-function previewSelectedReq(
-  reqNo = null
-) {
-  const selected =
-    reqNo ||
-    selectedReqNo ||
-    requisitions[0]?.req_no;
-
-  if (!selected) {
-    showToast(
-      "There are no requisitions to preview.",
-      "warning"
-    );
-
-    return;
-  }
-
-  selectedReqNo =
-    selected;
-
-  const rows =
-    requisitions.filter(
-      r =>
-        String(r.req_no) ===
-        String(selected)
-    );
-
-  if (!rows.length) {
     showToast(
       "Requisition not found.",
       "error"
     );
 
     return;
+
   }
 
-  const first =
-    rows[0];
+
+  selectedReqForPrint =
+    req;
+
 
   const vehicle =
-    vehicles.find(
-      v =>
-        String(v.id) ===
-        String(first.vehicle_id)
+    getVehicleRegistration(
+      req.vehicle_id
     );
 
-  const total =
-    rows.reduce(
-      (sum, r) =>
-        sum +
-        num(r.total_amount),
-      0
-    );
+
+  const expenseType =
+    req.expense_type ||
+    req.category ||
+    "—";
+
 
   const content =
     $("reqPreviewContent");
 
+
   if (!content) return;
 
+
   content.innerHTML = `
-    <h2>
-      Requisition
-      ${escapeHtml(selected)}
-    </h2>
 
-    <p>
-      <strong>Date:</strong>
-      ${escapeHtml(
-        formatDate(
-          first.req_date
-        )
-      )}
-    </p>
+    <div style="
+      font-family:Arial,sans-serif;
+      color:#0f172a;
+    ">
 
-    <p>
-      <strong>Requested By:</strong>
-      ${escapeHtml(
-        first.requested_by ||
-        "—"
-      )}
-    </p>
+      <div style="
+        text-align:center;
+        margin-bottom:22px;
+      ">
 
-    <p>
-      <strong>Vehicle:</strong>
-      ${escapeHtml(
-        vehicle?.registration ||
-        "—"
-      )}
-    </p>
+        <h2 style="
+          margin-bottom:5px;
+        ">
+          Garage Operations Pro
+        </h2>
 
-    <hr>
+        <div style="
+          color:#64748b;
+          font-size:12px;
+        ">
+          Requisition Preview
+        </div>
 
-    ${rows.map(r => `
-      <div
-        style="
-          padding:12px 0;
-          border-bottom:1px solid #eee;
-        "
-      >
+      </div>
 
-        <strong>
-          ${escapeHtml(
-            r.item_description ||
-            "—"
-          )}
-        </strong>
+
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+        margin-bottom:18px;
+      ">
 
         <div>
-          Qty:
+          <strong>Requisition No.</strong>
+          <br>
           ${escapeHtml(
-            r.quantity
-          )}
-          ×
-          ${money(
-            r.unit_cost
+            req.req_no || "—"
           )}
         </div>
 
-        <strong>
-          ${money(
-            r.total_amount
+        <div>
+          <strong>Date</strong>
+          <br>
+          ${formatDate(
+            req.req_date
           )}
-        </strong>
+        </div>
+
+        <div>
+          <strong>Requested By</strong>
+          <br>
+          ${escapeHtml(
+            req.requested_by ||
+            "—"
+          )}
+        </div>
+
+        <div>
+          <strong>Vehicle</strong>
+          <br>
+          ${escapeHtml(
+            vehicle
+          )}
+        </div>
+
+        <div>
+          <strong>Status</strong>
+          <br>
+          ${escapeHtml(
+            req.status ||
+            "—"
+          )}
+        </div>
+
+        <div>
+          <strong>Expense Type</strong>
+          <br>
+          ${escapeHtml(
+            expenseType
+          )}
+        </div>
 
       </div>
-    `).join("")}
 
-    <h3>
-      Total:
-      ${money(total)}
-    </h3>
 
-    <p>
-      <strong>Status:</strong>
-      ${escapeHtml(
-        first.status ||
-        "Pending"
-      )}
-    </p>
+      <div style="
+        border:1px solid #e5e7eb;
+        border-radius:10px;
+        padding:14px;
+        margin-bottom:15px;
+      ">
+
+        <strong>
+          Item Description
+        </strong>
+
+        <p style="
+          margin-top:7px;
+          white-space:pre-wrap;
+        ">
+          ${escapeHtml(
+            req.item_description ||
+            "—"
+          )}
+        </p>
+
+      </div>
+
+
+      <table style="
+        width:100%;
+        border-collapse:collapse;
+        margin-bottom:15px;
+      ">
+
+        <tr>
+          <td style="
+            padding:9px;
+            border:1px solid #e5e7eb;
+          ">
+            Quantity
+          </td>
+
+          <td style="
+            padding:9px;
+            border:1px solid #e5e7eb;
+          ">
+            ${num(req.quantity)}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="
+            padding:9px;
+            border:1px solid #e5e7eb;
+          ">
+            Unit Cost
+          </td>
+
+          <td style="
+            padding:9px;
+            border:1px solid #e5e7eb;
+          ">
+            ${money(req.unit_cost)}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="
+            padding:9px;
+            border:1px solid #e5e7eb;
+            font-weight:bold;
+          ">
+            Total
+          </td>
+
+          <td style="
+            padding:9px;
+            border:1px solid #e5e7eb;
+            font-weight:bold;
+          ">
+            ${money(req.total_amount)}
+          </td>
+        </tr>
+
+      </table>
+
+
+      <div>
+        <strong>Notes</strong>
+
+        <p style="
+          margin-top:6px;
+          white-space:pre-wrap;
+        ">
+          ${escapeHtml(
+            req.notes ||
+            "—"
+          )}
+        </p>
+      </div>
+
+    </div>
   `;
+
 
   openModal(
     "reqPreviewModal"
   );
+
+}
+
+
+/* =========================================================
+   PREVIEW SELECTED REQUISITION
+   ========================================================= */
+
+function previewSelectedReq() {
+
+  if (
+    selectedReqForPrint
+  ) {
+
+    previewReq(
+      selectedReqForPrint.id
+    );
+
+    return;
+
+  }
+
+
+  const first =
+    requisitions[0];
+
+
+  if (!first) {
+
+    showToast(
+      "There are no requisitions to preview.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  previewReq(
+    first.id
+  );
+
+}
+
+
+/* =========================================================
+   VEHICLE EXPENSE PREVIEW
+   ========================================================= */
+
+function previewVehicleExpenses(
+  vehicleId
+) {
+
+  const vehicle =
+    vehicles.find(
+      item =>
+        String(item.id) ===
+        String(vehicleId)
+    );
+
+
+  if (!vehicle) return;
+
+
+  const vehicleExpenses =
+    expenses.filter(
+      expense =>
+        String(
+          expense.vehicle_id
+        ) ===
+        String(vehicleId)
+    );
+
+
+  const total =
+    vehicleExpenses.reduce(
+      (sum, item) =>
+        sum + num(item.amount),
+      0
+    );
+
+
+  selectedVehicleExpenseForPrint =
+    {
+      vehicle,
+      expenses:
+        vehicleExpenses,
+      total
+    };
+
+
+  const content =
+    $("vehicleExpensePreviewContent");
+
+
+  if (!content) return;
+
+
+  content.innerHTML = `
+
+    <div style="
+      font-family:Arial,sans-serif;
+    ">
+
+      <h2 style="
+        margin-bottom:6px;
+      ">
+        Vehicle Expense Summary
+      </h2>
+
+      <p style="
+        color:#64748b;
+        margin-bottom:18px;
+      ">
+        Vehicle:
+        <strong>
+          ${escapeHtml(
+            vehicle.registration ||
+            "—"
+          )}
+        </strong>
+      </p>
+
+
+      <table style="
+        width:100%;
+        border-collapse:collapse;
+      ">
+
+        <thead>
+
+          <tr>
+
+            <th style="
+              padding:9px;
+              text-align:left;
+              border-bottom:1px solid #ddd;
+            ">
+              Date
+            </th>
+
+            <th style="
+              padding:9px;
+              text-align:left;
+              border-bottom:1px solid #ddd;
+            ">
+              Description
+            </th>
+
+            <th style="
+              padding:9px;
+              text-align:left;
+              border-bottom:1px solid #ddd;
+            ">
+              Category
+            </th>
+
+            <th style="
+              padding:9px;
+              text-align:right;
+              border-bottom:1px solid #ddd;
+            ">
+              Amount
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          ${
+            vehicleExpenses.length
+              ? vehicleExpenses
+                  .map(
+                    expense => `
+                      <tr>
+
+                        <td style="
+                          padding:9px;
+                          border-bottom:1px solid #eee;
+                        ">
+                          ${formatDate(
+                            expense.expense_date
+                          )}
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          border-bottom:1px solid #eee;
+                        ">
+                          ${escapeHtml(
+                            expense.description ||
+                            "—"
+                          )}
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          border-bottom:1px solid #eee;
+                        ">
+                          ${escapeHtml(
+                            expense.category ||
+                            "—"
+                          )}
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          text-align:right;
+                          border-bottom:1px solid #eee;
+                        ">
+                          ${money(
+                            expense.amount
+                          )}
+                        </td>
+
+                      </tr>
+                    `
+                  )
+                  .join("")
+              : `
+                <tr>
+                  <td colspan="4"
+                      style="
+                        padding:20px;
+                        text-align:center;
+                        color:#94a3b8;
+                      ">
+                    No expenses recorded
+                    for this vehicle.
+                  </td>
+                </tr>
+              `
+          }
+
+        </tbody>
+
+      </table>
+
+
+      <div style="
+        margin-top:18px;
+        text-align:right;
+        font-size:18px;
+        font-weight:800;
+      ">
+        Total:
+        ${money(total)}
+      </div>
+
+    </div>
+  `;
+
+
+  openModal(
+    "vehicleExpensePreviewModal"
+  );
+
 }
 
 
@@ -3358,27 +3754,31 @@ function previewSelectedReq(
    PRINT HELPER
    ========================================================= */
 
-function printWindow(
+function printHtml(
   title,
-  content
+  html
 ) {
-  const win =
+
+  const printWindow =
     window.open(
       "",
-      "_blank",
-      "width=900,height=700"
+      "_blank"
     );
 
-  if (!win) {
+
+  if (!printWindow) {
+
     showToast(
       "Please allow pop-ups to print.",
-      "warning"
+      "error"
     );
 
     return;
+
   }
 
-  win.document.write(`
+
+  printWindow.document.write(`
     <!DOCTYPE html>
 
     <html>
@@ -3393,41 +3793,39 @@ function printWindow(
 
         body{
           font-family:Arial,sans-serif;
-          padding:30px;
           color:#111827;
+          padding:30px;
         }
 
-        h1{
-          margin-bottom:5px;
+        h1,h2,h3{
+          margin-top:0;
         }
 
         table{
           width:100%;
           border-collapse:collapse;
-          margin-top:20px;
         }
 
         th,td{
-          border:1px solid #d1d5db;
           padding:8px;
+          border:1px solid #ddd;
           text-align:left;
-          font-size:12px;
         }
 
         th{
-          background:#f3f4f6;
-        }
-
-        .total{
-          margin-top:20px;
-          font-size:18px;
-          font-weight:bold;
+          background:#f5f5f5;
         }
 
         @media print{
+
           body{
             padding:10px;
           }
+
+          .no-print{
+            display:none!important;
+          }
+
         }
 
       </style>
@@ -3436,28 +3834,29 @@ function printWindow(
 
     <body>
 
-      <h1>
-        Garage Operations Pro
-      </h1>
-
-      <p>
-        ${escapeHtml(title)}
-      </p>
-
-      ${content}
-
-      <script>
-        window.onload=function(){
-          window.print();
-        };
-      <\/script>
+      ${html}
 
     </body>
 
     </html>
   `);
 
-  win.document.close();
+
+  printWindow.document.close();
+
+
+  printWindow.focus();
+
+
+  setTimeout(
+    () => {
+
+      printWindow.print();
+
+    },
+    350
+  );
+
 }
 
 
@@ -3466,69 +3865,105 @@ function printWindow(
    ========================================================= */
 
 function printVehicles() {
+
   const rows =
-    vehicles.map(v => `
-      <tr>
+    vehicles
+      .map(
+        vehicle => {
 
-        <td>
-          ${escapeHtml(
-            v.registration
-          )}
-        </td>
+          const billed =
+            num(vehicle.billed);
 
-        <td>
-          ${escapeHtml(
-            v.customer
-          )}
-        </td>
+          const paid =
+            num(vehicle.paid);
 
-        <td>
-          ${escapeHtml(
-            formatDate(v.date_in)
-          )}
-        </td>
-
-        <td>
-          ${escapeHtml(
-            v.job_type
-          )}
-        </td>
-
-        <td>
-          ${escapeHtml(
-            v.status
-          )}
-        </td>
-
-        <td>
-          ${money(v.billed)}
-        </td>
-
-        <td>
-          ${money(v.paid)}
-        </td>
-
-        <td>
-          ${money(
+          const outstanding =
             Math.max(
               0,
-              num(v.billed) -
-              num(v.paid)
-            )
-          )}
-        </td>
+              billed - paid
+            );
 
-      </tr>
-    `).join("");
 
-  printWindow(
-    "Vehicle Report",
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  vehicle.registration ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  vehicle.customer ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${formatDate(
+                  vehicle.date_in
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  vehicle.job_type ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  vehicle.status ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${money(billed)}
+              </td>
+
+              <td>
+                ${money(paid)}
+              </td>
+
+              <td>
+                ${money(outstanding)}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+
+  printHtml(
+    "Vehicles - Garage Operations Pro",
     `
+
+      <h1>
+        Garage Operations Pro
+      </h1>
+
+      <h2>
+        Vehicle Report
+      </h2>
+
+      <p>
+        Printed:
+        ${formatDate(today())}
+      </p>
+
       <table>
 
         <thead>
 
           <tr>
+
             <th>Registration</th>
             <th>Customer</th>
             <th>Date In</th>
@@ -3537,6 +3972,7 @@ function printVehicles() {
             <th>Billed</th>
             <th>Paid</th>
             <th>Outstanding</th>
+
           </tr>
 
         </thead>
@@ -3548,6 +3984,196 @@ function printVehicles() {
       </table>
     `
   );
+
+}
+
+
+/* =========================================================
+   PRINT EXPENSES
+   ========================================================= */
+
+function printExpenses() {
+
+  const rows =
+    expenses
+      .map(
+        expense => `
+          <tr>
+
+            <td>
+              ${formatDate(
+                expense.expense_date
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                getVehicleRegistration(
+                  expense.vehicle_id
+                )
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.description ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.category ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${money(
+                expense.amount
+              )}
+            </td>
+
+          </tr>
+        `
+      )
+      .join("");
+
+
+  printHtml(
+    "Expenses - Garage Operations Pro",
+    `
+
+      <h1>
+        Garage Operations Pro
+      </h1>
+
+      <h2>
+        Expense Report
+      </h2>
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Date</th>
+            <th>Vehicle</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+          ${rows}
+        </tbody>
+
+      </table>
+    `
+  );
+
+}
+
+
+/* =========================================================
+   PRINT PETTY CASH
+   ========================================================= */
+
+function printPettyCash() {
+
+  const rows =
+    pettyCash
+      .map(
+        item => `
+          <tr>
+
+            <td>
+              ${formatDate(
+                item.cash_date
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.description ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.paid_to ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.category ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${money(
+                item.amount
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.notes ||
+                "—"
+              )}
+            </td>
+
+          </tr>
+        `
+      )
+      .join("");
+
+
+  printHtml(
+    "Petty Cash - Garage Operations Pro",
+    `
+
+      <h1>
+        Garage Operations Pro
+      </h1>
+
+      <h2>
+        Petty Cash Report
+      </h2>
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Date</th>
+            <th>Description</th>
+            <th>Paid To</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Notes</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+          ${rows}
+        </tbody>
+
+      </table>
+    `
+  );
+
 }
 
 
@@ -3556,79 +4182,118 @@ function printVehicles() {
    ========================================================= */
 
 function printRequisitions() {
+
   const rows =
-    requisitions.map(r => `
-      <tr>
+    requisitions
+      .map(
+        req => `
 
-        <td>
-          ${escapeHtml(
-            r.req_no
-          )}
-        </td>
+          <tr>
 
-        <td>
-          ${escapeHtml(
-            formatDate(
-              r.req_date
-            )
-          )}
-        </td>
+            <td>
+              ${escapeHtml(
+                req.req_no ||
+                "—"
+              )}
+            </td>
 
-        <td>
-          ${escapeHtml(
-            r.requested_by
-          )}
-        </td>
+            <td>
+              ${formatDate(
+                req.req_date
+              )}
+            </td>
 
-        <td>
-          ${escapeHtml(
-            r.item_description
-          )}
-        </td>
+            <td>
+              ${escapeHtml(
+                req.requested_by ||
+                "—"
+              )}
+            </td>
 
-        <td>
-          ${escapeHtml(
-            r.quantity
-          )}
-        </td>
+            <td>
+              ${escapeHtml(
+                getVehicleRegistration(
+                  req.vehicle_id
+                )
+              )}
+            </td>
 
-        <td>
-          ${money(
-            r.unit_cost
-          )}
-        </td>
+            <td>
+              ${escapeHtml(
+                req.item_description ||
+                "—"
+              )}
+            </td>
 
-        <td>
-          ${money(
-            r.total_amount
-          )}
-        </td>
+            <td>
+              ${num(
+                req.quantity
+              )}
+            </td>
 
-        <td>
-          ${escapeHtml(
-            r.status
-          )}
-        </td>
+            <td>
+              ${money(
+                req.unit_cost
+              )}
+            </td>
 
-      </tr>
-    `).join("");
+            <td>
+              ${money(
+                req.total_amount
+              )}
+            </td>
 
-  printWindow(
-    "Requisition Report",
+            <td>
+              ${escapeHtml(
+                req.expense_type ||
+                req.category ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                req.status ||
+                "—"
+              )}
+            </td>
+
+          </tr>
+
+        `
+      )
+      .join("");
+
+
+  printHtml(
+    "Requisitions - Garage Operations Pro",
     `
+
+      <h1>
+        Garage Operations Pro
+      </h1>
+
+      <h2>
+        Requisition Report
+      </h2>
+
       <table>
 
         <thead>
 
           <tr>
+
             <th>Req No.</th>
             <th>Date</th>
             <th>Requested By</th>
-            <th>Item</th>
+            <th>Vehicle</th>
+            <th>Item Description</th>
             <th>Qty</th>
             <th>Unit Cost</th>
             <th>Total</th>
+            <th>Expense Type</th>
             <th>Status</th>
+
           </tr>
 
         </thead>
@@ -3640,227 +4305,283 @@ function printRequisitions() {
       </table>
     `
   );
+
 }
 
 
 /* =========================================================
-   PRINT ONE REQUISITION
+   PRINT SELECTED REQUISITION
    ========================================================= */
 
-function printReq(reqNo) {
-  const rows =
-    requisitions.filter(
-      r =>
-        String(r.req_no) ===
-        String(reqNo)
-    );
+function printSelectedReq() {
 
-  if (!rows.length) {
+  const req =
+    selectedReqForPrint;
+
+
+  if (!req) {
+
     showToast(
-      "Requisition not found.",
+      "Select a requisition first.",
       "error"
     );
 
     return;
+
   }
 
-  const first =
-    rows[0];
 
-  const total =
-    rows.reduce(
-      (sum, r) =>
-        sum +
-        num(r.total_amount),
-      0
-    );
+  const expenseType =
+    req.expense_type ||
+    req.category ||
+    "—";
 
-  const items =
-    rows.map(r => `
-      <tr>
 
-        <td>
-          ${escapeHtml(
-            r.item_description
-          )}
-        </td>
-
-        <td>
-          ${escapeHtml(
-            r.quantity
-          )}
-        </td>
-
-        <td>
-          ${money(
-            r.unit_cost
-          )}
-        </td>
-
-        <td>
-          ${money(
-            r.total_amount
-          )}
-        </td>
-
-      </tr>
-    `).join("");
-
-  printWindow(
-    `Requisition ${reqNo}`,
+  printHtml(
+    "Requisition - Garage Operations Pro",
     `
-      <p>
-        <strong>
-          Requisition No:
-        </strong>
-        ${escapeHtml(reqNo)}
-      </p>
 
-      <p>
-        <strong>
-          Date:
-        </strong>
-        ${escapeHtml(
-          formatDate(
-            first.req_date
-          )
-        )}
-      </p>
+      <div style="
+        max-width:750px;
+        margin:auto;
+      ">
 
-      <p>
-        <strong>
-          Requested By:
-        </strong>
-        ${escapeHtml(
-          first.requested_by
-        )}
-      </p>
+        <h1>
+          Garage Operations Pro
+        </h1>
 
-      <table>
+        <h2>
+          Requisition
+        </h2>
 
-        <thead>
+        <p>
+          <strong>
+            Requisition No.:
+          </strong>
+          ${escapeHtml(
+            req.req_no ||
+            "—"
+          )}
+        </p>
+
+        <p>
+          <strong>
+            Date:
+          </strong>
+          ${formatDate(
+            req.req_date
+          )}
+        </p>
+
+        <p>
+          <strong>
+            Requested By:
+          </strong>
+          ${escapeHtml(
+            req.requested_by ||
+            "—"
+          )}
+        </p>
+
+        <p>
+          <strong>
+            Vehicle:
+          </strong>
+          ${escapeHtml(
+            getVehicleRegistration(
+              req.vehicle_id
+            )
+          )}
+        </p>
+
+        <p>
+          <strong>
+            Status:
+          </strong>
+          ${escapeHtml(
+            req.status ||
+            "—"
+          )}
+        </p>
+
+        <p>
+          <strong>
+            Expense Type:
+          </strong>
+          ${escapeHtml(
+            expenseType
+          )}
+        </p>
+
+        <hr>
+
+        <h3>
+          Item Description
+        </h3>
+
+        <p style="
+          white-space:pre-wrap;
+        ">
+          ${escapeHtml(
+            req.item_description ||
+            "—"
+          )}
+        </p>
+
+        <table>
 
           <tr>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Unit Cost</th>
-            <th>Total</th>
+
+            <th>
+              Quantity
+            </th>
+
+            <td>
+              ${num(
+                req.quantity
+              )}
+            </td>
+
           </tr>
 
-        </thead>
+          <tr>
 
-        <tbody>
-          ${items}
-        </tbody>
+            <th>
+              Unit Cost
+            </th>
 
-      </table>
+            <td>
+              ${money(
+                req.unit_cost
+              )}
+            </td>
 
-      <div class="total">
-        Total:
-        ${money(total)}
+          </tr>
+
+          <tr>
+
+            <th>
+              Total
+            </th>
+
+            <td>
+              <strong>
+                ${money(
+                  req.total_amount
+                )}
+              </strong>
+            </td>
+
+          </tr>
+
+        </table>
+
+        <br>
+
+        <h3>
+          Notes
+        </h3>
+
+        <p style="
+          white-space:pre-wrap;
+        ">
+          ${escapeHtml(
+            req.notes ||
+            "—"
+          )}
+        </p>
+
       </div>
     `
   );
-}
 
-function printSelectedReq() {
-  if (!selectedReqNo) {
-    showToast(
-      "Preview a requisition first.",
-      "warning"
-    );
-
-    return;
-  }
-
-  printReq(
-    selectedReqNo
-  );
 }
 
 
 /* =========================================================
-   PRINT VEHICLE EXPENSES
+   PRINT VEHICLE EXPENSE PREVIEW
    ========================================================= */
 
 function printVehicleExpensePreview() {
-  if (!selectedVehicleExpenseId) {
+
+  const selected =
+    selectedVehicleExpenseForPrint;
+
+
+  if (!selected) {
+
     showToast(
-      "No vehicle selected.",
-      "warning"
+      "No vehicle expense summary selected.",
+      "error"
     );
 
     return;
+
   }
 
-  const vehicle =
-    vehicles.find(
-      v =>
-        String(v.id) ===
-        String(
-          selectedVehicleExpenseId
-        )
-    );
 
-  if (!vehicle) return;
+  const vehicle =
+    selected.vehicle;
+
 
   const rows =
-    getVehicleExpenses(
-      vehicle.id
-    );
+    selected.expenses
+      .map(
+        expense => `
+          <tr>
 
-  const total =
-    rows.reduce(
-      (sum, e) =>
-        sum + num(e.amount),
-      0
-    );
+            <td>
+              ${formatDate(
+                expense.expense_date
+              )}
+            </td>
 
-  const table =
-    rows.map(e => `
-      <tr>
+            <td>
+              ${escapeHtml(
+                expense.description ||
+                "—"
+              )}
+            </td>
 
-        <td>
-          ${escapeHtml(
-            formatDate(
-              e.expense_date
-            )
-          )}
-        </td>
+            <td>
+              ${escapeHtml(
+                expense.category ||
+                "—"
+              )}
+            </td>
 
-        <td>
-          ${escapeHtml(
-            e.description
-          )}
-        </td>
+            <td>
+              ${money(
+                expense.amount
+              )}
+            </td>
 
-        <td>
-          ${escapeHtml(
-            e.category
-          )}
-        </td>
+          </tr>
+        `
+      )
+      .join("");
 
-        <td>
-          ${money(e.amount)}
-        </td>
 
-      </tr>
-    `).join("");
-
-  printWindow(
-    `Vehicle Expenses - ${vehicle.registration}`,
+  printHtml(
+    "Vehicle Expense Summary",
     `
-      <p>
-        <strong>Vehicle:</strong>
-        ${escapeHtml(
-          vehicle.registration
-        )}
-      </p>
+
+      <h1>
+        Garage Operations Pro
+      </h1>
+
+      <h2>
+        Vehicle Expense Summary
+      </h2>
 
       <p>
-        <strong>Customer:</strong>
+        <strong>
+          Vehicle:
+        </strong>
+
         ${escapeHtml(
-          vehicle.customer
+          vehicle.registration ||
+          "—"
         )}
       </p>
 
@@ -3869,86 +4590,100 @@ function printVehicleExpensePreview() {
         <thead>
 
           <tr>
+
             <th>Date</th>
             <th>Description</th>
             <th>Category</th>
             <th>Amount</th>
+
           </tr>
 
         </thead>
 
         <tbody>
-          ${table}
+
+          ${rows}
+
         </tbody>
 
       </table>
 
-      <div class="total">
-        Total Expenses:
-        ${money(total)}
-      </div>
+      <h3 style="
+        text-align:right;
+        margin-top:20px;
+      ">
+        Total:
+        ${money(
+          selected.total
+        )}
+      </h3>
     `
   );
+
 }
 
 
 /* =========================================================
-   SEARCH AND FILTERS
+   SEARCH / FILTER EVENTS
    ========================================================= */
 
 function bindSearchEvents() {
-  const events = [
-    [
-      "vehicleSearch",
+
+  $("vehicleSearch")
+    ?.addEventListener(
+      "input",
       renderVehicles
-    ],
-    [
-      "vehicleStatusFilter",
+    );
+
+
+  $("vehicleStatusFilter")
+    ?.addEventListener(
+      "change",
       renderVehicles
-    ],
-    [
-      "expenseSearch",
+    );
+
+
+  $("expenseSearch")
+    ?.addEventListener(
+      "input",
       renderExpenses
-    ],
-    [
-      "expenseCategoryFilter",
+    );
+
+
+  $("expenseCategoryFilter")
+    ?.addEventListener(
+      "change",
       renderExpenses
-    ],
-    [
-      "pettySearch",
+    );
+
+
+  $("pettySearch")
+    ?.addEventListener(
+      "input",
       renderPettyCash
-    ],
-    [
-      "pettyCategoryFilter",
+    );
+
+
+  $("pettyCategoryFilter")
+    ?.addEventListener(
+      "change",
       renderPettyCash
-    ],
-    [
-      "reqSearch",
+    );
+
+
+  $("reqSearch")
+    ?.addEventListener(
+      "input",
       renderRequisitions
-    ],
-    [
-      "reqStatusFilter",
+    );
+
+
+  $("reqStatusFilter")
+    ?.addEventListener(
+      "change",
       renderRequisitions
-    ]
-  ];
+    );
 
-  events.forEach(
-    ([id, fn]) => {
-      const element = $(id);
-
-      if (!element) return;
-
-      element.addEventListener(
-        "input",
-        fn
-      );
-
-      element.addEventListener(
-        "change",
-        fn
-      );
-    }
-  );
 }
 
 
@@ -3957,136 +4692,186 @@ function bindSearchEvents() {
    ========================================================= */
 
 function bindFormEvents() {
-  if ($("vehicleForm")) {
-    $("vehicleForm").onsubmit =
-      saveVehicle;
-  }
 
-  if ($("expenseForm")) {
-    $("expenseForm").onsubmit =
-      saveExpense;
-  }
+  $("vehicleForm")
+    ?.addEventListener(
+      "submit",
+      saveVehicle
+    );
 
-  if ($("pettyForm")) {
-    $("pettyForm").onsubmit =
-      savePetty;
-  }
 
-  if ($("reqForm")) {
-    $("reqForm").onsubmit =
-      saveReq;
-  }
+  $("expenseForm")
+    ?.addEventListener(
+      "submit",
+      saveExpense
+    );
 
-  if ($("reqQuantity")) {
-    $("reqQuantity").addEventListener(
+
+  $("pettyForm")
+    ?.addEventListener(
+      "submit",
+      savePetty
+    );
+
+
+  $("reqForm")
+    ?.addEventListener(
+      "submit",
+      saveReq
+    );
+
+
+  $("reqQuantity")
+    ?.addEventListener(
       "input",
       calculateReqTotal
     );
-  }
 
-  if ($("reqUnitCost")) {
-    $("reqUnitCost").addEventListener(
+
+  $("reqUnitCost")
+    ?.addEventListener(
       "input",
       calculateReqTotal
     );
-  }
 
-  if ($("vehicleDateIn")) {
-    $("vehicleDateIn").addEventListener(
-      "input",
-      updateVehicleStorageDays
-    );
-
-    $("vehicleDateIn").addEventListener(
-      "change",
-      updateVehicleStorageDays
-    );
-  }
-
-  if ($("vehicleDateOut")) {
-    $("vehicleDateOut").addEventListener(
-      "input",
-      updateVehicleStorageDays
-    );
-
-    $("vehicleDateOut").addEventListener(
-      "change",
-      updateVehicleStorageDays
-    );
-  }
 }
 
 
 /* =========================================================
-   CLOSE MODAL BY CLICKING OUTSIDE
+   MODAL EVENTS
    ========================================================= */
 
 function bindModalEvents() {
-  document.addEventListener(
-    "click",
-    event => {
-      if (
-        event.target &&
-        event.target.classList &&
-        event.target.classList.contains(
-          "modal"
-        )
-      ) {
-        event.target.classList.remove(
-          "show"
-        );
 
-        event.target.style.display =
-          "none";
-      }
-    }
-  );
+  document
+    .querySelectorAll(".modal")
+    .forEach(modal => {
+
+      modal.addEventListener(
+        "click",
+        event => {
+
+          if (
+            event.target ===
+            modal
+          ) {
+
+            modal.classList.remove(
+              "show"
+            );
+
+          }
+
+        }
+      );
+
+    });
+
 }
 
 
 /* =========================================================
-   MAKE FUNCTIONS AVAILABLE TO HTML
+   ESCAPE KEY CLOSES MODAL
    ========================================================= */
 
-Object.assign(
-  window,
-  {
-    showSection,
+document.addEventListener(
+  "keydown",
+  event => {
 
-    openModal,
-    closeModal,
+    if (
+      event.key !== "Escape"
+    ) {
+      return;
+    }
 
-    openVehicleModal,
-    saveVehicle,
-    deleteVehicle,
-    openVehicleExpenses,
 
-    openExpenseModal,
-    saveExpense,
-    deleteExpense,
+    document
+      .querySelectorAll(
+        ".modal.show"
+      )
+      .forEach(modal => {
 
-    openPettyModal,
-    savePetty,
-    deletePetty,
+        modal.classList.remove(
+          "show"
+        );
 
-    openReqModal,
-    saveReq,
-    deleteReq,
-    calculateReqTotal,
+      });
 
-    previewSelectedReq,
-    printSelectedReq,
-
-    printVehicles,
-    printRequisitions,
-    printReq,
-    printVehicleExpensePreview,
-
-    updateVehicleStorageDays,
-
-    loadAllData
   }
 );
+
+
+/* =========================================================
+   LOGIN DISPLAY
+   ========================================================= */
+
+function initializeLoggedInState() {
+
+  const loggedIn =
+    sessionStorage.getItem(
+      "garageLoggedIn"
+    );
+
+
+  const username =
+    sessionStorage.getItem(
+      "garageUser"
+    );
+
+
+  if (
+    loggedIn === "true"
+  ) {
+
+    if ($("loginPage")) {
+
+      $("loginPage")
+        .style.display =
+        "none";
+
+    }
+
+
+    if ($("app")) {
+
+      $("app")
+        .style.display =
+        "block";
+
+    }
+
+
+    if (username) {
+
+      const displayName =
+        username
+          .charAt(0)
+          .toUpperCase() +
+        username.slice(1);
+
+
+      if ($("welcomeUser")) {
+
+        $("welcomeUser")
+          .textContent =
+          displayName;
+
+      }
+
+
+      if ($("sidebarUser")) {
+
+        $("sidebarUser")
+          .textContent =
+          displayName;
+
+      }
+
+    }
+
+  }
+
+}
 
 
 /* =========================================================
@@ -4094,9 +4879,6 @@ Object.assign(
    ========================================================= */
 
 async function initGarageApp() {
-  console.log(
-    "Garage Operations Pro starting..."
-  );
 
   bindFormEvents();
 
@@ -4104,97 +4886,210 @@ async function initGarageApp() {
 
   bindModalEvents();
 
-  if (
-    $("vehicleDateIn") &&
-    !$("vehicleDateIn").value
-  ) {
+  /*
+   * IMPORTANT:
+   * This makes the dashboard cards
+   * actually clickable.
+   */
+  bindDashboardCards();
+
+
+  /*
+   * Default dates
+   */
+  if ($("vehicleDateIn")) {
+
     $("vehicleDateIn").value =
       today();
+
   }
 
-  if (
-    $("expenseDate") &&
-    !$("expenseDate").value
-  ) {
+  if ($("expenseDate")) {
+
     $("expenseDate").value =
       today();
+
   }
 
-  if (
-    $("pettyDate") &&
-    !$("pettyDate").value
-  ) {
+  if ($("pettyDate")) {
+
     $("pettyDate").value =
       today();
+
   }
 
-  if (
-    $("reqDate") &&
-    !$("reqDate").value
-  ) {
+  if ($("reqDate")) {
+
     $("reqDate").value =
       today();
+
   }
 
-  if (
-    $("vehicleJobType") &&
-    !$("vehicleJobType").value
-  ) {
+
+  /*
+   * Default vehicle form values
+   */
+  if ($("vehicleJobType")) {
+
     $("vehicleJobType").value =
       "Repair";
+
   }
 
-  if (
-    $("vehicleStatus") &&
-    !$("vehicleStatus").value
-  ) {
+  if ($("vehicleStatus")) {
+
     $("vehicleStatus").value =
-      "Under Repair";
+      "Storage";
+
   }
 
-  if (
-    $("reqQuantity") &&
-    !$("reqQuantity").value
-  ) {
-    $("reqQuantity").value =
-      "1";
-  }
 
+  /*
+   * Show dashboard first
+   */
   showSection(
     "dashboard"
   );
 
+
+  /*
+   * Load Supabase data
+   */
   await loadAllData();
 
-  updateVehicleStorageDays();
-
-  console.log(
-    "Garage Operations Pro ready."
-  );
 }
 
 
 /* =========================================================
-   DOM START
+   EXPOSE FUNCTIONS TO index.html
+   The HTML uses onclick="..."
+   ========================================================= */
+
+Object.assign(
+  window,
+  {
+
+    /* Navigation */
+
+    showSection,
+
+
+    /* Modals */
+
+    openModal,
+
+    closeModal,
+
+    openVehicleModal,
+
+    openExpenseModal,
+
+    openPettyModal,
+
+    openReqModal,
+
+
+    /* Vehicles */
+
+    editVehicle,
+
+    deleteVehicle,
+
+    printVehicles,
+
+    previewVehicleExpenses,
+
+
+    /* Expenses */
+
+    editExpense,
+
+    deleteExpense,
+
+    printExpenses,
+
+
+    /* Petty Cash */
+
+    editPetty,
+
+    deletePetty,
+
+    printPettyCash,
+
+
+    /* Requisitions */
+
+    editReq,
+
+    deleteReq,
+
+    previewReq,
+
+    previewSelectedReq,
+
+    printRequisitions,
+
+    printSelectedReq,
+
+    printVehicleExpensePreview,
+
+
+    /* Calculations */
+
+    calculateReqTotal,
+
+
+    /* Data */
+
+    loadAllData,
+
+    renderDashboard,
+
+    renderVehicles,
+
+    renderExpenses,
+
+    renderPettyCash,
+
+    renderRequisitions
+
+  }
+);
+
+
+/* =========================================================
+   START WHEN MODULE LOADS
    ========================================================= */
 
 if (
   document.readyState ===
   "loading"
 ) {
+
   document.addEventListener(
     "DOMContentLoaded",
-    initGarageApp
+    () => {
+
+      initializeLoggedInState();
+
+      initGarageApp();
+
+    },
+    {
+      once: true
+    }
   );
+
 } else {
+
+  initializeLoggedInState();
+
   initGarageApp();
+
 }
 
 
 /* =========================================================
-   =========================================================
    PART 4 END HERE
-   =========================================================
-   END OF SINGLE app.js FILE
-   =========================================================
    ========================================================= */
