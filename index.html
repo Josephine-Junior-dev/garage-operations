@@ -1360,6 +1360,7 @@ class="filter-select"
 style="max-width:190px">
 
 <option value="">All Statuses</option>
+<option value="Storage">Storage</option>
 <option value="Under Repair">Under Repair</option>
 <option value="Completed">Completed</option>
 <option value="Released">Released</option>
@@ -1716,7 +1717,7 @@ onclick="closeModal('vehicleModal')">✕</button>
 <div class="form-grid">
 
 <div class="form-group">
-<label>Registration</label>
+<label>Registration / Chassis No.</label>
 <input id="vehicleRegistration" required>
 </div>
 
@@ -1737,13 +1738,17 @@ onclick="closeModal('vehicleModal')">✕</button>
 
 <div class="form-group">
 <label>Job Type</label>
-<input id="vehicleJobType" value="Repair">
+<select id="vehicleJobType">
+<option value="Repair">Repair</option>
+<option value="Storage">Storage</option>
+</select>
 </div>
 
 <div class="form-group">
 <label>Status</label>
 
 <select id="vehicleStatus">
+<option value="Storage">Storage</option>
 <option value="Under Repair">Under Repair</option>
 <option value="Completed">Completed</option>
 <option value="Released">Released</option>
@@ -1831,7 +1836,12 @@ onclick="closeModal('expenseModal')">✕</button>
 
 <div class="form-group">
 <label>Category</label>
-<input id="expenseCategory" required>
+<select id="expenseCategory" required>
+<option value="">Select Category</option>
+<option value="Parts">Parts</option>
+<option value="Materials">Materials</option>
+<option value="Labour">Labour</option>
+</select>
 </div>
 
 <div class="form-group">
@@ -1897,7 +1907,14 @@ onclick="closeModal('pettyModal')">✕</button>
 
 <div class="form-group">
 <label>Category</label>
-<input id="pettyCategory" required>
+<select id="pettyCategory" required>
+<option value="">Select Category</option>
+<option value="Parts">Parts</option>
+<option value="Materials">Materials</option>
+<option value="Labour">Labour</option>
+<option value="Transport">Transport</option>
+<option value="Other">Other</option>
+</select>
 </div>
 
 <div class="form-group">
