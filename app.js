@@ -14,6 +14,9 @@ import { createClient } from
    SUPABASE
    ========================================================= */
 
+
+
+
 const SUPABASE_URL =
   "https://ptluwoeogfkqavhspdjj.supabase.co";
 
@@ -22,8 +25,9 @@ const SUPABASE_URL =
   Paste the SAME Supabase anon/publishable key that was in
   your previous working app.js here.
 */
-const SUPABASE_ANON_KEY =
-  "PASTE_YOUR_EXISTING_SUPABASE_ANON_KEY_HERE";
+const SUPABASE_ANON_KEY = "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
+
+
 
 const supabase = createClient(
   SUPABASE_URL,
