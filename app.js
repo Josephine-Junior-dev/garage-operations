@@ -2,7 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 /* =========================================================
    GARAGE OPERATIONS PRO
-   CLEAN SILICON-VALLEY STYLE APPLICATION ENGINE
+   COMPLETE APP.JS
    ========================================================= */
 
 const SUPABASE_URL =
@@ -11,10 +11,8 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
 
-const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const supabase =
+  createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* =========================================================
    DATA
@@ -28,9 +26,7 @@ let invoices = [];
 let gatePasses = [];
 let estimates = [];
 
-const missingTables = {};
-
-window.currentVehicleExpenseId = null;
+let currentVehicleExpenseId = null;
 
 /* =========================================================
    HELPERS
@@ -39,8 +35,8 @@ window.currentVehicleExpenseId = null;
 const $ = id => document.getElementById(id);
 
 function num(v) {
-  const x = Number(v);
-  return Number.isFinite(x) ? x : 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function money(v) {
@@ -52,11 +48,14 @@ function money(v) {
 
 function today() {
   const d = new Date();
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
+
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    "-" +
     String(d.getDate()).padStart(2, "0")
-  ].join("-");
+  );
 }
 
 function esc(v) {
@@ -81,28 +80,6 @@ function vehicleById(id) {
   );
 }
 
-function findVehicle(id) {
-  return vehicleById(id);
-}
-
-function vehicleName(v) {
-  if (!v) return "Unassigned";
-  return `${v.registration || ""}${v.customer ? " — " + v.customer : ""}`;
-}
-
-function errorMessage(error) {
-  return error?.message || "Database operation failed.";
-}
-
-function statusClass(status) {
-  return (
-    "status-" +
-    String(status || "")
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-  );
-}
-
 function toast(message, type = "") {
   const el = $("toast");
 
@@ -116,9 +93,10 @@ function toast(message, type = "") {
 
   clearTimeout(window.__garageToast);
 
-  window.__garageToast = setTimeout(() => {
-    el.className = "toast";
-  }, 3000);
+  window.__garageToast =
+    setTimeout(() => {
+      el.className = "toast";
+    }, 3000);
 }
 
 /* =========================================================
@@ -127,22 +105,33 @@ function toast(message, type = "") {
 
 function openModal(id) {
   const el = $(id);
-  if (el) el.classList.add("show");
+
+  if (!el) return;
+
+  el.style.display = "flex";
+  el.classList.add("show");
 }
 
 function closeModal(id) {
   const el = $(id);
-  if (el) el.classList.remove("show");
+
+  if (!el) return;
+
+  el.style.display = "none";
+  el.classList.remove("show");
 }
 
 function closeAllModals() {
   document
     .querySelectorAll(".modal")
-    .forEach(m => m.classList.remove("show"));
+    .forEach(el => {
+      el.style.display = "none";
+      el.classList.remove("show");
+    });
 }
 
 /* =========================================================
-   CLEAN ACTION BUTTONS
+   STYLES
    ========================================================= */
 
 function injectStyles() {
@@ -153,17 +142,57 @@ function injectStyles() {
   style.id = "garageAppStyles";
 
   style.textContent = `
-    .table-actions{
+
+    /* =====================================================
+       TABLE LAYOUT
+       ===================================================== */
+
+    .table-container,
+    .table-wrap {
+      width:100% !important;
+      overflow-x:auto !important;
+      -webkit-overflow-scrolling:touch !important;
+    }
+
+    .table-container table,
+    .table-wrap table {
+      width:100%;
+      min-width:900px;
+      border-collapse:collapse;
+    }
+
+    .table-container th,
+    .table-container td,
+    .table-wrap th,
+    .table-wrap td {
+      padding:10px 12px !important;
+      vertical-align:middle !important;
+      white-space:nowrap;
+    }
+
+    /* Description can breathe */
+    #expensesTableBody td:nth-child(3) {
+      white-space:normal !important;
+      min-width:230px;
+      max-width:420px;
+    }
+
+    /* =====================================================
+       ACTION BUTTONS
+       ===================================================== */
+
+    .table-actions {
       display:flex !important;
       flex-direction:row !important;
       flex-wrap:nowrap !important;
       align-items:center !important;
+      justify-content:flex-start !important;
       gap:5px !important;
       white-space:nowrap !important;
       min-width:max-content !important;
     }
 
-    .action-btn{
+    .action-btn {
       width:34px !important;
       height:32px !important;
       min-width:34px !important;
@@ -179,116 +208,157 @@ function injectStyles() {
       line-height:1 !important;
       cursor:pointer !important;
       flex:0 0 34px !important;
-      box-shadow:none !important;
     }
 
-    .action-btn.blue{
-      background:#e0f2fe !important;
-      color:#075985 !important;
-    }
-
-    .action-btn.green{
-      background:#dcfce7 !important;
-      color:#166534 !important;
-    }
-
-    .action-btn.orange{
-      background:#fef3c7 !important;
-      color:#92400e !important;
-    }
-
-    .action-btn.purple{
-      background:#ede9fe !important;
-      color:#5b21b6 !important;
-    }
-
-    .action-btn.gray{
-      background:#f1f5f9 !important;
-      color:#172033 !important;
-    }
-
-    .action-btn.danger{
-      background:#fee2e2 !important;
-      color:#991b1b !important;
-    }
-
-    .action-btn:hover{
+    .action-btn:hover {
       transform:translateY(-1px);
       filter:brightness(.96);
     }
 
-    .table-wrap,
-    .table-container{
-      overflow-x:auto !important;
-      -webkit-overflow-scrolling:touch !important;
+    .action-btn.blue {
+      background:#e0f2fe !important;
+      color:#075985 !important;
     }
 
-    table{
-      min-width:max-content;
+    .action-btn.green {
+      background:#dcfce7 !important;
+      color:#166534 !important;
     }
 
-    th:last-child,
-    td:last-child{
-      white-space:nowrap !important;
+    .action-btn.orange {
+      background:#fef3c7 !important;
+      color:#92400e !important;
     }
 
-    .kpi-card,
-    .stat-card,
-    .dashboard-card{
-      cursor:pointer;
+    .action-btn.purple {
+      background:#ede9fe !important;
+      color:#5b21b6 !important;
+    }
+
+    .action-btn.gray {
+      background:#f1f5f9 !important;
+      color:#172033 !important;
+    }
+
+    .action-btn.danger {
+      background:#fee2e2 !important;
+      color:#991b1b !important;
     }
 
     /* =====================================================
-       IMPORTANT:
-       ESTIMATES MUST NEVER OVERLAP DASHBOARD
+       EXPENSE SUMMARY
        ===================================================== */
 
-    #estimates{
+    .garage-expense-summary {
+      display:grid;
+      grid-template-columns:
+        repeat(3,minmax(0,1fr));
+      gap:14px;
+      margin:0 0 18px 0;
+    }
+
+    .garage-expense-summary-card {
+      background:#ffffff;
+      border:1px solid #e2e8f0;
+      border-radius:14px;
+      padding:18px;
+      box-shadow:
+        0 4px 15px rgba(15,23,42,.05);
+    }
+
+    .garage-expense-summary-label {
+      font-size:12px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:#64748b;
+      margin-bottom:7px;
+    }
+
+    .garage-expense-summary-value {
+      font-size:24px;
+      font-weight:800;
+      color:#0f172a;
+      line-height:1.2;
+    }
+
+    .garage-expense-summary-sub {
+      margin-top:5px;
+      color:#64748b;
+      font-size:12px;
+    }
+
+    .garage-expense-total {
+      background:
+        linear-gradient(
+          135deg,
+          #eff6ff,
+          #ffffff
+        );
+      border-color:#bfdbfe;
+    }
+
+    .garage-expense-total
+    .garage-expense-summary-value {
+      color:#075985;
+    }
+
+    /* =====================================================
+       TOTAL ROW
+       ===================================================== */
+
+    .garage-expense-total-row td {
+      background:#f8fafc !important;
+      font-weight:800 !important;
+      border-top:2px solid #cbd5e1 !important;
+    }
+
+    .garage-expense-total-row td:last-child {
+      color:#075985 !important;
+      font-size:16px !important;
+    }
+
+    /* =====================================================
+       ESTIMATES
+       ===================================================== */
+
+    #estimates {
       display:none !important;
-      position:relative !important;
       width:100% !important;
       max-width:100% !important;
       box-sizing:border-box !important;
       clear:both !important;
       float:none !important;
+      position:relative !important;
       margin:0 !important;
       padding:0 !important;
+      overflow:hidden !important;
       z-index:1 !important;
     }
 
-    #estimates.active{
+    #estimates.active {
       display:block !important;
     }
 
-    #estimateModal{
-      position:fixed !important;
-      inset:0 !important;
+    .garage-estimate-nav {
+      cursor:pointer !important;
+    }
+
+    #estimateModal {
       z-index:99999 !important;
     }
 
-    .garage-estimate-section{
-      width:100%;
-      box-sizing:border-box;
-      overflow:hidden;
-    }
+    /* =====================================================
+       MOBILE
+       ===================================================== */
 
-    .garage-estimate-card{
-      width:100%;
-      box-sizing:border-box;
-      overflow:hidden;
-    }
+    @media(max-width:720px) {
 
-    .estimate-items-wrap{
-      width:100%;
-      overflow-x:auto;
-    }
-
-    @media(max-width:720px){
-      .table-actions{
-        gap:4px !important;
+      .garage-expense-summary {
+        grid-template-columns:1fr;
       }
 
-      .action-btn{
+      .action-btn {
         width:32px !important;
         height:30px !important;
         min-width:32px !important;
@@ -296,24 +366,40 @@ function injectStyles() {
         flex:0 0 32px !important;
         font-size:14px !important;
       }
+
+      .table-actions {
+        gap:4px !important;
+      }
+
+      .table-container table,
+      .table-wrap table {
+        min-width:900px;
+      }
     }
+
   `;
 
   document.head.appendChild(style);
 }
 
 /* =========================================================
-   ACTION BUTTON HELPERS
+   BUTTONS
    ========================================================= */
 
-function btn(icon, title, fn, id, cls = "gray") {
+function actionButton(
+  icon,
+  title,
+  functionName,
+  id,
+  color = "gray"
+) {
   return `
     <button
       type="button"
-      class="action-btn ${cls}"
+      class="action-btn ${color}"
       title="${esc(title)}"
       aria-label="${esc(title)}"
-      onclick="${fn}('${esc(id)}')"
+      onclick="${functionName}('${esc(id)}')"
     >${icon}</button>
   `;
 }
@@ -321,28 +407,93 @@ function btn(icon, title, fn, id, cls = "gray") {
 function vehicleActions(id) {
   return `
     <div class="table-actions">
-      ${btn("✏️", "Edit vehicle", "editVehicle", id, "blue")}
-      ${btn("🚘", "Vehicle expenses", "viewVehicleExpenses", id, "green")}
-      ${btn("👁️", "View vehicle", "viewVehicle", id, "gray")}
-      ${btn("📤", "Share vehicle", "shareVehicle", id, "purple")}
-      ${btn("🗑️", "Delete vehicle", "deleteVehicle", id, "danger")}
+
+      ${actionButton(
+        "✏️",
+        "Edit vehicle",
+        "editVehicle",
+        id,
+        "blue"
+      )}
+
+      ${actionButton(
+        "🚘",
+        "Vehicle expenses",
+        "viewVehicleExpenses",
+        id,
+        "green"
+      )}
+
+      ${actionButton(
+        "👁️",
+        "View vehicle",
+        "viewVehicle",
+        id,
+        "gray"
+      )}
+
+      ${actionButton(
+        "📤",
+        "Share vehicle",
+        "shareVehicle",
+        id,
+        "purple"
+      )}
+
+      ${actionButton(
+        "🗑️",
+        "Delete vehicle",
+        "deleteVehicle",
+        id,
+        "danger"
+      )}
+
     </div>
   `;
 }
 
-function standardActions(
+function normalActions(
   id,
-  editFn,
-  viewFn,
-  shareFn,
-  deleteFn
+  edit,
+  view,
+  share,
+  del
 ) {
   return `
     <div class="table-actions">
-      ${btn("✏️", "Edit", editFn, id, "blue")}
-      ${btn("👁️", "View", viewFn, id, "gray")}
-      ${btn("📤", "Share", shareFn, id, "purple")}
-      ${btn("🗑️", "Delete", deleteFn, id, "danger")}
+
+      ${actionButton(
+        "✏️",
+        "Edit",
+        edit,
+        id,
+        "blue"
+      )}
+
+      ${actionButton(
+        "👁️",
+        "View",
+        view,
+        id,
+        "gray"
+      )}
+
+      ${actionButton(
+        "📤",
+        "Share",
+        share,
+        id,
+        "purple"
+      )}
+
+      ${actionButton(
+        "🗑️",
+        "Delete",
+        del,
+        id,
+        "danger"
+      )}
+
     </div>
   `;
 }
@@ -353,129 +504,137 @@ function standardActions(
 
 async function getRows(table) {
   try {
-    let result = await supabase
-      .from(table)
-      .select("*")
-      .order("created_at", {
-        ascending: false
-      });
+
+    let result =
+      await supabase
+        .from(table)
+        .select("*")
+        .order(
+          "created_at",
+          { ascending:false }
+        );
 
     if (
       result.error &&
-      /created_at/i.test(result.error.message || "")
+      /created_at/i.test(
+        result.error.message || ""
+      )
     ) {
-      result = await supabase
-        .from(table)
-        .select("*");
+      result =
+        await supabase
+          .from(table)
+          .select("*");
     }
 
     if (result.error) {
-      missingTables[table] =
-        /relation|does not exist|schema cache/i.test(
-          result.error.message || ""
-        );
 
-      console.warn(table, result.error);
+      console.warn(
+        table,
+        result.error.message
+      );
 
       return [];
     }
 
-    missingTables[table] = false;
-
     return result.data || [];
-  } catch (error) {
-    console.error(table, error);
+
+  } catch(error) {
+
+    console.error(
+      "Loading " + table,
+      error
+    );
+
     return [];
   }
 }
 
 async function loadAllData() {
-  try {
-    const [
-      v,
-      e,
-      p,
-      r,
-      i,
-      g,
-      q
-    ] = await Promise.all([
-      getRows("vehicles"),
-      getRows("expenses"),
-      getRows("petty_cash"),
-      getRows("requisitions"),
-      getRows("invoices"),
-      getRows("gate_passes"),
-      getRows("estimates")
-    ]);
 
-    vehicles = v;
-    expenses = e;
-    pettyCash = p;
-    requisitions = r;
-    invoices = i;
-    gatePasses = g;
-    estimates = q;
+  const [
+    v,
+    e,
+    p,
+    r,
+    i,
+    g,
+    q
+  ] = await Promise.all([
 
-    renderAll();
+    getRows("vehicles"),
 
-    if (missingTables.gate_passes) {
-      console.warn(
-        "gate_passes table not available."
-      );
-    }
+    getRows("expenses"),
 
-    if (missingTables.invoices) {
-      console.warn(
-        "invoices table not available."
-      );
-    }
-  } catch (error) {
-    console.error(error);
-    toast("Unable to load garage data", "error");
-  }
+    getRows("petty_cash"),
+
+    getRows("requisitions"),
+
+    getRows("invoices"),
+
+    getRows("gate_passes"),
+
+    getRows("estimates")
+
+  ]);
+
+  vehicles = v;
+  expenses = e;
+  pettyCash = p;
+  requisitions = r;
+  invoices = i;
+  gatePasses = g;
+  estimates = q;
+
+  renderAll();
 }
 
 /* =========================================================
-   VEHICLE HELPERS
+   VEHICLE EXPENSE FUNCTIONS
    ========================================================= */
 
-function storageDays(v) {
-  if (!v?.date_in) return 0;
-
-  const start = new Date(
-    v.date_in + "T00:00:00"
-  );
-
-  const end = v.date_out
-    ? new Date(v.date_out + "T00:00:00")
-    : new Date();
-
-  return Math.max(
-    0,
-    Math.floor(
-      (end - start) / 86400000
-    )
-  );
-}
-
-function vehicleExpenseRows(id) {
+function vehicleExpenses(id) {
   return expenses.filter(
     e =>
-      String(e.vehicle_id) === String(id)
+      String(e.vehicle_id) ===
+      String(id)
   );
 }
 
 function vehicleExpenseTotal(id) {
-  return vehicleExpenseRows(id)
+  return vehicleExpenses(id)
     .reduce(
-      (sum, e) => sum + num(e.amount),
+      (sum,e) =>
+        sum + num(e.amount),
       0
     );
 }
 
-function vehicleExpenseData(id) {
-  return vehicleExpenseRows(id);
+function storageDays(v) {
+
+  if (!v?.date_in)
+    return 0;
+
+  const start =
+    new Date(
+      v.date_in +
+      "T00:00:00"
+    );
+
+  const end =
+    v.date_out
+      ? new Date(
+          v.date_out +
+          "T00:00:00"
+        )
+      : new Date();
+
+  return Math.max(
+    0,
+    Math.floor(
+      (end - start) /
+      86400000
+    )
+  );
 }
 
 /* =========================================================
@@ -483,24 +642,30 @@ function vehicleExpenseData(id) {
    ========================================================= */
 
 function filteredVehicles() {
-  const q = norm(
-    $("vehicleSearch")?.value || ""
-  );
+
+  const q =
+    norm(
+      $("vehicleSearch")?.value ||
+      ""
+    );
 
   const status =
-    $("vehicleStatusFilter")?.value || "";
+    $("vehicleStatusFilter")?.value ||
+    "";
 
   return vehicles.filter(v => {
-    const text = norm([
-      v.registration,
-      v.customer,
-      v.model,
-      v.model_year,
-      v.color,
-      v.job_type,
-      v.status,
-      v.description
-    ].join(" "));
+
+    const text =
+      norm([
+        v.registration,
+        v.customer,
+        v.model,
+        v.model_year,
+        v.color,
+        v.job_type,
+        v.status,
+        v.description
+      ].join(" "));
 
     return (
       (!q || text.includes(q)) &&
@@ -510,73 +675,101 @@ function filteredVehicles() {
 }
 
 function renderVehicles() {
-  const body = $("vehiclesTableBody");
+
+  const body =
+    $("vehiclesTableBody");
 
   if (!body) return;
 
-  const rows = filteredVehicles();
+  const rows =
+    filteredVehicles();
 
   if (!rows.length) {
+
     body.innerHTML = `
       <tr>
-        <td colspan="11"
-          style="text-align:center;padding:25px">
+        <td
+          colspan="11"
+          style="text-align:center;padding:25px"
+        >
           No vehicles found
         </td>
       </tr>
     `;
+
     return;
   }
 
-  body.innerHTML = rows.map(v => {
-    const totalExpenses =
-      vehicleExpenseTotal(v.id);
+  body.innerHTML =
+    rows.map(v => {
 
-    const outstanding =
-      num(v.billed) - num(v.paid);
+      const expenseTotal =
+        vehicleExpenseTotal(v.id);
 
-    return `
-      <tr>
-        <td>
-          <strong>${esc(v.registration)}</strong>
-        </td>
+      const outstanding =
+        num(v.billed) -
+        num(v.paid);
 
-        <td>${esc(v.customer)}</td>
+      return `
+        <tr>
 
-        <td>${esc(v.date_in || "")}</td>
+          <td>
+            <strong>
+              ${esc(v.registration)}
+            </strong>
+          </td>
 
-        <td>${esc(v.job_type || "")}</td>
+          <td>
+            ${esc(v.customer)}
+          </td>
 
-        <td>
-          <span class="${statusClass(v.status)}">
+          <td>
+            ${esc(v.date_in || "")}
+          </td>
+
+          <td>
+            ${esc(v.job_type || "")}
+          </td>
+
+          <td>
             ${esc(v.status || "")}
-          </span>
-        </td>
+          </td>
 
-        <td>${storageDays(v)}</td>
+          <td>
+            ${storageDays(v)}
+          </td>
 
-        <td>${money(v.billed)}</td>
+          <td>
+            ${money(v.billed)}
+          </td>
 
-        <td>${money(v.paid)}</td>
+          <td>
+            ${money(v.paid)}
+          </td>
 
-        <td>${money(outstanding)}</td>
+          <td>
+            ${money(outstanding)}
+          </td>
 
-        <td>
-          <strong>${money(totalExpenses)}</strong>
-        </td>
+          <td>
+            <strong>
+              ${money(expenseTotal)}
+            </strong>
+          </td>
 
-        <td>
-          ${vehicleActions(v.id)}
-        </td>
-      </tr>
-    `;
-  }).join("");
+          <td>
+            ${vehicleActions(v.id)}
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
 }
 
 function openVehicleModal(id = "") {
-  const form = $("vehicleForm");
 
-  if (form) form.reset();
+  $("vehicleForm")?.reset();
 
   if ($("vehicleId"))
     $("vehicleId").value = "";
@@ -586,10 +779,12 @@ function openVehicleModal(id = "") {
       "Add Vehicle";
 
   if ($("vehicleDateIn"))
-    $("vehicleDateIn").value = today();
+    $("vehicleDateIn").value =
+      today();
 
   if ($("vehicleJobType"))
-    $("vehicleJobType").value = "Repair";
+    $("vehicleJobType").value =
+      "Repair";
 
   if ($("vehicleStatus"))
     $("vehicleStatus").value =
@@ -604,51 +799,58 @@ function openVehicleModal(id = "") {
   if ($("vehicleStorageDays"))
     $("vehicleStorageDays").value = 0;
 
-  if (id) {
+  if (id)
     editVehicle(id);
-  } else {
+  else
     openModal("vehicleModal");
-  }
 }
 
 async function saveVehicle(event) {
+
   event?.preventDefault();
 
   const id =
-    $("vehicleId")?.value.trim() || "";
+    $("vehicleId")?.value || "";
 
   const registration =
-    $("vehicleRegistration")?.value.trim() ||
-    "";
+    $("vehicleRegistration")
+      ?.value.trim() || "";
 
   const customer =
-    $("vehicleCustomer")?.value.trim() ||
-    "";
+    $("vehicleCustomer")
+      ?.value.trim() || "";
 
   if (!registration || !customer) {
+
     toast(
-      "Registration and customer are required",
+      "Registration and customer are required.",
       "error"
     );
+
     return;
   }
 
-  const duplicate = vehicles.find(v =>
-    norm(v.registration) ===
+  const duplicate =
+    vehicles.find(v =>
+      norm(v.registration) ===
       norm(registration) &&
-    String(v.id) !== String(id)
-  );
+      String(v.id) !== String(id)
+    );
 
   if (duplicate) {
+
     toast(
-      "This vehicle registration already exists",
+      "This vehicle registration already exists.",
       "error"
     );
+
     return;
   }
 
-  const row = {
+  const record = {
+
     registration,
+
     customer,
 
     date_in:
@@ -668,44 +870,63 @@ async function saveVehicle(event) {
       "Under Repair",
 
     released_to:
-      $("vehicleReleasedTo")?.value.trim() ||
+      $("vehicleReleasedTo")
+        ?.value.trim() ||
       null,
 
     released_contact:
-      $("vehicleReleasedContact")?.value.trim() ||
+      $("vehicleReleasedContact")
+        ?.value.trim() ||
       null,
 
     billed:
-      num($("vehicleBilled")?.value),
+      num(
+        $("vehicleBilled")?.value
+      ),
 
     paid:
-      num($("vehiclePaid")?.value),
+      num(
+        $("vehiclePaid")?.value
+      ),
 
     description:
-      $("vehicleDescription")?.value.trim() ||
+      $("vehicleDescription")
+        ?.value.trim() ||
       null,
 
     model:
-      $("vehicleModel")?.value.trim() || "",
+      $("vehicleModel")
+        ?.value.trim() ||
+      "",
 
     model_year:
-      $("vehicleModelYear")?.value.trim() || "",
+      $("vehicleModelYear")
+        ?.value.trim() ||
+      "",
 
     color:
-      $("vehicleColor")?.value.trim() || ""
+      $("vehicleColor")
+        ?.value.trim() ||
+      ""
+
   };
 
   let result;
 
   if (id) {
-    result = await supabase
-      .from("vehicles")
-      .update(row)
-      .eq("id", id);
+
+    result =
+      await supabase
+        .from("vehicles")
+        .update(record)
+        .eq("id",id);
+
   } else {
-    result = await supabase
-      .from("vehicles")
-      .insert(row);
+
+    result =
+      await supabase
+        .from("vehicles")
+        .insert(record);
   }
 
   if (
@@ -714,29 +935,33 @@ async function saveVehicle(event) {
       result.error.message || ""
     )
   ) {
+
     const fallback = {
-      ...row
+      ...record
     };
 
     delete fallback.model;
     delete fallback.model_year;
     delete fallback.color;
 
-    result = id
-      ? await supabase
-          .from("vehicles")
-          .update(fallback)
-          .eq("id", id)
-      : await supabase
-          .from("vehicles")
-          .insert(fallback);
+    result =
+      id
+        ? await supabase
+            .from("vehicles")
+            .update(fallback)
+            .eq("id",id)
+        : await supabase
+            .from("vehicles")
+            .insert(fallback);
   }
 
   if (result.error) {
+
     toast(
-      errorMessage(result.error),
+      result.error.message,
       "error"
     );
+
     return;
   }
 
@@ -746,19 +971,24 @@ async function saveVehicle(event) {
 
   toast(
     id
-      ? "Vehicle updated"
-      : "Vehicle added"
+      ? "Vehicle updated."
+      : "Vehicle added."
   );
 }
 
 function editVehicle(id) {
-  const v = findVehicle(id);
+
+  const v =
+    vehicleById(id);
 
   if (!v) return;
 
-  $("vehicleId").value = v.id;
+  $("vehicleId").value =
+    v.id;
+
   $("vehicleRegistration").value =
     v.registration || "";
+
   $("vehicleCustomer").value =
     v.customer || "";
 
@@ -811,15 +1041,15 @@ function editVehicle(id) {
 }
 
 async function deleteVehicle(id) {
-  const v = findVehicle(id);
+
+  const v =
+    vehicleById(id);
 
   if (!v) return;
 
   if (
     !confirm(
-      `Delete ${v.registration}?\n\n` +
-      `Linked vehicle expenses will also be removed ` +
-      `if the database cascade is enabled.`
+      `Delete ${v.registration}?`
     )
   ) return;
 
@@ -827,222 +1057,203 @@ async function deleteVehicle(id) {
     await supabase
       .from("vehicles")
       .delete()
-      .eq("id", id);
+      .eq("id",id);
 
   if (error) {
+
     toast(
-      errorMessage(error),
+      error.message,
       "error"
     );
+
     return;
   }
 
   await loadAllData();
 
-  toast("Vehicle deleted");
+  toast("Vehicle deleted.");
 }
 
 /* =========================================================
-   VEHICLE VIEW / SHARE
+   VEHICLE VIEW
    ========================================================= */
 
-function vehicleHTML(v) {
-  const rows =
-    vehicleExpenseRows(v.id);
-
-  const total =
-    rows.reduce(
-      (a, e) => a + num(e.amount),
-      0
-    );
-
-  const outstanding =
-    num(v.billed) - num(v.paid);
-
-  return `
-    <div class="print-document">
-
-      <h2>GARAGE OPERATIONS PRO</h2>
-      <h3>Vehicle Report</h3>
-
-      <table>
-        <tr>
-          <th>Registration</th>
-          <td>${esc(v.registration)}</td>
-        </tr>
-
-        <tr>
-          <th>Customer</th>
-          <td>${esc(v.customer)}</td>
-        </tr>
-
-        <tr>
-          <th>Model</th>
-          <td>${esc(v.model || "-")}</td>
-        </tr>
-
-        <tr>
-          <th>Year</th>
-          <td>${esc(v.model_year || "-")}</td>
-        </tr>
-
-        <tr>
-          <th>Color</th>
-          <td>${esc(v.color || "-")}</td>
-        </tr>
-
-        <tr>
-          <th>Date In</th>
-          <td>${esc(v.date_in || "-")}</td>
-        </tr>
-
-        <tr>
-          <th>Date Out</th>
-          <td>${esc(v.date_out || "-")}</td>
-        </tr>
-
-        <tr>
-          <th>Storage Days</th>
-          <td>${storageDays(v)}</td>
-        </tr>
-
-        <tr>
-          <th>Job Type</th>
-          <td>${esc(v.job_type || "-")}</td>
-        </tr>
-
-        <tr>
-          <th>Status</th>
-          <td>${esc(v.status || "-")}</td>
-        </tr>
-
-        <tr>
-          <th>Billed</th>
-          <td>${money(v.billed)}</td>
-        </tr>
-
-        <tr>
-          <th>Paid</th>
-          <td>${money(v.paid)}</td>
-        </tr>
-
-        <tr>
-          <th>Outstanding</th>
-          <td>${money(outstanding)}</td>
-        </tr>
-
-        <tr>
-          <th>Total Expenses</th>
-          <td>${money(total)}</td>
-        </tr>
-
-        <tr>
-          <th>Description</th>
-          <td>${esc(v.description || "-")}</td>
-        </tr>
-      </table>
-
-    </div>
-  `;
-}
-
 function viewVehicle(id) {
-  const v = findVehicle(id);
+
+  const v =
+    vehicleById(id);
 
   if (!v) return;
 
-  if ($("previewTitle"))
-    $("previewTitle").textContent =
-      `Vehicle — ${v.registration}`;
+  const expenseTotal =
+    vehicleExpenseTotal(id);
 
-  if ($("previewContent"))
-    $("previewContent").innerHTML =
-      vehicleHTML(v);
+  showPreview(
+    `Vehicle — ${v.registration}`,
+    `
+      <div class="print-document">
 
-  openModal("previewModal");
-}
+        <h2>
+          GARAGE OPERATIONS PRO
+        </h2>
 
-async function shareText(title, text) {
-  try {
-    if (
-      navigator.share &&
-      typeof navigator.share === "function"
-    ) {
-      await navigator.share({
-        title,
-        text
-      });
-      return;
-    }
-  } catch (error) {
-    if (error?.name === "AbortError")
-      return;
-  }
+        <h3>
+          Vehicle Report
+        </h3>
 
-  try {
-    await navigator.clipboard.writeText(text);
+        <table>
 
-    toast(
-      "Report copied. You can paste it into WhatsApp."
-    );
+          <tr>
+            <th>
+              Registration / Chassis No.
+            </th>
+            <td>
+              ${esc(v.registration)}
+            </td>
+          </tr>
 
-    return;
-  } catch (error) {
-    console.warn(error);
-  }
+          <tr>
+            <th>Customer</th>
+            <td>
+              ${esc(v.customer)}
+            </td>
+          </tr>
 
-  const area =
-    document.createElement("textarea");
+          <tr>
+            <th>Model</th>
+            <td>
+              ${esc(v.model || "-")}
+            </td>
+          </tr>
 
-  area.value = text;
+          <tr>
+            <th>Year</th>
+            <td>
+              ${esc(v.model_year || "-")}
+            </td>
+          </tr>
 
-  area.style.position = "fixed";
-  area.style.left = "-9999px";
+          <tr>
+            <th>Color</th>
+            <td>
+              ${esc(v.color || "-")}
+            </td>
+          </tr>
 
-  document.body.appendChild(area);
+          <tr>
+            <th>Date In</th>
+            <td>
+              ${esc(v.date_in || "-")}
+            </td>
+          </tr>
 
-  area.select();
+          <tr>
+            <th>Date Out</th>
+            <td>
+              ${esc(v.date_out || "-")}
+            </td>
+          </tr>
 
-  try {
-    document.execCommand("copy");
-    toast("Report copied.");
-  } catch {
-    alert(text);
-  }
+          <tr>
+            <th>Storage Days</th>
+            <td>
+              ${storageDays(v)}
+            </td>
+          </tr>
 
-  area.remove();
+          <tr>
+            <th>Job Type</th>
+            <td>
+              ${esc(v.job_type || "-")}
+            </td>
+          </tr>
+
+          <tr>
+            <th>Status</th>
+            <td>
+              ${esc(v.status || "-")}
+            </td>
+          </tr>
+
+          <tr>
+            <th>Billed</th>
+            <td>
+              ${money(v.billed)}
+            </td>
+          </tr>
+
+          <tr>
+            <th>Paid</th>
+            <td>
+              ${money(v.paid)}
+            </td>
+          </tr>
+
+          <tr>
+            <th>Outstanding</th>
+            <td>
+              ${money(
+                num(v.billed) -
+                num(v.paid)
+              )}
+            </td>
+          </tr>
+
+          <tr>
+            <th>Total Expenses</th>
+            <td>
+              <strong>
+                ${money(expenseTotal)}
+              </strong>
+            </td>
+          </tr>
+
+          <tr>
+            <th>Description</th>
+            <td>
+              ${esc(
+                v.description || "-"
+              )}
+            </td>
+          </tr>
+
+        </table>
+
+      </div>
+    `
+  );
 }
 
 async function shareVehicle(id) {
-  const v = findVehicle(id);
+
+  const v =
+    vehicleById(id);
 
   if (!v) return;
 
-  const total =
-    vehicleExpenseTotal(id);
-
-  const text = [
-    "GARAGE OPERATIONS PRO",
-    "VEHICLE REPORT",
-    "",
-    `Registration: ${v.registration}`,
-    `Customer: ${v.customer}`,
-    `Model: ${v.model || "-"}`,
-    `Status: ${v.status || "-"}`,
-    `Job Type: ${v.job_type || "-"}`,
-    `Date In: ${v.date_in || "-"}`,
-    `Storage Days: ${storageDays(v)}`,
-    `Billed: ${money(v.billed)}`,
-    `Paid: ${money(v.paid)}`,
-    `Outstanding: ${money(
-      num(v.billed) - num(v.paid)
-    )}`,
-    `Total Expenses: ${money(total)}`
-  ].join("\n");
-
   await shareText(
     `Vehicle ${v.registration}`,
-    text
+    [
+      "GARAGE OPERATIONS PRO",
+      "VEHICLE REPORT",
+      "",
+      `Registration: ${v.registration}`,
+      `Customer: ${v.customer}`,
+      `Model: ${v.model || "-"}`,
+      `Status: ${v.status || "-"}`,
+      `Job Type: ${v.job_type || "-"}`,
+      `Date In: ${v.date_in || "-"}`,
+      `Storage Days: ${storageDays(v)}`,
+      `Billed: ${money(v.billed)}`,
+      `Paid: ${money(v.paid)}`,
+      `Outstanding: ${money(
+        num(v.billed) -
+        num(v.paid)
+      )}`,
+      `Total Expenses: ${money(
+        vehicleExpenseTotal(id)
+      )}`
+    ].join("\n")
   );
 }
 
@@ -1051,24 +1262,31 @@ async function shareVehicle(id) {
    ========================================================= */
 
 function vehicleExpenseHTML(id) {
-  const v = findVehicle(id);
+
+  const v =
+    vehicleById(id);
 
   if (!v)
     return "<p>Vehicle not found.</p>";
 
   const rows =
-    vehicleExpenseRows(id);
+    vehicleExpenses(id);
 
   const total =
     rows.reduce(
-      (a, e) => a + num(e.amount),
+      (sum,e) =>
+        sum + num(e.amount),
       0
     );
 
   return `
+
     <div class="print-document">
 
-      <h2>CRYSTAL MOTORS (K) LTD</h2>
+      <h2>
+        CRYSTAL MOTORS (K) LTD
+      </h2>
+
       <p>
         P.O. Box 54385 – 00200, Nairobi<br>
         Cell: 0722 707124 | 0723 914 222<br>
@@ -1078,24 +1296,32 @@ function vehicleExpenseHTML(id) {
 
       <hr>
 
-      <h2>VEHICLE EXPENSE REPORT</h2>
+      <h2>
+        VEHICLE EXPENSE REPORT
+      </h2>
 
       <p>
-        <strong>Vehicle:</strong>
+        <strong>
+          Registration:
+        </strong>
         ${esc(v.registration)}
       </p>
 
       <p>
-        <strong>Customer:</strong>
+        <strong>
+          Customer:
+        </strong>
         ${esc(v.customer)}
       </p>
 
       <table>
+
         <thead>
           <tr>
             <th>Date</th>
-            <th>Category</th>
+            <th>Vehicle</th>
             <th>Description</th>
+            <th>Category</th>
             <th>Amount</th>
           </tr>
         </thead>
@@ -1104,35 +1330,69 @@ function vehicleExpenseHTML(id) {
 
           ${
             rows.length
+
               ? rows.map(e => `
-                <tr>
-                  <td>${esc(e.expense_date || "")}</td>
-                  <td>${esc(e.category || "")}</td>
-                  <td>${esc(e.description || "")}</td>
-                  <td>${money(e.amount)}</td>
-                </tr>
-              `).join("")
+                  <tr>
+
+                    <td>
+                      ${esc(
+                        e.expense_date || ""
+                      )}
+                    </td>
+
+                    <td>
+                      ${esc(
+                        v.registration
+                      )}
+                    </td>
+
+                    <td>
+                      ${esc(
+                        e.description || ""
+                      )}
+                    </td>
+
+                    <td>
+                      ${esc(
+                        e.category || ""
+                      )}
+                    </td>
+
+                    <td>
+                      ${money(e.amount)}
+                    </td>
+
+                  </tr>
+                `).join("")
+
               : `
-                <tr>
-                  <td colspan="4">
-                    No expenses found for this vehicle.
-                  </td>
-                </tr>
-              `
+                  <tr>
+                    <td colspan="5">
+                      No expenses found.
+                    </td>
+                  </tr>
+                `
           }
+
+          <tr
+            class="garage-expense-total-row"
+          >
+
+            <td
+              colspan="4"
+              style="text-align:right"
+            >
+              TOTAL EXPENSES
+            </td>
+
+            <td>
+              ${money(total)}
+            </td>
+
+          </tr>
 
         </tbody>
 
-        <tfoot>
-          <tr>
-            <th colspan="3">
-              TOTAL
-            </th>
-            <th>
-              ${money(total)}
-            </th>
-          </tr>
-        </tfoot>
       </table>
 
     </div>
@@ -1140,15 +1400,22 @@ function vehicleExpenseHTML(id) {
 }
 
 function viewVehicleExpenses(id) {
-  const v = findVehicle(id);
+
+  const v =
+    vehicleById(id);
 
   if (!v) return;
 
-  window.currentVehicleExpenseId = id;
+  currentVehicleExpenseId =
+    id;
 
-  if ($("vehicleExpensePreviewContent")) {
-    $("vehicleExpensePreviewContent").innerHTML =
-      vehicleExpenseHTML(id);
+  if (
+    $("vehicleExpensePreviewContent")
+  ) {
+
+    $("vehicleExpensePreviewContent")
+      .innerHTML =
+        vehicleExpenseHTML(id);
   }
 
   openModal(
@@ -1157,51 +1424,74 @@ function viewVehicleExpenses(id) {
 }
 
 function printVehicleExpensePreview() {
-  const id =
-    window.currentVehicleExpenseId;
 
-  if (!id) {
-    toast("No vehicle selected.");
+  if (!currentVehicleExpenseId) {
+
+    toast(
+      "No vehicle selected.",
+      "error"
+    );
+
     return;
   }
 
+  const v =
+    vehicleById(
+      currentVehicleExpenseId
+    );
+
   printHTML(
-    `Vehicle Expense Report — ${
-      findVehicle(id)?.registration || ""
+    `Vehicle Expenses — ${
+      v?.registration || ""
     }`,
-    vehicleExpenseHTML(id)
+    vehicleExpenseHTML(
+      currentVehicleExpenseId
+    )
   );
 }
 
 async function shareVehicleExpenses(id) {
-  const v = findVehicle(id);
+
+  const v =
+    vehicleById(id);
 
   if (!v) return;
 
   const rows =
-    vehicleExpenseRows(id);
+    vehicleExpenses(id);
 
   const total =
     rows.reduce(
-      (a, e) => a + num(e.amount),
+      (a,e) =>
+        a + num(e.amount),
       0
     );
 
   const text = [
+
     "CRYSTAL MOTORS (K) LTD",
+
     "VEHICLE EXPENSE REPORT",
+
     "",
+
     `Vehicle: ${v.registration}`,
+
     `Customer: ${v.customer}`,
+
     "",
+
     ...rows.map(e =>
       `${e.expense_date || ""} | ` +
-      `${e.category || ""} | ` +
       `${e.description || ""} | ` +
+      `${e.category || ""} | ` +
       `${money(e.amount)}`
     ),
+
     "",
-    `TOTAL: ${money(total)}`
+
+    `TOTAL EXPENSES: ${money(total)}`
+
   ].join("\n");
 
   await shareText(
@@ -1217,80 +1507,344 @@ async function shareVehicleExpenses(id) {
 function fillExpenseVehicleSelect(
   selected = ""
 ) {
-  const el = $("expenseVehicle");
+
+  const el =
+    $("expenseVehicle");
 
   if (!el) return;
 
   el.innerHTML = `
+
     <option value="">
       Select vehicle
     </option>
 
-    ${vehicles.map(v => `
-      <option
-        value="${esc(v.id)}"
-        ${String(v.id) === String(selected)
-          ? "selected"
-          : ""}
-      >
-        ${esc(vehicleName(v))}
-      </option>
-    `).join("")}
+    ${
+      vehicles.map(v => `
+        <option
+          value="${esc(v.id)}"
+          ${
+            String(v.id) ===
+            String(selected)
+              ? "selected"
+              : ""
+          }
+        >
+          ${esc(
+            v.registration +
+            (
+              v.customer
+                ? " — " +
+                  v.customer
+                : ""
+            )
+          )}
+        </option>
+      `).join("")
+    }
+
   `;
 }
 
+/*
+  ==========================================================
+  IMPORTANT EXPENSE FILTER
+  ==========================================================
+
+  If search exactly matches a vehicle registration,
+  filter by vehicle_id.
+
+  This prevents:
+
+  KBZ 272B
+  from displaying expenses belonging to
+  KBN 084E, KCA 123A, etc.
+*/
+
 function filteredExpenses() {
-  const q =
-    ($("expenseSearch")?.value || "")
-      .trim();
 
-  const cat =
-    $("expenseCategoryFilter")?.value ||
-    "";
+  const search =
+    (
+      $("expenseSearch")?.value ||
+      ""
+    ).trim();
 
-  /*
-    EXACT VEHICLE SEARCH:
-    If the search is a vehicle registration,
-    use vehicle_id only.
-  */
+  const category =
+    $("expenseCategoryFilter")
+      ?.value || "";
 
-  if (q) {
-    const v = vehicles.find(x =>
-      norm(x.registration) === norm(q)
-    );
+  if (search) {
 
-    if (v) {
+    const exactVehicle =
+      vehicles.find(
+        v =>
+          norm(v.registration) ===
+          norm(search)
+      );
+
+    if (exactVehicle) {
+
       return expenses.filter(e =>
+
         String(e.vehicle_id) ===
-        String(v.id)
+        String(exactVehicle.id)
+
       ).filter(e =>
-        !cat || e.category === cat
+
+        !category ||
+        e.category === category
+
       );
     }
   }
 
-  const nq = norm(q);
+  const q =
+    norm(search);
 
   return expenses.filter(e => {
+
     const v =
       vehicleById(e.vehicle_id);
 
-    const text = norm([
-      e.description,
-      e.category,
-      e.expense_date,
-      v?.registration,
-      v?.customer
-    ].join(" "));
+    const text =
+      norm([
+        e.description,
+        e.category,
+        e.expense_date,
+        v?.registration,
+        v?.customer
+      ].join(" "));
 
     return (
-      (!nq || text.includes(nq)) &&
-      (!cat || e.category === cat)
+      (!q ||
+        text.includes(q)) &&
+      (
+        !category ||
+        e.category === category
+      )
     );
   });
 }
 
+/*
+  ----------------------------------------------------------
+  EXPENSE TOTAL DISPLAY
+  ----------------------------------------------------------
+*/
+
+function renderExpenseSummary(rows) {
+
+  const total =
+    rows.reduce(
+      (sum,e) =>
+        sum + num(e.amount),
+      0
+    );
+
+  const uniqueVehicles =
+    new Set(
+      rows
+        .map(e => e.vehicle_id)
+        .filter(Boolean)
+    ).size;
+
+  const search =
+    (
+      $("expenseSearch")?.value ||
+      ""
+    ).trim();
+
+  let title =
+    "TOTAL EXPENSES";
+
+  let subtitle =
+    `${rows.length} expense record${
+      rows.length === 1
+        ? ""
+        : "s"
+    }`;
+
+  /*
+    If exact vehicle is searched,
+    make the total vehicle-specific.
+  */
+
+  const vehicle =
+    vehicles.find(
+      v =>
+        norm(v.registration) ===
+        norm(search)
+    );
+
+  if (vehicle) {
+
+    title =
+      `TOTAL EXPENSES — ${
+        vehicle.registration
+      }`;
+
+    subtitle =
+      `${rows.length} expense record${
+        rows.length === 1
+          ? ""
+          : "s"
+      } for this vehicle`;
+  }
+
+  /*
+    Inject summary directly above
+    the expense table.
+
+    It is removed/rebuilt safely
+    on every render.
+  */
+
+  const tableBody =
+    $("expensesTableBody");
+
+  if (!tableBody)
+    return;
+
+  const table =
+    tableBody.closest(
+      "table"
+    );
+
+  if (!table)
+    return;
+
+  const container =
+    table.parentElement;
+
+  if (!container)
+    return;
+
+  let summary =
+    $("garageExpenseSummary");
+
+  if (!summary) {
+
+    summary =
+      document.createElement(
+        "div"
+      );
+
+    summary.id =
+      "garageExpenseSummary";
+
+    summary.className =
+      "garage-expense-summary";
+
+    container.parentElement
+      ?.insertBefore(
+        summary,
+        container
+      );
+  }
+
+  summary.innerHTML = `
+
+    <div
+      class="
+        garage-expense-summary-card
+        garage-expense-total
+      "
+    >
+
+      <div
+        class="
+          garage-expense-summary-label
+        "
+      >
+        ${esc(title)}
+      </div>
+
+      <div
+        class="
+          garage-expense-summary-value
+        "
+      >
+        ${money(total)}
+      </div>
+
+      <div
+        class="
+          garage-expense-summary-sub
+        "
+      >
+        ${esc(subtitle)}
+      </div>
+
+    </div>
+
+    <div
+      class="
+        garage-expense-summary-card
+      "
+    >
+
+      <div
+        class="
+          garage-expense-summary-label
+        "
+      >
+        RECORDS
+      </div>
+
+      <div
+        class="
+          garage-expense-summary-value
+        "
+      >
+        ${rows.length}
+      </div>
+
+      <div
+        class="
+          garage-expense-summary-sub
+        "
+      >
+        Expense entries
+      </div>
+
+    </div>
+
+    <div
+      class="
+        garage-expense-summary-card
+      "
+    >
+
+      <div
+        class="
+          garage-expense-summary-label
+        "
+      >
+        VEHICLES
+      </div>
+
+      <div
+        class="
+          garage-expense-summary-value
+        "
+      >
+        ${uniqueVehicles}
+      </div>
+
+      <div
+        class="
+          garage-expense-summary-sub
+        "
+      >
+        Vehicles represented
+      </div>
+
+    </div>
+  `;
+}
+
 function renderExpenses() {
+
   const body =
     $("expensesTableBody");
 
@@ -1299,63 +1853,138 @@ function renderExpenses() {
   const rows =
     filteredExpenses();
 
+  /*
+    Update TOTAL EXPENSES
+    every time the table renders.
+  */
+
+  renderExpenseSummary(rows);
+
+  const total =
+    rows.reduce(
+      (sum,e) =>
+        sum + num(e.amount),
+      0
+    );
+
   if (!rows.length) {
+
     body.innerHTML = `
+
       <tr>
-        <td colspan="7"
-          style="text-align:center;padding:25px">
+
+        <td
+          colspan="6"
+          style="
+            text-align:center;
+            padding:28px;
+          "
+        >
           No expenses found
         </td>
+
       </tr>
+
     `;
+
     return;
   }
 
-  body.innerHTML = rows.map(e => {
-    const v =
-      vehicleById(e.vehicle_id);
+  body.innerHTML =
+    rows.map(e => {
 
-    return `
-      <tr>
-        <td>
-          ${esc(e.expense_date || "")}
+      const v =
+        vehicleById(e.vehicle_id);
+
+      /*
+        Display Labour consistently.
+      */
+
+      let category =
+        e.category || "";
+
+      if (
+        category.toLowerCase() ===
+        "labor"
+      ) {
+        category = "Labour";
+      }
+
+      return `
+
+        <tr>
+
+          <td>
+            ${esc(
+              e.expense_date || ""
+            )}
+          </td>
+
+          <td>
+            <strong>
+              ${esc(
+                v?.registration || "—"
+              )}
+            </strong>
+          </td>
+
+          <td>
+            ${esc(
+              e.description || ""
+            )}
+          </td>
+
+          <td>
+            ${esc(category)}
+          </td>
+
+          <td>
+            <strong>
+              ${money(e.amount)}
+            </strong>
+          </td>
+
+          <td>
+            ${normalActions(
+              e.id,
+              "editExpense",
+              "viewExpense",
+              "shareExpense",
+              "deleteExpense"
+            )}
+          </td>
+
+        </tr>
+      `;
+
+    }).join("") +
+
+    `
+
+      <tr
+        class="garage-expense-total-row"
+      >
+
+        <td
+          colspan="4"
+          style="text-align:right"
+        >
+          TOTAL EXPENSES
         </td>
 
         <td>
-          ${esc(v?.registration || "—")}
+          ${money(total)}
         </td>
 
-        <td>
-          ${esc(e.category || "")}
-        </td>
+        <td></td>
 
-        <td>
-          ${esc(e.description || "")}
-        </td>
-
-        <td>
-          ${money(e.amount)}
-        </td>
-
-        <td>
-          ${esc(v?.customer || "")}
-        </td>
-
-        <td>
-          ${standardActions(
-            e.id,
-            "editExpense",
-            "viewExpense",
-            "shareExpense",
-            "deleteExpense"
-          )}
-        </td>
       </tr>
+
     `;
-  }).join("");
 }
 
 function openExpenseModal(id = "") {
+
   $("expenseForm")?.reset();
 
   if ($("expenseId"))
@@ -1366,7 +1995,8 @@ function openExpenseModal(id = "") {
       "Add Expense";
 
   if ($("expenseDate"))
-    $("expenseDate").value = today();
+    $("expenseDate").value =
+      today();
 
   fillExpenseVehicleSelect();
 
@@ -1377,6 +2007,7 @@ function openExpenseModal(id = "") {
 }
 
 async function saveExpense(event) {
+
   event?.preventDefault();
 
   const id =
@@ -1386,15 +2017,19 @@ async function saveExpense(event) {
     $("expenseVehicle")?.value || "";
 
   if (!vehicleId) {
+
     toast(
       "Please select a vehicle.",
       "error"
     );
+
     return;
   }
 
   const record = {
-    vehicle_id: vehicleId,
+
+    vehicle_id:
+      vehicleId,
 
     expense_date:
       $("expenseDate")?.value ||
@@ -1405,35 +2040,46 @@ async function saveExpense(event) {
       "Parts",
 
     amount:
-      num($("expenseAmount")?.value),
+      num(
+        $("expenseAmount")?.value
+      ),
 
     description:
-      $("expenseDescription")?.value.trim() ||
+      $("expenseDescription")
+        ?.value.trim() ||
       ""
+
   };
 
   if (!record.description) {
+
     toast(
       "Expense description is required.",
       "error"
     );
+
     return;
   }
 
-  const result = id
-    ? await supabase
-        .from("expenses")
-        .update(record)
-        .eq("id", id)
-    : await supabase
-        .from("expenses")
-        .insert(record);
+  const result =
+    id
+
+      ? await supabase
+          .from("expenses")
+          .update(record)
+          .eq("id",id)
+
+      : await supabase
+          .from("expenses")
+          .insert(record);
 
   if (result.error) {
+
     toast(
-      errorMessage(result.error),
+      result.error.message,
       "error"
     );
+
     return;
   }
 
@@ -1443,20 +2089,24 @@ async function saveExpense(event) {
 
   toast(
     id
-      ? "Expense updated"
-      : "Expense added"
+      ? "Expense updated."
+      : "Expense added."
   );
 }
 
 function editExpense(id) {
+
   const e =
     expenses.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!e) return;
 
-  $("expenseId").value = e.id;
+  $("expenseId").value =
+    e.id;
 
   fillExpenseVehicleSelect(
     e.vehicle_id
@@ -1481,32 +2131,41 @@ function editExpense(id) {
 }
 
 async function deleteExpense(id) {
-  if (!confirm("Delete this expense?"))
-    return;
+
+  if (
+    !confirm(
+      "Delete this expense?"
+    )
+  ) return;
 
   const { error } =
     await supabase
       .from("expenses")
       .delete()
-      .eq("id", id);
+      .eq("id",id);
 
   if (error) {
+
     toast(
-      errorMessage(error),
+      error.message,
       "error"
     );
+
     return;
   }
 
   await loadAllData();
 
-  toast("Expense deleted");
+  toast("Expense deleted.");
 }
 
 function viewExpense(id) {
+
   const e =
     expenses.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!e) return;
@@ -1515,28 +2174,38 @@ function viewExpense(id) {
     vehicleById(e.vehicle_id);
 
   showPreview(
-    "Expense",
+    "Vehicle Expense",
     `
-      <h2>Vehicle Expense</h2>
+      <h2>
+        Vehicle Expense
+      </h2>
 
       <p>
         <strong>Vehicle:</strong>
-        ${esc(v?.registration || "")}
+        ${esc(
+          v?.registration || ""
+        )}
       </p>
 
       <p>
         <strong>Date:</strong>
-        ${esc(e.expense_date || "")}
-      </p>
-
-      <p>
-        <strong>Category:</strong>
-        ${esc(e.category || "")}
+        ${esc(
+          e.expense_date || ""
+        )}
       </p>
 
       <p>
         <strong>Description:</strong>
-        ${esc(e.description || "")}
+        ${esc(
+          e.description || ""
+        )}
+      </p>
+
+      <p>
+        <strong>Category:</strong>
+        ${esc(
+          e.category || ""
+        )}
       </p>
 
       <p>
@@ -1548,9 +2217,12 @@ function viewExpense(id) {
 }
 
 async function shareExpense(id) {
+
   const e =
     expenses.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!e) return;
@@ -1566,8 +2238,8 @@ async function shareExpense(id) {
       "",
       `Vehicle: ${v?.registration || ""}`,
       `Date: ${e.expense_date || ""}`,
-      `Category: ${e.category || ""}`,
       `Description: ${e.description || ""}`,
+      `Category: ${e.category || ""}`,
       `Amount: ${money(e.amount)}`
     ].join("\n")
   );
@@ -1578,43 +2250,75 @@ async function shareExpense(id) {
    ========================================================= */
 
 function renderPettyCash() {
-  const body = $("pettyTableBody");
+
+  const body =
+    $("pettyTableBody");
 
   if (!body) return;
 
   const q =
-    norm($("pettySearch")?.value || "");
+    norm(
+      $("pettySearch")?.value ||
+      ""
+    );
 
-  const cat =
+  const category =
     $("pettyCategoryFilter")?.value ||
     "";
 
-  const rows = pettyCash.filter(p => {
-    const text = norm([
-      p.description,
-      p.paid_to,
-      p.category,
-      p.notes,
-      p.cash_date
-    ].join(" "));
+  const rows =
+    pettyCash.filter(p => {
 
-    return (
-      (!q || text.includes(q)) &&
-      (!cat || p.category === cat)
-    );
-  });
+      const text =
+        norm([
+          p.description,
+          p.paid_to,
+          p.category,
+          p.notes,
+          p.cash_date
+        ].join(" "));
+
+      return (
+        (!q ||
+          text.includes(q)) &&
+        (
+          !category ||
+          p.category === category
+        )
+      );
+    });
 
   body.innerHTML =
     rows.map(p => `
+
       <tr>
-        <td>${esc(p.cash_date || "")}</td>
-        <td>${esc(p.paid_to || "")}</td>
-        <td>${esc(p.category || "")}</td>
-        <td>${esc(p.description || "")}</td>
-        <td>${money(p.amount)}</td>
-        <td>${esc(p.notes || "")}</td>
+
         <td>
-          ${standardActions(
+          ${esc(p.cash_date || "")}
+        </td>
+
+        <td>
+          ${esc(p.paid_to || "")}
+        </td>
+
+        <td>
+          ${esc(p.category || "")}
+        </td>
+
+        <td>
+          ${esc(p.description || "")}
+        </td>
+
+        <td>
+          ${money(p.amount)}
+        </td>
+
+        <td>
+          ${esc(p.notes || "")}
+        </td>
+
+        <td>
+          ${normalActions(
             p.id,
             "editPetty",
             "viewPetty",
@@ -1622,12 +2326,17 @@ function renderPettyCash() {
             "deletePetty"
           )}
         </td>
+
       </tr>
+
     `).join("") ||
+
     `
       <tr>
-        <td colspan="7"
-          style="text-align:center;padding:25px">
+        <td
+          colspan="7"
+          style="text-align:center;padding:25px"
+        >
           No petty cash records found
         </td>
       </tr>
@@ -1635,6 +2344,7 @@ function renderPettyCash() {
 }
 
 function openPettyModal(id = "") {
+
   $("pettyForm")?.reset();
 
   if ($("pettyId"))
@@ -1645,7 +2355,8 @@ function openPettyModal(id = "") {
       "Add Petty Cash";
 
   if ($("pettyDate"))
-    $("pettyDate").value = today();
+    $("pettyDate").value =
+      today();
 
   if (id)
     editPetty(id);
@@ -1654,50 +2365,64 @@ function openPettyModal(id = "") {
 }
 
 async function savePetty(event) {
+
   event?.preventDefault();
 
   const id =
     $("pettyId")?.value || "";
 
   const record = {
+
     cash_date:
       $("pettyDate")?.value ||
       today(),
 
     paid_to:
-      $("pettyPaidTo")?.value.trim() ||
+      $("pettyPaidTo")
+        ?.value.trim() ||
       null,
 
     category:
-      $("pettyCategory")?.value ||
+      $("pettyCategory")
+        ?.value ||
       null,
 
     amount:
-      num($("pettyAmount")?.value),
+      num(
+        $("pettyAmount")?.value
+      ),
 
     description:
-      $("pettyDescription")?.value.trim() ||
+      $("pettyDescription")
+        ?.value.trim() ||
       "",
 
     notes:
-      $("pettyNotes")?.value.trim() ||
+      $("pettyNotes")
+        ?.value.trim() ||
       null
+
   };
 
-  const result = id
-    ? await supabase
-        .from("petty_cash")
-        .update(record)
-        .eq("id", id)
-    : await supabase
-        .from("petty_cash")
-        .insert(record);
+  const result =
+    id
+
+      ? await supabase
+          .from("petty_cash")
+          .update(record)
+          .eq("id",id)
+
+      : await supabase
+          .from("petty_cash")
+          .insert(record);
 
   if (result.error) {
+
     toast(
-      errorMessage(result.error),
+      result.error.message,
       "error"
     );
+
     return;
   }
 
@@ -1707,30 +2432,40 @@ async function savePetty(event) {
 
   toast(
     id
-      ? "Petty cash updated"
-      : "Petty cash added"
+      ? "Petty cash updated."
+      : "Petty cash added."
   );
 }
 
 function editPetty(id) {
+
   const p =
     pettyCash.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!p) return;
 
-  $("pettyId").value = p.id;
+  $("pettyId").value =
+    p.id;
+
   $("pettyDate").value =
     p.cash_date || "";
+
   $("pettyPaidTo").value =
     p.paid_to || "";
+
   $("pettyCategory").value =
     p.category || "";
+
   $("pettyAmount").value =
     num(p.amount);
+
   $("pettyDescription").value =
     p.description || "";
+
   $("pettyNotes").value =
     p.notes || "";
 
@@ -1741,32 +2476,41 @@ function editPetty(id) {
 }
 
 async function deletePetty(id) {
-  if (!confirm("Delete this petty cash record?"))
-    return;
+
+  if (
+    !confirm(
+      "Delete this petty cash record?"
+    )
+  ) return;
 
   const { error } =
     await supabase
       .from("petty_cash")
       .delete()
-      .eq("id", id);
+      .eq("id",id);
 
   if (error) {
+
     toast(
-      errorMessage(error),
+      error.message,
       "error"
     );
+
     return;
   }
 
   await loadAllData();
 
-  toast("Petty cash deleted");
+  toast("Petty cash deleted.");
 }
 
 function viewPetty(id) {
+
   const p =
     pettyCash.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!p) return;
@@ -1778,7 +2522,7 @@ function viewPetty(id) {
 
       <p>
         <strong>Date:</strong>
-        ${esc(p.cash_date)}
+        ${esc(p.cash_date || "")}
       </p>
 
       <p>
@@ -1810,9 +2554,12 @@ function viewPetty(id) {
 }
 
 async function sharePetty(id) {
+
   const p =
     pettyCash.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!p) return;
@@ -1834,67 +2581,123 @@ async function sharePetty(id) {
 }
 
 /* =========================================================
-   REQUISITIONS
+   VEHICLE SELECT
    ========================================================= */
 
-function fillVehicleSelect(id, selected = "") {
+function fillVehicleSelect(
+  id,
+  selected = ""
+) {
+
   const el = $(id);
 
   if (!el) return;
 
   el.innerHTML = `
+
     <option value="">
       Select vehicle
     </option>
 
-    ${vehicles.map(v => `
-      <option
-        value="${esc(v.id)}"
-        ${String(v.id) === String(selected)
-          ? "selected"
-          : ""}
-      >
-        ${esc(vehicleName(v))}
-      </option>
-    `).join("")}
+    ${
+      vehicles.map(v => `
+        <option
+          value="${esc(v.id)}"
+          ${
+            String(v.id) ===
+            String(selected)
+              ? "selected"
+              : ""
+          }
+        >
+          ${esc(
+            v.registration +
+            (
+              v.customer
+                ? " — " +
+                  v.customer
+                : ""
+            )
+          )}
+        </option>
+      `).join("")
+    }
+
   `;
 }
 
+/* =========================================================
+   REQUISITIONS
+   ========================================================= */
+
+function calculateReqTotal() {
+
+  const quantity =
+    num(
+      $("reqQuantity")?.value
+    );
+
+  const unit =
+    num(
+      $("reqUnitCost")?.value
+    );
+
+  const total =
+    quantity * unit;
+
+  if ($("reqTotal"))
+    $("reqTotal").value =
+      total.toFixed(2);
+
+  return total;
+}
+
 function renderRequisitions() {
+
   const body =
     $("requisitionsTableBody");
 
   if (!body) return;
 
   const q =
-    norm($("reqSearch")?.value || "");
+    norm(
+      $("reqSearch")?.value ||
+      ""
+    );
 
   const status =
-    $("reqStatusFilter")?.value || "";
+    $("reqStatusFilter")?.value ||
+    "";
 
   const rows =
     requisitions.filter(r => {
+
       const v =
         vehicleById(r.vehicle_id);
 
-      const text = norm([
-        r.req_no,
-        r.requested_by,
-        r.item_description,
-        r.expense_type,
-        r.notes,
-        v?.registration
-      ].join(" "));
+      const text =
+        norm([
+          r.req_no,
+          r.requested_by,
+          r.item_description,
+          r.expense_type,
+          r.notes,
+          v?.registration
+        ].join(" "));
 
       return (
-        (!q || text.includes(q)) &&
-        (!status || r.status === status)
+        (!q ||
+          text.includes(q)) &&
+        (
+          !status ||
+          r.status === status
+        )
       );
     });
 
   const total =
     rows.reduce(
-      (a, r) =>
+      (a,r) =>
         a + num(r.total_amount),
       0
     );
@@ -1905,22 +2708,54 @@ function renderRequisitions() {
 
   body.innerHTML =
     rows.map(r => {
+
       const v =
         vehicleById(r.vehicle_id);
 
       return `
+
         <tr>
-          <td>${esc(r.req_no)}</td>
-          <td>${esc(r.req_date || "")}</td>
-          <td>${esc(r.requested_by || "")}</td>
-          <td>${esc(v?.registration || "")}</td>
-          <td>${esc(r.item_description || "")}</td>
-          <td>${num(r.quantity)}</td>
-          <td>${money(r.unit_cost)}</td>
-          <td>${money(r.total_amount)}</td>
-          <td>${esc(r.status || "")}</td>
+
           <td>
-            ${standardActions(
+            ${esc(r.req_no)}
+          </td>
+
+          <td>
+            ${esc(r.req_date || "")}
+          </td>
+
+          <td>
+            ${esc(r.requested_by || "")}
+          </td>
+
+          <td>
+            ${esc(v?.registration || "")}
+          </td>
+
+          <td>
+            ${esc(
+              r.item_description || ""
+            )}
+          </td>
+
+          <td>
+            ${num(r.quantity)}
+          </td>
+
+          <td>
+            ${money(r.unit_cost)}
+          </td>
+
+          <td>
+            ${money(r.total_amount)}
+          </td>
+
+          <td>
+            ${esc(r.status || "")}
+          </td>
+
+          <td>
+            ${normalActions(
               r.id,
               "editReq",
               "viewReq",
@@ -1928,36 +2763,26 @@ function renderRequisitions() {
               "deleteReq"
             )}
           </td>
+
         </tr>
+
       `;
     }).join("") ||
+
     `
       <tr>
-        <td colspan="10"
-          style="text-align:center;padding:25px">
+        <td
+          colspan="10"
+          style="text-align:center;padding:25px"
+        >
           No requisitions found
         </td>
       </tr>
     `;
 }
 
-function calculateReqTotal() {
-  const q =
-    num($("reqQuantity")?.value);
-
-  const unit =
-    num($("reqUnitCost")?.value);
-
-  const total = q * unit;
-
-  if ($("reqTotal"))
-    $("reqTotal").value =
-      total.toFixed(2);
-
-  return total;
-}
-
 function openReqModal(id = "") {
+
   $("reqForm")?.reset();
 
   if ($("reqId"))
@@ -1968,9 +2793,12 @@ function openReqModal(id = "") {
       "Add Requisition";
 
   if ($("reqDate"))
-    $("reqDate").value = today();
+    $("reqDate").value =
+      today();
 
-  fillVehicleSelect("reqVehicle");
+  fillVehicleSelect(
+    "reqVehicle"
+  );
 
   calculateReqTotal();
 
@@ -1981,39 +2809,51 @@ function openReqModal(id = "") {
 }
 
 async function saveReq(event) {
+
   event?.preventDefault();
 
   const id =
     $("reqId")?.value || "";
 
   const quantity =
-    num($("reqQuantity")?.value);
+    num(
+      $("reqQuantity")?.value
+    );
 
   const unitCost =
-    num($("reqUnitCost")?.value);
+    num(
+      $("reqUnitCost")?.value
+    );
 
   const record = {
+
     req_no:
-      $("reqNo")?.value.trim() || "",
+      $("reqNo")
+        ?.value.trim() ||
+      "",
 
     req_date:
       $("reqDate")?.value ||
       today(),
 
     requested_by:
-      $("reqRequestedBy")?.value.trim() ||
+      $("reqRequestedBy")
+        ?.value.trim() ||
       "",
 
     vehicle_id:
-      $("reqVehicle")?.value || null,
+      $("reqVehicle")?.value ||
+      null,
 
     item_description:
-      $("reqItemDescription")?.value.trim() ||
+      $("reqItemDescription")
+        ?.value.trim() ||
       "",
 
     quantity,
 
-    unit_cost: unitCost,
+    unit_cost:
+      unitCost,
 
     total_amount:
       quantity * unitCost,
@@ -2028,32 +2868,41 @@ async function saveReq(event) {
       "Materials",
 
     notes:
-      $("reqNotes")?.value.trim() ||
+      $("reqNotes")
+        ?.value.trim() ||
       null
+
   };
 
   if (!record.req_no) {
+
     toast(
       "Requisition number is required.",
       "error"
     );
+
     return;
   }
 
-  const result = id
-    ? await supabase
-        .from("requisitions")
-        .update(record)
-        .eq("id", id)
-    : await supabase
-        .from("requisitions")
-        .insert(record);
+  const result =
+    id
+
+      ? await supabase
+          .from("requisitions")
+          .update(record)
+          .eq("id",id)
+
+      : await supabase
+          .from("requisitions")
+          .insert(record);
 
   if (result.error) {
+
     toast(
-      errorMessage(result.error),
+      result.error.message,
       "error"
     );
+
     return;
   }
 
@@ -2063,23 +2912,31 @@ async function saveReq(event) {
 
   toast(
     id
-      ? "Requisition updated"
-      : "Requisition added"
+      ? "Requisition updated."
+      : "Requisition added."
   );
 }
 
 function editReq(id) {
+
   const r =
     requisitions.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!r) return;
 
-  $("reqId").value = r.id;
-  $("reqNo").value = r.req_no || "";
+  $("reqId").value =
+    r.id;
+
+  $("reqNo").value =
+    r.req_no || "";
+
   $("reqDate").value =
     r.req_date || "";
+
   $("reqRequestedBy").value =
     r.requested_by || "";
 
@@ -2098,18 +2955,21 @@ function editReq(id) {
     num(r.unit_cost);
 
   $("reqTotal").value =
-    num(r.total_amount).toFixed(2);
+    num(r.total_amount)
+      .toFixed(2);
 
   $("reqStatus").value =
     r.status || "Pending";
 
   if ($("reqExpenseType"))
     $("reqExpenseType").value =
-      r.expense_type || "Materials";
+      r.expense_type ||
+      "Materials";
 
   if ($("reqCategory"))
     $("reqCategory").value =
-      r.expense_type || "Materials";
+      r.expense_type ||
+      "Materials";
 
   $("reqNotes").value =
     r.notes || "";
@@ -2121,32 +2981,41 @@ function editReq(id) {
 }
 
 async function deleteReq(id) {
-  if (!confirm("Delete this requisition?"))
-    return;
+
+  if (
+    !confirm(
+      "Delete this requisition?"
+    )
+  ) return;
 
   const { error } =
     await supabase
       .from("requisitions")
       .delete()
-      .eq("id", id);
+      .eq("id",id);
 
   if (error) {
+
     toast(
-      errorMessage(error),
+      error.message,
       "error"
     );
+
     return;
   }
 
   await loadAllData();
 
-  toast("Requisition deleted");
+  toast("Requisition deleted.");
 }
 
 function viewReq(id) {
+
   const r =
     requisitions.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!r) return;
@@ -2160,33 +3029,34 @@ function viewReq(id) {
       <h2>REQUISITION</h2>
 
       <p>
-        <strong>Request No:</strong>
+        <strong>No:</strong>
         ${esc(r.req_no)}
       </p>
 
       <p>
         <strong>Date:</strong>
-        ${esc(r.req_date)}
+        ${esc(r.req_date || "")}
       </p>
 
       <p>
         <strong>Requested By:</strong>
-        ${esc(r.requested_by)}
+        ${esc(
+          r.requested_by || ""
+        )}
       </p>
 
       <p>
         <strong>Vehicle:</strong>
-        ${esc(v?.registration || "")}
+        ${esc(
+          v?.registration || ""
+        )}
       </p>
 
       <p>
         <strong>Item:</strong>
-        ${esc(r.item_description)}
-      </p>
-
-      <p>
-        <strong>Quantity:</strong>
-        ${num(r.quantity)}
+        ${esc(
+          r.item_description || ""
+        )}
       </p>
 
       <p>
@@ -2196,7 +3066,7 @@ function viewReq(id) {
 
       <p>
         <strong>Status:</strong>
-        ${esc(r.status)}
+        ${esc(r.status || "")}
       </p>
 
       <p>
@@ -2208,9 +3078,12 @@ function viewReq(id) {
 }
 
 async function shareReq(id) {
+
   const r =
     requisitions.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!r) return;
@@ -2241,23 +3114,35 @@ async function shareReq(id) {
    ========================================================= */
 
 function calculateInvoice() {
+
   const labour =
-    num($("invoiceLabour")?.value);
+    num(
+      $("invoiceLabour")?.value
+    );
 
   const parts =
-    num($("invoiceParts")?.value);
+    num(
+      $("invoiceParts")?.value
+    );
 
   const other =
-    num($("invoiceOther")?.value);
+    num(
+      $("invoiceOther")?.value
+    );
 
   const subtotal =
-    labour + parts + other;
+    labour +
+    parts +
+    other;
 
   const paid =
-    num($("invoicePaid")?.value);
+    num(
+      $("invoicePaid")?.value
+    );
 
   const balance =
-    subtotal - paid;
+    subtotal -
+    paid;
 
   if ($("invoiceSubtotal"))
     $("invoiceSubtotal").value =
@@ -2274,13 +3159,17 @@ function calculateInvoice() {
 }
 
 function renderInvoices() {
+
   const body =
     $("invoicesTableBody");
 
   if (!body) return;
 
   const q =
-    norm($("invoiceSearch")?.value || "");
+    norm(
+      $("invoiceSearch")?.value ||
+      ""
+    );
 
   const status =
     $("invoiceStatusFilter")?.value ||
@@ -2288,40 +3177,77 @@ function renderInvoices() {
 
   const rows =
     invoices.filter(i => {
+
       const v =
         vehicleById(i.vehicle_id);
 
-      const text = norm([
-        i.invoice_no,
-        i.customer,
-        i.job_description,
-        i.status,
-        v?.registration
-      ].join(" "));
+      const text =
+        norm([
+          i.invoice_no,
+          i.customer,
+          i.job_description,
+          i.status,
+          v?.registration
+        ].join(" "));
 
       return (
-        (!q || text.includes(q)) &&
-        (!status || i.status === status)
+        (!q ||
+          text.includes(q)) &&
+        (
+          !status ||
+          i.status === status
+        )
       );
     });
 
   body.innerHTML =
     rows.map(i => {
+
       const v =
         vehicleById(i.vehicle_id);
 
       return `
+
         <tr>
-          <td>${esc(i.invoice_no)}</td>
-          <td>${esc(i.invoice_date || "")}</td>
-          <td>${esc(v?.registration || "")}</td>
-          <td>${esc(i.customer || "")}</td>
-          <td>${money(i.subtotal)}</td>
-          <td>${money(i.paid)}</td>
-          <td>${money(i.balance)}</td>
-          <td>${esc(i.status || "")}</td>
+
           <td>
-            ${standardActions(
+            ${esc(i.invoice_no)}
+          </td>
+
+          <td>
+            ${esc(
+              i.invoice_date || ""
+            )}
+          </td>
+
+          <td>
+            ${esc(
+              v?.registration || ""
+            )}
+          </td>
+
+          <td>
+            ${esc(i.customer || "")}
+          </td>
+
+          <td>
+            ${money(i.subtotal)}
+          </td>
+
+          <td>
+            ${money(i.paid)}
+          </td>
+
+          <td>
+            ${money(i.balance)}
+          </td>
+
+          <td>
+            ${esc(i.status || "")}
+          </td>
+
+          <td>
+            ${normalActions(
               i.id,
               "editInvoice",
               "viewInvoice",
@@ -2329,13 +3255,19 @@ function renderInvoices() {
               "deleteInvoice"
             )}
           </td>
+
         </tr>
+
       `;
+
     }).join("") ||
+
     `
       <tr>
-        <td colspan="9"
-          style="text-align:center;padding:25px">
+        <td
+          colspan="9"
+          style="text-align:center;padding:25px"
+        >
           No invoices found
         </td>
       </tr>
@@ -2343,6 +3275,7 @@ function renderInvoices() {
 }
 
 function openInvoiceModal(id = "") {
+
   $("invoiceForm")?.reset();
 
   if ($("invoiceId"))
@@ -2353,7 +3286,8 @@ function openInvoiceModal(id = "") {
       "Add Invoice";
 
   if ($("invoiceDate"))
-    $("invoiceDate").value = today();
+    $("invoiceDate").value =
+      today();
 
   fillVehicleSelect(
     "invoiceVehicle"
@@ -2368,6 +3302,7 @@ function openInvoiceModal(id = "") {
 }
 
 async function saveInvoice(event) {
+
   event?.preventDefault();
 
   const id =
@@ -2377,8 +3312,11 @@ async function saveInvoice(event) {
     calculateInvoice();
 
   const record = {
+
     invoice_no:
-      $("invoiceNo")?.value.trim() || "",
+      $("invoiceNo")
+        ?.value.trim() ||
+      "",
 
     invoice_date:
       $("invoiceDate")?.value ||
@@ -2389,27 +3327,37 @@ async function saveInvoice(event) {
       null,
 
     customer:
-      $("invoiceCustomer")?.value.trim() ||
+      $("invoiceCustomer")
+        ?.value.trim() ||
       null,
 
     job_description:
-      $("invoiceJobDescription")?.value.trim() ||
+      $("invoiceJobDescription")
+        ?.value.trim() ||
       null,
 
     labour:
-      num($("invoiceLabour")?.value),
+      num(
+        $("invoiceLabour")?.value
+      ),
 
     parts:
-      num($("invoiceParts")?.value),
+      num(
+        $("invoiceParts")?.value
+      ),
 
     other:
-      num($("invoiceOther")?.value),
+      num(
+        $("invoiceOther")?.value
+      ),
 
     subtotal:
       calc.subtotal,
 
     paid:
-      num($("invoicePaid")?.value),
+      num(
+        $("invoicePaid")?.value
+      ),
 
     balance:
       calc.balance,
@@ -2419,32 +3367,41 @@ async function saveInvoice(event) {
       "Pending",
 
     notes:
-      $("invoiceNotes")?.value.trim() ||
+      $("invoiceNotes")
+        ?.value.trim() ||
       null
+
   };
 
   if (!record.invoice_no) {
+
     toast(
       "Invoice number is required.",
       "error"
     );
+
     return;
   }
 
-  const result = id
-    ? await supabase
-        .from("invoices")
-        .update(record)
-        .eq("id", id)
-    : await supabase
-        .from("invoices")
-        .insert(record);
+  const result =
+    id
+
+      ? await supabase
+          .from("invoices")
+          .update(record)
+          .eq("id",id)
+
+      : await supabase
+          .from("invoices")
+          .insert(record);
 
   if (result.error) {
+
     toast(
-      errorMessage(result.error),
+      result.error.message,
       "error"
     );
+
     return;
   }
 
@@ -2454,20 +3411,25 @@ async function saveInvoice(event) {
 
   toast(
     id
-      ? "Invoice updated"
-      : "Invoice added"
+      ? "Invoice updated."
+      : "Invoice added."
   );
 }
 
 function editInvoice(id) {
+
   const i =
     invoices.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!i) return;
 
-  $("invoiceId").value = i.id;
+  $("invoiceId").value =
+    i.id;
+
   $("invoiceNo").value =
     i.invoice_no || "";
 
@@ -2512,32 +3474,41 @@ function editInvoice(id) {
 }
 
 async function deleteInvoice(id) {
-  if (!confirm("Delete this invoice?"))
-    return;
+
+  if (
+    !confirm(
+      "Delete this invoice?"
+    )
+  ) return;
 
   const { error } =
     await supabase
       .from("invoices")
       .delete()
-      .eq("id", id);
+      .eq("id",id);
 
   if (error) {
+
     toast(
-      errorMessage(error),
+      error.message,
       "error"
     );
+
     return;
   }
 
   await loadAllData();
 
-  toast("Invoice deleted");
+  toast("Invoice deleted.");
 }
 
 function viewInvoice(id) {
+
   const i =
     invoices.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!i) return;
@@ -2548,7 +3519,9 @@ function viewInvoice(id) {
   showPreview(
     `Invoice ${i.invoice_no}`,
     `
-      <h2>CRYSTAL MOTORS (K) LTD</h2>
+      <h2>
+        CRYSTAL MOTORS (K) LTD
+      </h2>
 
       <h2>INVOICE</h2>
 
@@ -2559,22 +3532,19 @@ function viewInvoice(id) {
 
       <p>
         <strong>Date:</strong>
-        ${esc(i.invoice_date)}
+        ${esc(i.invoice_date || "")}
       </p>
 
       <p>
         <strong>Vehicle:</strong>
-        ${esc(v?.registration || "")}
+        ${esc(
+          v?.registration || ""
+        )}
       </p>
 
       <p>
         <strong>Customer:</strong>
         ${esc(i.customer || "")}
-      </p>
-
-      <p>
-        <strong>Job:</strong>
-        ${esc(i.job_description || "")}
       </p>
 
       <p>
@@ -2594,21 +3564,19 @@ function viewInvoice(id) {
 
       <p>
         <strong>Status:</strong>
-        ${esc(i.status)}
-      </p>
-
-      <p>
-        <strong>Notes:</strong>
-        ${esc(i.notes || "")}
+        ${esc(i.status || "")}
       </p>
     `
   );
 }
 
 async function shareInvoice(id) {
+
   const i =
     invoices.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!i) return;
@@ -2639,55 +3607,101 @@ async function shareInvoice(id) {
    ========================================================= */
 
 function renderGatePasses() {
+
   const body =
     $("gatePassesTableBody");
 
   if (!body) return;
 
   const q =
-    norm($("gateSearch")?.value || "");
+    norm(
+      $("gateSearch")?.value ||
+      ""
+    );
 
   const status =
-    $("gateStatusFilter")?.value || "";
+    $("gateStatusFilter")?.value ||
+    "";
 
   const rows =
     gatePasses.filter(g => {
+
       const v =
         vehicleById(g.vehicle_id);
 
-      const text = norm([
-        g.gate_pass_no,
-        g.registration,
-        g.customer,
-        g.released_to,
-        g.released_contact,
-        g.status,
-        v?.registration
-      ].join(" "));
+      const text =
+        norm([
+          g.gate_pass_no,
+          g.registration,
+          g.customer,
+          g.released_to,
+          g.released_contact,
+          g.status,
+          v?.registration
+        ].join(" "));
 
       return (
-        (!q || text.includes(q)) &&
-        (!status || g.status === status)
+        (!q ||
+          text.includes(q)) &&
+        (
+          !status ||
+          g.status === status
+        )
       );
     });
 
   body.innerHTML =
     rows.map(g => {
+
       const v =
         vehicleById(g.vehicle_id);
 
       return `
+
         <tr>
-          <td>${esc(g.gate_pass_no)}</td>
-          <td>${esc(g.gate_pass_date || "")}</td>
-          <td>${esc(v?.registration || g.registration || "")}</td>
-          <td>${esc(g.customer || "")}</td>
-          <td>${esc(g.released_to || "")}</td>
-          <td>${money(g.paid)}</td>
-          <td>${money(g.balance)}</td>
-          <td>${esc(g.status || "")}</td>
+
           <td>
-            ${standardActions(
+            ${esc(g.gate_pass_no)}
+          </td>
+
+          <td>
+            ${esc(
+              g.gate_pass_date || ""
+            )}
+          </td>
+
+          <td>
+            ${esc(
+              v?.registration ||
+              g.registration ||
+              ""
+            )}
+          </td>
+
+          <td>
+            ${esc(g.customer || "")}
+          </td>
+
+          <td>
+            ${esc(
+              g.released_to || ""
+            )}
+          </td>
+
+          <td>
+            ${money(g.paid)}
+          </td>
+
+          <td>
+            ${money(g.balance)}
+          </td>
+
+          <td>
+            ${esc(g.status || "")}
+          </td>
+
+          <td>
+            ${normalActions(
               g.id,
               "editGatePass",
               "viewGatePass",
@@ -2695,13 +3709,19 @@ function renderGatePasses() {
               "deleteGatePass"
             )}
           </td>
+
         </tr>
+
       `;
+
     }).join("") ||
+
     `
       <tr>
-        <td colspan="9"
-          style="text-align:center;padding:25px">
+        <td
+          colspan="9"
+          style="text-align:center;padding:25px"
+        >
           No gate passes found
         </td>
       </tr>
@@ -2709,6 +3729,7 @@ function renderGatePasses() {
 }
 
 function openGatePassModal(id = "") {
+
   $("gatePassForm")?.reset();
 
   if ($("gatePassId"))
@@ -2719,7 +3740,8 @@ function openGatePassModal(id = "") {
       "Add Gate Pass";
 
   if ($("gatePassDate"))
-    $("gatePassDate").value = today();
+    $("gatePassDate").value =
+      today();
 
   fillVehicleSelect(
     "gateVehicle"
@@ -2732,75 +3754,96 @@ function openGatePassModal(id = "") {
 }
 
 async function saveGatePass(event) {
+
   event?.preventDefault();
 
   const id =
     $("gatePassId")?.value || "";
 
   const vehicleId =
-    $("gateVehicle")?.value || null;
+    $("gateVehicle")?.value ||
+    null;
 
   const v =
     vehicleById(vehicleId);
 
   const invoiceId =
-    $("gateInvoice")?.value || null;
+    $("gateInvoice")?.value ||
+    null;
 
   let balance =
-    num($("gateBalance")?.value);
+    num(
+      $("gateBalance")?.value
+    );
 
   if (invoiceId) {
-    const inv =
+
+    const invoice =
       invoices.find(
-        x => String(x.id) ===
+        x =>
+          String(x.id) ===
           String(invoiceId)
       );
 
-    if (inv) {
+    if (invoice) {
+
       balance =
-        num(inv.subtotal) -
-        num($("gatePaid")?.value);
+        num(invoice.subtotal) -
+        num(
+          $("gatePaid")?.value
+        );
     }
   }
 
   const record = {
+
     gate_pass_no:
-      $("gatePassNo")?.value.trim() ||
+      $("gatePassNo")
+        ?.value.trim() ||
       "",
 
     gate_pass_date:
       $("gatePassDate")?.value ||
       today(),
 
-    vehicle_id: vehicleId,
+    vehicle_id:
+      vehicleId,
 
     registration:
-      $("gateVehicleRegistration")?.value.trim() ||
+      $("gateVehicleRegistration")
+        ?.value.trim() ||
       v?.registration ||
       null,
 
     customer:
-      $("gateCustomer")?.value.trim() ||
+      $("gateCustomer")
+        ?.value.trim() ||
       v?.customer ||
       null,
 
     released_to:
-      $("gateReleasedTo")?.value.trim() ||
+      $("gateReleasedTo")
+        ?.value.trim() ||
       null,
 
     released_contact:
-      $("gateReleasedContact")?.value.trim() ||
+      $("gateReleasedContact")
+        ?.value.trim() ||
       null,
 
-    invoice_id: invoiceId,
+    invoice_id:
+      invoiceId,
 
     paid:
-      num($("gatePaid")?.value),
+      num(
+        $("gatePaid")?.value
+      ),
 
     balance,
 
     authorized_by:
-      $("gateAuthorizedBy")?.value.trim() ||
+      $("gateAuthorizedBy")
+        ?.value.trim() ||
       null,
 
     status:
@@ -2808,32 +3851,41 @@ async function saveGatePass(event) {
       "Pending",
 
     notes:
-      $("gateNotes")?.value.trim() ||
+      $("gateNotes")
+        ?.value.trim() ||
       null
+
   };
 
   if (!record.gate_pass_no) {
+
     toast(
       "Gate pass number is required.",
       "error"
     );
+
     return;
   }
 
-  const result = id
-    ? await supabase
-        .from("gate_passes")
-        .update(record)
-        .eq("id", id)
-    : await supabase
-        .from("gate_passes")
-        .insert(record);
+  const result =
+    id
+
+      ? await supabase
+          .from("gate_passes")
+          .update(record)
+          .eq("id",id)
+
+      : await supabase
+          .from("gate_passes")
+          .insert(record);
 
   if (result.error) {
+
     toast(
-      errorMessage(result.error),
+      result.error.message,
       "error"
     );
+
     return;
   }
 
@@ -2843,20 +3895,25 @@ async function saveGatePass(event) {
 
   toast(
     id
-      ? "Gate pass updated"
-      : "Gate pass added"
+      ? "Gate pass updated."
+      : "Gate pass added."
   );
 }
 
 function editGatePass(id) {
+
   const g =
     gatePasses.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!g) return;
 
-  $("gatePassId").value = g.id;
+  $("gatePassId").value =
+    g.id;
+
   $("gatePassNo").value =
     g.gate_pass_no || "";
 
@@ -2899,39 +3956,49 @@ function editGatePass(id) {
   $("gateNotes").value =
     g.notes || "";
 
-  $("gatePassModalTitle").textContent =
-    "Edit Gate Pass";
+  $("gatePassModalTitle")
+    .textContent =
+      "Edit Gate Pass";
 
   openModal("gatePassModal");
 }
 
 async function deleteGatePass(id) {
-  if (!confirm("Delete this gate pass?"))
-    return;
+
+  if (
+    !confirm(
+      "Delete this gate pass?"
+    )
+  ) return;
 
   const { error } =
     await supabase
       .from("gate_passes")
       .delete()
-      .eq("id", id);
+      .eq("id",id);
 
   if (error) {
+
     toast(
-      errorMessage(error),
+      error.message,
       "error"
     );
+
     return;
   }
 
   await loadAllData();
 
-  toast("Gate pass deleted");
+  toast("Gate pass deleted.");
 }
 
 function viewGatePass(id) {
+
   const g =
     gatePasses.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!g) return;
@@ -2942,7 +4009,9 @@ function viewGatePass(id) {
   showPreview(
     `Gate Pass ${g.gate_pass_no}`,
     `
-      <h2>CRYSTAL MOTORS (K) LTD</h2>
+      <h2>
+        CRYSTAL MOTORS (K) LTD
+      </h2>
 
       <h2>GATE PASS</h2>
 
@@ -2953,12 +4022,18 @@ function viewGatePass(id) {
 
       <p>
         <strong>Date:</strong>
-        ${esc(g.gate_pass_date)}
+        ${esc(
+          g.gate_pass_date || ""
+        )}
       </p>
 
       <p>
         <strong>Vehicle:</strong>
-        ${esc(v?.registration || g.registration || "")}
+        ${esc(
+          v?.registration ||
+          g.registration ||
+          ""
+        )}
       </p>
 
       <p>
@@ -2968,12 +4043,16 @@ function viewGatePass(id) {
 
       <p>
         <strong>Released To:</strong>
-        ${esc(g.released_to || "")}
+        ${esc(
+          g.released_to || ""
+        )}
       </p>
 
       <p>
         <strong>Contact:</strong>
-        ${esc(g.released_contact || "")}
+        ${esc(
+          g.released_contact || ""
+        )}
       </p>
 
       <p>
@@ -2987,27 +4066,20 @@ function viewGatePass(id) {
       </p>
 
       <p>
-        <strong>Authorized By:</strong>
-        ${esc(g.authorized_by || "")}
-      </p>
-
-      <p>
         <strong>Status:</strong>
         ${esc(g.status || "")}
-      </p>
-
-      <p>
-        <strong>Notes:</strong>
-        ${esc(g.notes || "")}
       </p>
     `
   );
 }
 
 async function shareGatePass(id) {
+
   const g =
     gatePasses.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!g) return;
@@ -3023,13 +4095,16 @@ async function shareGatePass(id) {
       "",
       `No: ${g.gate_pass_no}`,
       `Date: ${g.gate_pass_date || ""}`,
-      `Vehicle: ${v?.registration || g.registration || ""}`,
+      `Vehicle: ${
+        v?.registration ||
+        g.registration ||
+        ""
+      }`,
       `Customer: ${g.customer || ""}`,
       `Released To: ${g.released_to || ""}`,
       `Contact: ${g.released_contact || ""}`,
       `Paid: ${money(g.paid)}`,
       `Balance: ${money(g.balance)}`,
-      `Authorized By: ${g.authorized_by || ""}`,
       `Status: ${g.status || ""}`
     ].join("\n")
   );
@@ -3037,35 +4112,129 @@ async function shareGatePass(id) {
 
 /* =========================================================
    ESTIMATES / QUOTATIONS
-   =========================================================
-   IMPORTANT FIX:
-   The estimate section is NOT created during renderAll().
-   It is created only when showSection("estimates")
-   is actually requested.
-   Therefore it cannot overlap the Dashboard.
    ========================================================= */
 
+function ensureEstimateNavigation() {
+
+  if (
+    document.querySelector(
+      '[data-section="estimates"]'
+    )
+  ) {
+    return;
+  }
+
+  const sidebar =
+    document.querySelector(
+      ".sidebar"
+    );
+
+  if (!sidebar) return;
+
+  const existing =
+    sidebar.querySelector(
+      '[data-section="gate-passes"]'
+    );
+
+  const button =
+    document.createElement(
+      "button"
+    );
+
+  button.type = "button";
+
+  /*
+    Copy the existing navigation
+    class so it looks like the
+    other sidebar buttons.
+  */
+
+  if (existing) {
+
+    button.className =
+      existing.className;
+
+  } else {
+
+    button.className =
+      "nav-item";
+  }
+
+  button.classList.add(
+    "garage-estimate-nav"
+  );
+
+  button.dataset.section =
+    "estimates";
+
+  button.innerHTML = `
+    <span>📋</span>
+    <span>
+      Estimates / Quotations
+    </span>
+  `;
+
+  button.addEventListener(
+    "click",
+    () =>
+      showSection("estimates")
+  );
+
+  if (
+    existing?.parentElement
+  ) {
+
+    existing.parentElement
+      .insertBefore(
+        button,
+        existing.nextSibling
+      );
+
+  } else {
+
+    sidebar.appendChild(
+      button
+    );
+  }
+}
+
 function ensureEstimateSection() {
-  if ($("estimates"))
-    return $("estimates");
 
-  const section =
-    document.createElement("section");
+  let section =
+    $("estimates");
 
-  section.id = "estimates";
+  if (section)
+    return section;
+
+  section =
+    document.createElement(
+      "section"
+    );
+
+  section.id =
+    "estimates";
 
   section.className =
-    "section garage-estimate-section";
+    "section";
 
-  section.style.display = "none";
+  section.style.display =
+    "none";
 
   section.innerHTML = `
+
     <div class="section-header">
+
       <div>
-        <h2>Estimates / Quotations</h2>
+
+        <h2>
+          Estimates / Quotations
+        </h2>
+
         <p>
-          Professional repair estimates and quotations.
+          Professional vehicle repair
+          estimates and quotations.
         </p>
+
       </div>
 
       <button
@@ -3075,13 +4244,19 @@ function ensureEstimateSection() {
       >
         + Add Estimate
       </button>
+
     </div>
 
-    <div class="table-container garage-estimate-card">
+    <div
+      class="table-container"
+    >
 
       <table>
+
         <thead>
+
           <tr>
+
             <th>Estimate No.</th>
             <th>Date</th>
             <th>Company</th>
@@ -3089,41 +4264,36 @@ function ensureEstimateSection() {
             <th>Customer</th>
             <th>Total</th>
             <th>Actions</th>
+
           </tr>
+
         </thead>
 
-        <tbody id="estimatesTableBody"></tbody>
+        <tbody
+          id="estimatesTableBody"
+        ></tbody>
 
       </table>
 
     </div>
-  `;
 
-  /*
-    Do NOT append into dashboard itself.
-    Append after the current application content.
-  */
+  `;
 
   const app =
     $("app");
 
-  if (app) {
+  if (app)
     app.appendChild(section);
-  } else {
+  else
     document.body.appendChild(section);
-  }
 
   return section;
 }
 
 function renderEstimates() {
+
   const section =
     $("estimates");
-
-  /*
-    If Estimates has not been opened,
-    do nothing. This is the overlap fix.
-  */
 
   if (!section)
     return;
@@ -3131,14 +4301,17 @@ function renderEstimates() {
   const body =
     $("estimatesTableBody");
 
-  if (!body) return;
+  if (!body)
+    return;
 
   body.innerHTML =
     estimates.map(e => {
+
       const v =
         vehicleById(e.vehicle_id);
 
       return `
+
         <tr>
 
           <td>
@@ -3146,11 +4319,15 @@ function renderEstimates() {
           </td>
 
           <td>
-            ${esc(e.estimate_date || "")}
+            ${esc(
+              e.estimate_date || ""
+            )}
           </td>
 
           <td>
-            ${esc(e.company_name || "")}
+            ${esc(
+              e.company_name || ""
+            )}
           </td>
 
           <td>
@@ -3172,7 +4349,7 @@ function renderEstimates() {
           </td>
 
           <td>
-            ${standardActions(
+            ${normalActions(
               e.id,
               "editEstimate",
               "viewEstimate",
@@ -3182,32 +4359,48 @@ function renderEstimates() {
           </td>
 
         </tr>
+
       `;
+
     }).join("") ||
+
     `
       <tr>
-        <td colspan="7"
-          style="text-align:center;padding:25px">
+        <td
+          colspan="7"
+          style="text-align:center;padding:25px"
+        >
           No estimates found.
         </td>
       </tr>
     `;
 }
 
-function estimateCompanyDetails(company) {
+function estimateCompanyDetails(
+  company
+) {
+
   if (
     company ===
     "QUARRY ROUTE MOTORS LTD"
   ) {
+
     return `
       <strong>
         QUARRY ROUTE MOTORS LTD
       </strong><br>
+
       P.O. Box 54385 – 00200, Nairobi<br>
-      Cell: 0722 707124 / 0723 914 222<br>
-      Off Mombasa Road, Along Quarry Road,
+
+      Cell: 0722 707124 /
+      0723 914 222<br>
+
+      Off Mombasa Road,
+      Along Quarry Road,
       Near Mlolongo Weigh Bridge<br>
+
       info@quarryroutemotors.com<br>
+
       quarryroutemotorsltd@gmail.com
     `;
   }
@@ -3216,20 +4409,29 @@ function estimateCompanyDetails(company) {
     <strong>
       CRYSTAL MOTORS (K) LTD
     </strong><br>
+
     P.O. Box 54385 – 00200, Nairobi<br>
-    Cell: 0722 707124 | 0723 914 222<br>
-    Off Mombasa Road, Along Quarry Road,
+
+    Cell: 0722 707124 |
+    0723 914 222<br>
+
+    Off Mombasa Road,
+    Along Quarry Road,
     Near Mlolongo Weighbridge
   `;
 }
 
 function openEstimateModal() {
+
   let modal =
     $("estimateModal");
 
   if (!modal) {
+
     modal =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     modal.id =
       "estimateModal";
@@ -3238,47 +4440,70 @@ function openEstimateModal() {
       "modal";
 
     modal.innerHTML = `
+
       <div class="modal-content">
 
         <button
           class="modal-close"
           type="button"
-          onclick="closeModal('estimateModal')"
+          onclick="
+            closeModal(
+              'estimateModal'
+            )
+          "
         >
           ×
         </button>
 
-        <h2 id="estimateModalTitle">
+        <h2
+          id="estimateModalTitle"
+        >
           Add Estimate
         </h2>
 
-        <form id="estimateForm">
+        <form
+          id="estimateForm"
+        >
 
           <input
             type="hidden"
             id="estimateId"
           >
 
-          <label>Company</label>
+          <label>
+            Company
+          </label>
 
-          <select id="estimateCompany">
-            <option value="CRYSTAL MOTORS (K) LTD">
+          <select
+            id="estimateCompany"
+          >
+
+            <option
+              value="CRYSTAL MOTORS (K) LTD"
+            >
               CRYSTAL MOTORS (K) LTD
             </option>
 
-            <option value="QUARRY ROUTE MOTORS LTD">
+            <option
+              value="QUARRY ROUTE MOTORS LTD"
+            >
               QUARRY ROUTE MOTORS LTD
             </option>
+
           </select>
 
-          <label>Estimate No.</label>
+          <label>
+            Estimate No.
+          </label>
 
           <input
             id="estimateNo"
             required
           >
 
-          <label>Date</label>
+          <label>
+            Date
+          </label>
 
           <input
             type="date"
@@ -3286,37 +4511,49 @@ function openEstimateModal() {
             required
           >
 
-          <label>Vehicle</label>
+          <label>
+            Vehicle
+          </label>
 
           <select
             id="estimateVehicle"
           ></select>
 
-          <label>Customer</label>
+          <label>
+            Customer
+          </label>
 
           <input
             id="estimateCustomer"
           >
 
-          <label>Customer Phone</label>
+          <label>
+            Customer Phone
+          </label>
 
           <input
             id="estimateCustomerPhone"
           >
 
-          <label>Vehicle Model</label>
+          <label>
+            Vehicle Model
+          </label>
 
           <input
             id="estimateVehicleModel"
           >
 
-          <label>Chassis No.</label>
+          <label>
+            Chassis No.
+          </label>
 
           <input
             id="estimateChassis"
           >
 
-          <label>Subtotal</label>
+          <label>
+            Subtotal
+          </label>
 
           <input
             type="number"
@@ -3324,7 +4561,9 @@ function openEstimateModal() {
             id="estimateSubtotal"
           >
 
-          <label>VAT %</label>
+          <label>
+            VAT %
+          </label>
 
           <input
             type="number"
@@ -3333,7 +4572,9 @@ function openEstimateModal() {
             value="16"
           >
 
-          <label>VAT Amount</label>
+          <label>
+            VAT Amount
+          </label>
 
           <input
             type="number"
@@ -3342,7 +4583,9 @@ function openEstimateModal() {
             readonly
           >
 
-          <label>Total</label>
+          <label>
+            Total
+          </label>
 
           <input
             type="number"
@@ -3351,7 +4594,9 @@ function openEstimateModal() {
             readonly
           >
 
-          <label>Notes</label>
+          <label>
+            Notes
+          </label>
 
           <textarea
             id="estimateNotes"
@@ -3365,10 +4610,13 @@ function openEstimateModal() {
           </button>
 
         </form>
+
       </div>
     `;
 
-    document.body.appendChild(modal);
+    document.body.appendChild(
+      modal
+    );
 
     $("estimateForm")
       ?.addEventListener(
@@ -3391,37 +4639,50 @@ function openEstimateModal() {
 
   $("estimateForm")?.reset();
 
-  $("estimateId").value = "";
+  $("estimateId").value =
+    "";
 
   $("estimateDate").value =
     today();
 
-  $("estimateVatRate").value = 16;
+  $("estimateVatRate").value =
+    16;
 
   fillVehicleSelect(
     "estimateVehicle"
   );
 
-  $("estimateModalTitle").textContent =
-    "Add Estimate";
+  $("estimateModalTitle")
+    .textContent =
+      "Add Estimate";
 
   calculateEstimate();
 
-  openModal("estimateModal");
+  openModal(
+    "estimateModal"
+  );
 }
 
 function calculateEstimate() {
+
   const subtotal =
-    num($("estimateSubtotal")?.value);
+    num(
+      $("estimateSubtotal")?.value
+    );
 
   const rate =
-    num($("estimateVatRate")?.value);
+    num(
+      $("estimateVatRate")?.value
+    );
 
   const vat =
-    subtotal * rate / 100;
+    subtotal *
+    rate /
+    100;
 
   const total =
-    subtotal + vat;
+    subtotal +
+    vat;
 
   if ($("estimateVatAmount"))
     $("estimateVatAmount").value =
@@ -3439,14 +4700,17 @@ function calculateEstimate() {
 }
 
 function editEstimate(id) {
+
+  openEstimateModal();
+
   const e =
     estimates.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!e) return;
-
-  openEstimateModal();
 
   $("estimateId").value =
     e.id;
@@ -3491,18 +4755,20 @@ function editEstimate(id) {
   $("estimateNotes").value =
     e.notes || "";
 
-  $("estimateModalTitle").textContent =
-    "Edit Estimate";
+  $("estimateModalTitle")
+    .textContent =
+      "Edit Estimate";
 }
 
 async function saveEstimate(event) {
-  event?.preventDefault();
 
-  const calc =
-    calculateEstimate();
+  event?.preventDefault();
 
   const id =
     $("estimateId")?.value || "";
+
+  const calc =
+    calculateEstimate();
 
   const vehicleId =
     $("estimateVehicle")?.value ||
@@ -3512,8 +4778,10 @@ async function saveEstimate(event) {
     vehicleById(vehicleId);
 
   const record = {
+
     estimate_no:
-      $("estimateNo")?.value.trim() ||
+      $("estimateNo")
+        ?.value.trim() ||
       "",
 
     estimate_date:
@@ -3525,25 +4793,30 @@ async function saveEstimate(event) {
       "CRYSTAL MOTORS (K) LTD",
 
     customer:
-      $("estimateCustomer")?.value.trim() ||
+      $("estimateCustomer")
+        ?.value.trim() ||
       null,
 
     customer_phone:
-      $("estimateCustomerPhone")?.value.trim() ||
+      $("estimateCustomerPhone")
+        ?.value.trim() ||
       null,
 
     vehicle_id:
       vehicleId,
 
     registration:
-      v?.registration || null,
+      v?.registration ||
+      null,
 
     chassis_no:
-      $("estimateChassis")?.value.trim() ||
+      $("estimateChassis")
+        ?.value.trim() ||
       null,
 
     vehicle_model:
-      $("estimateVehicleModel")?.value.trim() ||
+      $("estimateVehicleModel")
+        ?.value.trim() ||
       v?.model ||
       null,
 
@@ -3551,7 +4824,9 @@ async function saveEstimate(event) {
       calc.subtotal,
 
     vat_rate:
-      num($("estimateVatRate")?.value),
+      num(
+        $("estimateVatRate")?.value
+      ),
 
     vat_amount:
       calc.vat,
@@ -3560,76 +4835,64 @@ async function saveEstimate(event) {
       calc.total,
 
     notes:
-      $("estimateNotes")?.value.trim() ||
+      $("estimateNotes")
+        ?.value.trim() ||
       null
+
   };
 
   if (!record.estimate_no) {
+
     toast(
       "Estimate number is required.",
       "error"
     );
+
     return;
   }
 
-  const result = id
-    ? await supabase
-        .from("estimates")
-        .update(record)
-        .eq("id", id)
-    : await supabase
-        .from("estimates")
-        .insert(record);
+  const result =
+    id
+
+      ? await supabase
+          .from("estimates")
+          .update(record)
+          .eq("id",id)
+
+      : await supabase
+          .from("estimates")
+          .insert(record);
 
   if (result.error) {
+
     toast(
-      errorMessage(result.error),
+      result.error.message,
       "error"
     );
+
     return;
   }
 
-  closeModal("estimateModal");
+  closeModal(
+    "estimateModal"
+  );
 
   await loadAllData();
-
-  if ($("estimates"))
-    renderEstimates();
 
   toast(
     id
-      ? "Estimate updated"
-      : "Estimate saved"
+      ? "Estimate updated."
+      : "Estimate saved."
   );
 }
 
-async function deleteEstimate(id) {
-  if (!confirm("Delete this estimate?"))
-    return;
-
-  const { error } =
-    await supabase
-      .from("estimates")
-      .delete()
-      .eq("id", id);
-
-  if (error) {
-    toast(
-      errorMessage(error),
-      "error"
-    );
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Estimate deleted");
-}
-
 function viewEstimate(id) {
+
   const e =
     estimates.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!e) return;
@@ -3655,17 +4918,25 @@ function viewEstimate(id) {
         </h2>
 
         <p>
-          <strong>Estimate No:</strong>
+          <strong>
+            Estimate No:
+          </strong>
           ${esc(e.estimate_no)}
         </p>
 
         <p>
-          <strong>Date:</strong>
-          ${esc(e.estimate_date)}
+          <strong>
+            Date:
+          </strong>
+          ${esc(
+            e.estimate_date || ""
+          )}
         </p>
 
         <p>
-          <strong>Vehicle:</strong>
+          <strong>
+            Vehicle:
+          </strong>
           ${esc(
             v?.registration ||
             e.registration ||
@@ -3674,35 +4945,57 @@ function viewEstimate(id) {
         </p>
 
         <p>
-          <strong>Customer:</strong>
-          ${esc(e.customer || "")}
+          <strong>
+            Customer:
+          </strong>
+          ${esc(
+            e.customer || ""
+          )}
         </p>
 
         <p>
-          <strong>Customer Phone:</strong>
-          ${esc(e.customer_phone || "")}
+          <strong>
+            Customer Phone:
+          </strong>
+          ${esc(
+            e.customer_phone || ""
+          )}
         </p>
 
         <p>
-          <strong>Vehicle Model:</strong>
-          ${esc(e.vehicle_model || "")}
+          <strong>
+            Vehicle Model:
+          </strong>
+          ${esc(
+            e.vehicle_model || ""
+          )}
         </p>
 
         <p>
-          <strong>Chassis No:</strong>
-          ${esc(e.chassis_no || "")}
+          <strong>
+            Chassis No:
+          </strong>
+          ${esc(
+            e.chassis_no || ""
+          )}
         </p>
 
         <table>
 
           <tr>
             <th>Subtotal</th>
-            <td>${money(e.subtotal)}</td>
+            <td>
+              ${money(e.subtotal)}
+            </td>
           </tr>
 
           <tr>
-            <th>VAT ${num(e.vat_rate)}%</th>
-            <td>${money(e.vat_amount)}</td>
+            <th>
+              VAT ${num(e.vat_rate)}%
+            </th>
+            <td>
+              ${money(e.vat_amount)}
+            </td>
           </tr>
 
           <tr>
@@ -3727,9 +5020,12 @@ function viewEstimate(id) {
 }
 
 async function shareEstimate(id) {
+
   const e =
     estimates.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!e) return;
@@ -3745,7 +5041,11 @@ async function shareEstimate(id) {
       "",
       `Estimate No: ${e.estimate_no}`,
       `Date: ${e.estimate_date || ""}`,
-      `Vehicle: ${v?.registration || e.registration || ""}`,
+      `Vehicle: ${
+        v?.registration ||
+        e.registration ||
+        ""
+      }`,
       `Customer: ${e.customer || ""}`,
       `Subtotal: ${money(e.subtotal)}`,
       `VAT: ${money(e.vat_amount)}`,
@@ -3756,23 +5056,54 @@ async function shareEstimate(id) {
   );
 }
 
+async function deleteEstimate(id) {
+
+  if (
+    !confirm(
+      "Delete this estimate?"
+    )
+  ) return;
+
+  const { error } =
+    await supabase
+      .from("estimates")
+      .delete()
+      .eq("id",id);
+
+  if (error) {
+
+    toast(
+      error.message,
+      "error"
+    );
+
+    return;
+  }
+
+  await loadAllData();
+
+  toast("Estimate deleted.");
+}
+
 /* =========================================================
    DASHBOARD
    ========================================================= */
 
 function renderDashboard() {
+
   const totalVehicles =
     vehicles.length;
 
   const repairs =
     vehicles.filter(
       v =>
-        v.status === "Under Repair"
+        v.status ===
+        "Under Repair"
     ).length;
 
   const outstanding =
     vehicles.reduce(
-      (a, v) =>
+      (a,v) =>
         a +
         Math.max(
           0,
@@ -3784,42 +5115,38 @@ function renderDashboard() {
 
   const billed =
     vehicles.reduce(
-      (a, v) =>
+      (a,v) =>
         a + num(v.billed),
       0
     );
 
   const paid =
     vehicles.reduce(
-      (a, v) =>
+      (a,v) =>
         a + num(v.paid),
       0
     );
 
   const totalExpenses =
     expenses.reduce(
-      (a, e) =>
+      (a,e) =>
         a + num(e.amount),
       0
     );
 
   const totalPetty =
     pettyCash.reduce(
-      (a, p) =>
+      (a,p) =>
         a + num(p.amount),
       0
     );
 
   const pendingReq =
     requisitions.filter(
-      r => r.status === "Pending"
+      r =>
+        r.status ===
+        "Pending"
     ).length;
-
-  const invoiceCount =
-    invoices.length;
-
-  const gateCount =
-    gatePasses.length;
 
   setText(
     "dashVehicles",
@@ -3843,12 +5170,12 @@ function renderDashboard() {
 
   setText(
     "dashInvoices",
-    invoiceCount
+    invoices.length
   );
 
   setText(
     "dashGatePasses",
-    gateCount
+    gatePasses.length
   );
 
   setText(
@@ -3880,68 +5207,33 @@ function renderDashboard() {
     "dashReqTotal",
     money(
       requisitions.reduce(
-        (a, r) =>
-          a + num(r.total_amount),
+        (a,r) =>
+          a +
+          num(r.total_amount),
         0
       )
     )
   );
 }
 
-function setText(id, value) {
+function setText(id,value) {
+
   const el = $(id);
 
   if (el)
-    el.textContent = value;
-}
-
-/* =========================================================
-   RENDER ALL
-   ========================================================= */
-
-function renderAll() {
-  renderDashboard();
-  renderVehicles();
-  renderExpenses();
-  renderPettyCash();
-  renderRequisitions();
-  renderInvoices();
-  renderGatePasses();
-
-  /*
-    DO NOT CALL ensureEstimateSection()
-    HERE.
-
-    This is the critical overlap fix.
-  */
-
-  if ($("estimates"))
-    renderEstimates();
-
-  fillExpenseVehicleSelect();
-
-  fillVehicleSelect(
-    "reqVehicle"
-  );
-
-  fillVehicleSelect(
-    "invoiceVehicle"
-  );
-
-  fillVehicleSelect(
-    "gateVehicle"
-  );
-
-  fillVehicleSelect(
-    "estimateVehicle"
-  );
+    el.textContent =
+      value;
 }
 
 /* =========================================================
    PREVIEW
    ========================================================= */
 
-function showPreview(title, html) {
+function showPreview(
+  title,
+  html
+) {
+
   if ($("previewTitle"))
     $("previewTitle").textContent =
       title;
@@ -3950,113 +5242,30 @@ function showPreview(title, html) {
     $("previewContent").innerHTML =
       html;
 
-  openModal("previewModal");
+  openModal(
+    "previewModal"
+  );
 }
 
 function printCurrentPreview() {
+
   const title =
-    $("previewTitle")?.textContent ||
+    $("previewTitle")
+      ?.textContent ||
     "Garage Report";
 
   const html =
-    $("previewContent")?.innerHTML ||
+    $("previewContent")
+      ?.innerHTML ||
     "";
 
   if (!html) {
-    toast("Nothing to print.");
-    return;
-  }
 
-  printHTML(title, html);
-}
-
-/* =========================================================
-   PRINT
-   ========================================================= */
-
-function printHTML(title, html) {
-  const w =
-    window.open(
-      "",
-      "_blank"
-    );
-
-  if (!w) {
     toast(
-      "Please allow pop-ups to print."
+      "Nothing to print.",
+      "error"
     );
-    return;
-  }
 
-  w.document.open();
-
-  w.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${esc(title)}</title>
-
-      <style>
-
-        body{
-          font-family:Arial,sans-serif;
-          padding:30px;
-          color:#111;
-        }
-
-        h1,h2,h3{
-          margin-top:0;
-        }
-
-        table{
-          width:100%;
-          border-collapse:collapse;
-          margin-top:20px;
-        }
-
-        th,td{
-          border:1px solid #ccc;
-          padding:8px;
-          text-align:left;
-        }
-
-        th{
-          background:#f1f5f9;
-        }
-
-        .table-actions,
-        button{
-          display:none !important;
-        }
-
-      </style>
-    </head>
-
-    <body>
-      ${html}
-    </body>
-
-    </html>
-  `);
-
-  w.document.close();
-
-  setTimeout(() => {
-    w.focus();
-    w.print();
-  }, 300);
-}
-
-function printElement(
-  id,
-  title
-) {
-  const html =
-    $(id)?.parentElement?.innerHTML ||
-    "";
-
-  if (!html) {
-    toast("Nothing to print.");
     return;
   }
 
@@ -4066,55 +5275,257 @@ function printElement(
   );
 }
 
+/* =========================================================
+   SHARE
+   ========================================================= */
+
+async function shareText(
+  title,
+  text
+) {
+
+  try {
+
+    if (
+      navigator.share
+    ) {
+
+      await navigator.share({
+        title,
+        text
+      });
+
+      return;
+    }
+
+  } catch(error) {
+
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+      return;
+    }
+  }
+
+  try {
+
+    await navigator.clipboard
+      .writeText(text);
+
+    toast(
+      "Report copied. Paste it into WhatsApp."
+    );
+
+    return;
+
+  } catch(error) {
+
+    console.warn(error);
+  }
+
+  alert(text);
+}
+
+/* =========================================================
+   PRINT
+   ========================================================= */
+
+function printHTML(
+  title,
+  html
+) {
+
+  const w =
+    window.open(
+      "",
+      "_blank"
+    );
+
+  if (!w) {
+
+    toast(
+      "Please allow pop-ups to print.",
+      "error"
+    );
+
+    return;
+  }
+
+  w.document.write(`
+
+    <!DOCTYPE html>
+
+    <html>
+
+    <head>
+
+      <title>
+        ${esc(title)}
+      </title>
+
+      <style>
+
+        body {
+          font-family:
+            Arial,
+            sans-serif;
+
+          padding:30px;
+
+          color:#111;
+        }
+
+        h1,
+        h2,
+        h3 {
+          margin-top:0;
+        }
+
+        table {
+          width:100%;
+          border-collapse:
+            collapse;
+          margin-top:20px;
+        }
+
+        th,
+        td {
+          border:
+            1px solid #ccc;
+          padding:8px;
+          text-align:left;
+        }
+
+        th {
+          background:
+            #f1f5f9;
+        }
+
+        button,
+        .table-actions {
+          display:none !important;
+        }
+
+      </style>
+
+    </head>
+
+    <body>
+
+      ${html}
+
+    </body>
+
+    </html>
+
+  `);
+
+  w.document.close();
+
+  setTimeout(
+    () => {
+      w.focus();
+      w.print();
+    },
+    300
+  );
+}
+
+function printTableBody(
+  bodyId,
+  title
+) {
+
+  const body =
+    $(bodyId);
+
+  if (!body) {
+
+    toast(
+      "Nothing to print.",
+      "error"
+    );
+
+    return;
+  }
+
+  const table =
+    body.closest(
+      "table"
+    );
+
+  if (!table) {
+
+    toast(
+      "Nothing to print.",
+      "error"
+    );
+
+    return;
+  }
+
+  printHTML(
+    title,
+    table.outerHTML
+  );
+}
+
 function printVehicles() {
+
   renderVehicles();
 
-  printElement(
+  printTableBody(
     "vehiclesTableBody",
     "Vehicles"
   );
 }
 
 function printExpenses() {
+
   renderExpenses();
 
-  printElement(
+  printTableBody(
     "expensesTableBody",
     "Vehicle Expenses"
   );
 }
 
 function printPettyCash() {
+
   renderPettyCash();
 
-  printElement(
+  printTableBody(
     "pettyTableBody",
     "Petty Cash"
   );
 }
 
 function printRequisitions() {
+
   renderRequisitions();
 
-  printElement(
+  printTableBody(
     "requisitionsTableBody",
     "Requisitions"
   );
 }
 
 function printInvoices() {
+
   renderInvoices();
 
-  printElement(
+  printTableBody(
     "invoicesTableBody",
     "Invoices"
   );
 }
 
 function printGatePasses() {
+
   renderGatePasses();
 
-  printElement(
+  printTableBody(
     "gatePassesTableBody",
     "Gate Passes"
   );
@@ -4124,10 +5535,15 @@ function printGatePasses() {
    NAVIGATION
    ========================================================= */
 
-function showSection(sectionId) {
+function showSection(
+  sectionId
+) {
 
   /*
-    First hide all normal application sections.
+    Hide every section first.
+    This is what prevents
+    Dashboard + Estimates from
+    occupying the same workspace.
   */
 
   document
@@ -4135,6 +5551,7 @@ function showSection(sectionId) {
       ".section,.app-section"
     )
     .forEach(section => {
+
       section.classList.remove(
         "active"
       );
@@ -4143,45 +5560,37 @@ function showSection(sectionId) {
         "none";
     });
 
-  /*
-    Estimates is special because
-    it may not exist yet.
-  */
-
   if (
     sectionId ===
     "estimates"
   ) {
-    const estimateSection =
+
+    const section =
       ensureEstimateSection();
 
-    estimateSection.style.display =
+    section.style.display =
       "block";
 
-    estimateSection.classList.add(
+    section.classList.add(
       "active"
     );
 
     renderEstimates();
-  }
 
-  /*
-    Normal sections.
-  */
+  } else {
 
-  const target =
-    $(sectionId);
+    const target =
+      $(sectionId);
 
-  if (
-    target &&
-    sectionId !== "estimates"
-  ) {
-    target.style.display =
-      "";
+    if (target) {
 
-    target.classList.add(
-      "active"
-    );
+      target.style.display =
+        "";
+
+      target.classList.add(
+        "active"
+      );
+    }
   }
 
   /*
@@ -4192,20 +5601,18 @@ function showSection(sectionId) {
     .querySelectorAll(
       "[data-section]"
     )
-    .forEach(btn => {
-      btn.classList.toggle(
+    .forEach(el => {
+
+      el.classList.toggle(
         "active",
-        btn.dataset.section ===
-          sectionId
+        el.dataset.section ===
+        sectionId
       );
+
     });
 
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
+  switch(sectionId) {
 
-  switch (sectionId) {
     case "dashboard":
       renderDashboard();
       break;
@@ -4240,55 +5647,88 @@ function showSection(sectionId) {
       renderEstimates();
       break;
   }
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
 }
 
 /* =========================================================
-   DASHBOARD CARD CLICKING
+   DASHBOARD CLICKABLE CARDS
    ========================================================= */
 
 function setupDashboardCards() {
 
   const map = {
-    dashVehicles:"vehicles",
-    dashRepair:"vehicles",
-    dashOutstanding:"vehicles",
-    dashReq:"requisitions",
-    dashInvoices:"invoices",
-    dashGatePasses:"gate-passes",
-    dashBilled:"vehicles",
-    dashPaid:"vehicles",
-    dashExpenses:"expenses",
-    dashPetty:"petty-cash"
+
+    dashVehicles:
+      "vehicles",
+
+    dashRepair:
+      "vehicles",
+
+    dashOutstanding:
+      "vehicles",
+
+    dashReq:
+      "requisitions",
+
+    dashInvoices:
+      "invoices",
+
+    dashGatePasses:
+      "gate-passes",
+
+    dashBilled:
+      "vehicles",
+
+    dashPaid:
+      "vehicles",
+
+    dashExpenses:
+      "expenses",
+
+    dashPetty:
+      "petty-cash"
+
   };
 
   Object.entries(map)
     .forEach(
-      ([id, section]) => {
+      ([id,section]) => {
 
-        const el = $(id);
+        const el =
+          $(id);
 
-        if (!el) return;
+        if (!el)
+          return;
 
         const card =
-          el.closest(".kpi-card") ||
-          el.closest(".stat-card") ||
-          el.closest(".dashboard-card") ||
+          el.closest(
+            ".kpi-card"
+          ) ||
+          el.closest(
+            ".stat-card"
+          ) ||
+          el.closest(
+            ".dashboard-card"
+          ) ||
           el.parentElement;
 
-        if (!card) return;
-
-        /*
-          Prevent duplicate listeners.
-        */
+        if (!card)
+          return;
 
         if (
-          card.dataset.garageClickBound ===
+          card.dataset
+            .garageClickBound ===
           "1"
         ) {
           return;
         }
 
-        card.dataset.garageClickBound =
+        card.dataset
+          .garageClickBound =
           "1";
 
         card.style.cursor =
@@ -4296,131 +5736,318 @@ function setupDashboardCards() {
 
         card.addEventListener(
           "click",
-          () => {
-            showSection(section);
-          }
+          () =>
+            showSection(section)
         );
       }
     );
 }
 
 /* =========================================================
-   USER
-   ========================================================= */
-
-function setUserDisplay() {
-  const user =
-    sessionStorage.getItem(
-      "garageUser"
-    ) ||
-    sessionStorage.getItem(
-      "username"
-    ) ||
-    "User";
-
-  if ($("sidebarUser"))
-    $("sidebarUser").textContent =
-      user;
-
-  if ($("welcomeUser"))
-    $("welcomeUser").textContent =
-      user;
-}
-
-/* =========================================================
-   SEARCH LISTENERS
+   SEARCH
    ========================================================= */
 
 function setupSearches() {
 
-  [
+  const ids = [
+
     "vehicleSearch",
     "vehicleStatusFilter",
+
     "expenseSearch",
     "expenseCategoryFilter",
+
     "pettySearch",
     "pettyCategoryFilter",
+
     "reqSearch",
     "reqStatusFilter",
+
     "invoiceSearch",
     "invoiceStatusFilter",
+
     "gateSearch",
     "gateStatusFilter"
-  ].forEach(id => {
 
-    const el = $(id);
+  ];
 
-    if (!el) return;
+  ids.forEach(id => {
+
+    const el =
+      $(id);
+
+    if (!el)
+      return;
 
     if (
-      el.dataset.garageSearchBound ===
+      el.dataset
+        .garageSearchBound ===
       "1"
     ) {
       return;
     }
 
-    el.dataset.garageSearchBound =
+    el.dataset
+      .garageSearchBound =
       "1";
 
     el.addEventListener(
       "input",
-      () => refreshRelevant(id)
+      () =>
+        refreshSearch(id)
     );
 
     el.addEventListener(
       "change",
-      () => refreshRelevant(id)
+      () =>
+        refreshSearch(id)
     );
+
   });
 }
 
-function refreshRelevant(id) {
+function refreshSearch(id) {
 
   if (
-    id.startsWith("vehicle")
+    id ===
+    "expenseSearch" ||
+    id ===
+    "expenseCategoryFilter"
   ) {
-    renderVehicles();
-    return;
-  }
 
-  if (
-    id.startsWith("expense")
-  ) {
     renderExpenses();
+
     return;
   }
 
   if (
-    id.startsWith("petty")
+    id.startsWith(
+      "vehicle"
+    )
   ) {
+
+    renderVehicles();
+
+    return;
+  }
+
+  if (
+    id.startsWith(
+      "petty"
+    )
+  ) {
+
     renderPettyCash();
+
     return;
   }
 
   if (
-    id.startsWith("req")
+    id.startsWith(
+      "req"
+    )
   ) {
+
     renderRequisitions();
+
     return;
   }
 
   if (
-    id.startsWith("invoice")
+    id.startsWith(
+      "invoice"
+    )
   ) {
+
     renderInvoices();
+
     return;
   }
 
   if (
-    id.startsWith("gate")
+    id.startsWith(
+      "gate"
+    )
   ) {
+
     renderGatePasses();
+
     return;
   }
 }
 
 /* =========================================================
-   EXPOSE TO HTML
+   FORM LISTENERS
+   ========================================================= */
+
+function setupFormListeners() {
+
+  [
+    "reqQuantity",
+    "reqUnitCost"
+  ].forEach(id => {
+
+    $(id)?.addEventListener(
+      "input",
+      calculateReqTotal
+    );
+
+  });
+
+  [
+    "invoiceLabour",
+    "invoiceParts",
+    "invoiceOther",
+    "invoicePaid"
+  ].forEach(id => {
+
+    $(id)?.addEventListener(
+      "input",
+      calculateInvoice
+    );
+
+  });
+
+  [
+    "vehicleDateIn",
+    "vehicleDateOut"
+  ].forEach(id => {
+
+    $(id)?.addEventListener(
+      "change",
+      () => {
+
+        const fakeVehicle = {
+
+          date_in:
+            $("vehicleDateIn")
+              ?.value,
+
+          date_out:
+            $("vehicleDateOut")
+              ?.value
+
+        };
+
+        if (
+          $("vehicleStorageDays")
+        ) {
+
+          $("vehicleStorageDays")
+            .value =
+              storageDays(
+                fakeVehicle
+              );
+        }
+
+      }
+    );
+
+  });
+
+  $("invoiceVehicle")
+    ?.addEventListener(
+      "change",
+      () => {
+
+        const v =
+          vehicleById(
+            $("invoiceVehicle")
+              .value
+          );
+
+        if (
+          v &&
+          $("invoiceCustomer")
+        ) {
+
+          $("invoiceCustomer")
+            .value =
+              v.customer || "";
+        }
+      }
+    );
+
+  $("gateVehicle")
+    ?.addEventListener(
+      "change",
+      () => {
+
+        const v =
+          vehicleById(
+            $("gateVehicle")
+              .value
+          );
+
+        if (!v) return;
+
+        if (
+          $("gateVehicleRegistration")
+        ) {
+
+          $("gateVehicleRegistration")
+            .value =
+              v.registration || "";
+        }
+
+        if ($("gateCustomer")) {
+
+          $("gateCustomer")
+            .value =
+              v.customer || "";
+        }
+
+        if ($("gateReleasedTo")) {
+
+          $("gateReleasedTo")
+            .value =
+              v.released_to || "";
+        }
+
+        if (
+          $("gateReleasedContact")
+        ) {
+
+          $("gateReleasedContact")
+            .value =
+              v.released_contact || "";
+        }
+
+      }
+    );
+}
+
+/* =========================================================
+   RENDER ALL
+   ========================================================= */
+
+function renderAll() {
+
+  renderDashboard();
+
+  renderVehicles();
+
+  renderExpenses();
+
+  renderPettyCash();
+
+  renderRequisitions();
+
+  renderInvoices();
+
+  renderGatePasses();
+
+  /*
+    Estimates is rendered only
+    after its page exists.
+  */
+
+  if ($("estimates"))
+    renderEstimates();
+}
+
+/* =========================================================
+   GLOBAL FUNCTIONS
    ========================================================= */
 
 Object.assign(
@@ -4439,73 +6066,80 @@ Object.assign(
     closeAllModals,
 
     /* Vehicles */
+
     openVehicleModal,
-    editVehicle,
     saveVehicle,
+    editVehicle,
     deleteVehicle,
     viewVehicle,
     shareVehicle,
 
-    /* Vehicle expenses */
-    viewVehicleExpenses,
-    printVehicleExpensePreview,
-    shareVehicleExpenses,
+    /* Vehicle Expenses */
 
-    vehicleExpenseData,
+    viewVehicleExpenses,
+    shareVehicleExpenses,
+    printVehicleExpensePreview,
     vehicleExpenseTotal,
 
     /* Expenses */
+
     openExpenseModal,
-    editExpense,
     saveExpense,
+    editExpense,
     deleteExpense,
     viewExpense,
     shareExpense,
 
     /* Petty */
+
     openPettyModal,
-    editPetty,
     savePetty,
+    editPetty,
     deletePetty,
     viewPetty,
     sharePetty,
 
     /* Requisitions */
+
     openReqModal,
-    editReq,
     saveReq,
+    editReq,
     deleteReq,
     viewReq,
     shareReq,
     calculateReqTotal,
 
     /* Invoices */
+
     openInvoiceModal,
-    editInvoice,
     saveInvoice,
+    editInvoice,
     deleteInvoice,
     viewInvoice,
     shareInvoice,
     calculateInvoice,
 
-    /* Gate passes */
+    /* Gate Passes */
+
     openGatePassModal,
-    editGatePass,
     saveGatePass,
+    editGatePass,
     deleteGatePass,
     viewGatePass,
     shareGatePass,
 
     /* Estimates */
+
     openEstimateModal,
-    editEstimate,
     saveEstimate,
+    editEstimate,
     deleteEstimate,
     viewEstimate,
     shareEstimate,
     calculateEstimate,
 
-    /* Printing */
+    /* Print */
+
     printVehicles,
     printExpenses,
     printPettyCash,
@@ -4513,6 +6147,7 @@ Object.assign(
     printInvoices,
     printGatePasses,
     printCurrentPreview
+
   }
 );
 
@@ -4526,9 +6161,17 @@ document.addEventListener(
 
     injectStyles();
 
-    setUserDisplay();
-
     setupSearches();
+
+    setupFormListeners();
+
+    /*
+      Adds:
+      📋 Estimates / Quotations
+      to the existing sidebar.
+    */
+
+    ensureEstimateNavigation();
 
     /*
       Default dates.
@@ -4549,69 +6192,68 @@ document.addEventListener(
         el &&
         !el.value
       ) {
+
         el.value =
           today();
       }
+
     });
 
     /*
-      Load data.
+      Load Supabase.
     */
 
     await loadAllData();
 
     /*
-      Dashboard cards are bound once.
-      The data load does not create a second
-      set of listeners.
+      Dashboard cards.
     */
 
     setupDashboardCards();
 
     /*
-      Always start cleanly on Dashboard.
+      ALWAYS start on Dashboard.
+      Estimates remains hidden until
+      its sidebar button is clicked.
     */
+
+    document
+      .querySelectorAll(
+        ".section,.app-section"
+      )
+      .forEach(section => {
+
+        if (
+          section.id !==
+          "dashboard"
+        ) {
+
+          section.style.display =
+            "none";
+
+          section.classList.remove(
+            "active"
+          );
+        }
+
+      });
 
     const dashboard =
       $("dashboard");
 
     if (dashboard) {
 
-      document
-        .querySelectorAll(
-          ".section,.app-section"
-        )
-        .forEach(section => {
-          section.classList.remove(
-            "active"
-          );
-        });
-
-      dashboard.style.display = "";
+      dashboard.style.display =
+        "";
 
       dashboard.classList.add(
         "active"
       );
     }
 
-    /*
-      CRITICAL:
-      Estimates are NOT created here.
-      They are created only when the user
-      actually opens Estimates.
-    */
-
     console.log(
-      "Garage Operations Pro ready:",
-      {
-        vehicles:vehicles.length,
-        expenses:expenses.length,
-        pettyCash:pettyCash.length,
-        requisitions:requisitions.length,
-        invoices:invoices.length,
-        gatePasses:gatePasses.length,
-        estimates:estimates.length
-      }
+      "Garage Operations Pro ready."
     );
+
   }
 );
