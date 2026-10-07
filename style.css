@@ -1,25 +1,39 @@
 
 .storage-box{background:#f7f9fb;border:1px solid #dce3ea;border-radius:10px;padding:12px}.storage-box h3{margin:0 0 10px;font-size:15px}.storage-summary{background:#f7f9fb;border-left:4px solid #132238;border-radius:8px;padding:10px;margin:10px 0;display:grid;gap:4px}.storage-summary b{margin-bottom:3px}
 
-/* =========================================================
-   ADD VEHICLE - HORIZONTAL ACTION BUTTONS ONLY
-   ========================================================= */
 
-#vehicleModal .actions{
-    display:flex;
-    flex-direction:row;
-    align-items:center;
-    justify-content:flex-start;
-    gap:8px;
-    flex-wrap:nowrap;
+   
+/* Vehicle CRUD icons - horizontal only */
+#vehiclesTableBody .table-actions{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  gap:6px !important;
+  flex-wrap:nowrap !important;
+  white-space:nowrap !important;
 }
 
-#vehicleModal .actions button{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    white-space:nowrap;
-    min-width:auto;
-    flex:0 0 auto;
+#vehiclesTableBody .table-actions .action-btn{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  flex:0 0 auto !important;
+  width:34px !important;
+  min-width:34px !important;
+  height:34px !important;
+  padding:0 !important;
+}
+
+@media(max-width:720px){
+  #vehiclesTableBody .table-actions{
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    gap:5px !important;
+  }
+
+  #vehiclesTableBody .table-actions .action-btn{
+    width:32px !important;
+    min-width:32px !important;
+    height:32px !important;
+  }
 }
