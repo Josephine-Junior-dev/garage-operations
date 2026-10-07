@@ -4,186 +4,1433 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#07111f">
-<meta name="description" content="Garage Operations Pro - smart fleet, repair, storage, expenses and requisitions management">
+<meta name="description" content="Garage Operations Pro - smart fleet, repair, storage, expenses, requisitions, invoices and gate passes">
 <title>Garage Operations Pro</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="stylesheet" href="./style.css">
+
 <style>
-:root{--navy:#07111f;--blue:#1769aa;--blue2:#0f4f82;--line:#e5e7eb;--muted:#64748b;--bg:#f5f7fb;--white:#fff}
-*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:#172033;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}body{min-height:100vh}.hidden{display:none!important}
-button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}
-#loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#07111f,#132238)}
-.login-card{width:min(420px,100%);background:#fff;border-radius:22px;padding:28px;box-shadow:0 20px 60px #0005}.login-brand{font-size:28px;font-weight:900;color:#07111f;margin-bottom:4px}.login-sub{color:var(--muted);margin:0 0 22px}.login-form{display:grid;gap:12px}.login-form input{height:48px;border:1px solid #d7dce3;border-radius:10px;padding:0 14px}.login-form button{height:48px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:800}.login-msg{min-height:20px;color:#b42318;font-size:13px}
-.app-shell{min-height:100vh;display:flex}.sidebar{position:fixed;left:0;top:0;bottom:0;width:245px;background:#07111f;color:#fff;padding:20px 14px;z-index:20;display:flex;flex-direction:column}.brand{padding:4px 10px 22px}.brand-title{font-size:22px;font-weight:900}.brand-sub{font-size:11px;color:#94a3b8;margin-top:3px}.sidebar nav{display:grid;gap:6px}.nav-btn,.mobile-nav-btn{border:0;background:transparent;color:#cbd5e1;text-align:left;border-radius:10px;padding:12px;display:flex;gap:10px;align-items:center;font-weight:700}.nav-btn:hover,.nav-btn.active,.mobile-nav-btn.active{background:#12304e;color:#fff}.nav-icon{width:22px;text-align:center}.sidebar-user{margin-top:auto;border-top:1px solid #ffffff14;padding:15px 10px;color:#cbd5e1;font-size:13px}
-.content{margin-left:245px;min-width:0;width:calc(100% - 245px)}.topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:15px}.topbar-title{font-weight:900;font-size:20px}.topbar-title span{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:3px}.topbar-user{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:#e8f2fb;color:var(--blue);display:grid;place-items:center;font-weight:900}.btn{border:0;border-radius:9px;padding:10px 14px;background:#eef2f7;color:#172033;font-weight:800}.btn-primary{background:var(--blue);color:#fff}.btn-danger{background:#fee2e2;color:#991b1b}.page{padding:22px;max-width:1500px;margin:auto}.app-section{display:none}.app-section.active{display:block}.page-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px}.page-header h2{margin:0;font-size:24px}.page-header p{margin:5px 0 0;color:var(--muted)}.header-actions{display:flex;gap:8px;flex-wrap:wrap}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px}.search-box{flex:1}.toolbar input,.toolbar select{height:44px;width:100%;border:1px solid #d7dce3;background:#fff;border-radius:9px;padding:0 12px}.table-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto;box-shadow:0 2px 10px #00000008}.table-card table{width:100%;border-collapse:collapse;min-width:850px}.table-card th{background:#f8fafc;text-align:left;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:12px}.table-card td{border-top:1px solid #eef0f3;padding:12px;font-size:13px;vertical-align:middle}.table-actions{display:flex;gap:5px}.action-btn{border:0;background:#f1f5f9;border-radius:7px;padding:7px 9px}.status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}.status-storage{background:#e0f2fe;color:#075985}.status-under-repair{background:#fef3c7;color:#92400e}.status-completed{background:#dcfce7;color:#166534}.status-released{background:#e0e7ff;color:#3730a3}.status-pending{background:#fef3c7;color:#92400e}.status-paid{background:#dcfce7;color:#166534}.status-part-paid{background:#dbeafe;color:#1d4ed8}.status-unpaid{background:#fee2e2;color:#991b1b}
-.dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.kpi-card{background:linear-gradient(135deg,#fff,#f8fbff);border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:0 2px 10px #00000008;cursor:pointer}.kpi-label{font-size:12px;color:var(--muted)}.kpi-value{font-size:23px;font-weight:900;margin-top:7px}.kpi-card small{display:block;color:#94a3b8;margin-top:5px}.dashboard-main{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}.dashboard-card{background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid var(--line);border-radius:14px;padding:16px}.dashboard-card h3{margin:0 0 14px}.chart-placeholder{height:230px;box-shadow:inset 0 0 0 1px #eef2f7;border-radius:10px;background:linear-gradient(180deg,#f8fafc,#fff);display:flex;align-items:flex-end;gap:9px;padding:18px}.chart-bar{flex:1;background:#dbeafe;border-radius:6px 6px 2px 2px;min-height:25px}.activity-list{display:grid;gap:9px}.activity-item{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #edf0f4;border-radius:10px}.activity-icon{width:32px;height:32px;border-radius:9px;background:#eff6ff;display:grid;place-items:center}.activity-main{flex:1;display:grid;gap:2px}.activity-main span{font-size:12px;color:var(--muted)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.form-group{display:grid;gap:6px}.form-group.full{grid-column:1/-1}.form-group label{font-size:12px;font-weight:800;color:#344054}.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid #d7dce3;border-radius:9px;padding:11px;background:#fff}.form-group textarea{min-height:90px;resize:vertical}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:15px;z-index:100}.modal.show{display:flex}.modal-content{background:#fff;width:min(760px,100%);max-height:92vh;overflow:auto;border-radius:16px;box-shadow:0 20px 70px #0006}.modal-header{display:flex;justify-content:space-between;align-items:center;padding:17px 19px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}.modal-header h3{margin:0}.modal-close{border:0;background:transparent;font-size:22px;padding:4px}.modal-body{padding:18px}.modal-footer{padding:14px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}.readonly{background:#f8fafc!important}.money-total{font-weight:900}.mobile-bottom-nav{display:none}.mobile-only{display:none}#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:300;color:#fff;padding:11px 16px;border-radius:9px;display:none;box-shadow:0 8px 25px #0004}
-@media(max-width:1050px){.dashboard-grid{grid-template-columns:repeat(2,1fr)}.dashboard-main{grid-template-columns:1fr}.sidebar{width:220px}.content{margin-left:220px;width:calc(100% - 220px)}}
-@media(max-width:720px){.sidebar{display:none}.content{margin-left:0;width:100%;padding-bottom:72px}.topbar{padding:13px 14px}.page{padding:12px}.topbar-user .btn{display:none}.dashboard-grid{grid-template-columns:repeat(2,1fr);gap:8px}.kpi-card{padding:13px}.kpi-value{font-size:18px}.page-header{flex-direction:column}.header-actions{width:100%}.header-actions .btn{flex:1}.toolbar{flex-direction:column;align-items:stretch}.form-grid{grid-template-columns:1fr}.form-group.full{grid-column:auto}.mobile-bottom-nav{position:fixed;display:grid;grid-template-columns:repeat(5,1fr);left:0;right:0;bottom:0;background:#07111f;border-top:1px solid #ffffff12;z-index:50;padding:5px}.mobile-nav-btn{display:grid;gap:2px;justify-items:center;text-align:center;padding:6px 3px;font-size:10px}.mobile-nav-btn span:first-child{font-size:17px}.dashboard-card{padding:13px}}
-@media(max-width:420px){.dashboard-grid{grid-template-columns:1fr 1fr}.topbar-title{font-size:17px}.avatar{width:34px;height:34px}}
+:root{
+  --navy:#07111f;--navy2:#0b1b2f;--blue:#1769aa;--blue2:#0f4f82;
+  --line:#e5e7eb;--muted:#64748b;--bg:#f5f7fb;--white:#fff;
+  --green:#16834b;--red:#b42318;--orange:#b45309;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:#172033;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body{min-height:100vh}
+.hidden{display:none!important}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+
+/* LOGIN */
+#loginPage{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:20px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(circle at 20% 20%,#1769aa55,transparent 35%),
+    radial-gradient(circle at 80% 80%,#0f4f8244,transparent 35%),
+    linear-gradient(135deg,#040b14,#07111f 55%,#0b1b2f);
+}
+#loginPage:before{
+  content:"";position:absolute;inset:0;opacity:.15;
+  background-image:
+    linear-gradient(#fff 1px,transparent 1px),
+    linear-gradient(90deg,#fff 1px,transparent 1px);
+  background-size:45px 45px;
+}
+.login-card{
+  position:relative;width:min(430px,100%);background:#ffffffee;
+  backdrop-filter:blur(18px);border:1px solid #ffffff55;border-radius:24px;
+  padding:34px;box-shadow:0 30px 90px #0008;
+}
+.login-logo{
+  width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,#1769aa,#0f4f82);
+  color:#fff;display:grid;place-items:center;font-size:24px;font-weight:950;
+  box-shadow:0 12px 30px #1769aa55;margin-bottom:18px;
+}
+.login-brand{font-size:27px;font-weight:950;color:#07111f;margin-bottom:4px}
+.login-sub{color:var(--muted);margin:0 0 26px;font-size:13px;font-weight:700;letter-spacing:.04em}
+.login-form{display:grid;gap:12px}
+.login-form input{
+  height:50px;border:1px solid #d7dce3;border-radius:11px;padding:0 14px;
+  outline:none;background:#fff;
+}
+.login-form input:focus{border-color:#1769aa;box-shadow:0 0 0 3px #1769aa18}
+.login-form button{
+  height:50px;border:0;border-radius:11px;background:linear-gradient(135deg,#1769aa,#0f4f82);
+  color:#fff;font-weight:900;box-shadow:0 10px 24px #1769aa33;
+}
+.login-footer{font-size:11px;color:#94a3b8;margin-top:20px;text-align:center}
+.login-msg{min-height:20px;color:#b42318;font-size:13px;margin-top:4px}
+
+/* APP */
+.app-shell{min-height:100vh;display:flex}
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:245px;background:#07111f;color:#fff;
+  padding:20px 14px;z-index:20;display:flex;flex-direction:column;
+}
+.brand{padding:4px 10px 22px}
+.brand-mark{
+  width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#1769aa,#0f4f82);
+  display:grid;place-items:center;font-weight:950;margin-bottom:10px;
+}
+.brand-title{font-size:22px;font-weight:900}
+.brand-sub{font-size:11px;color:#94a3b8;margin-top:3px}
+.sidebar nav{display:grid;gap:5px}
+.nav-btn,.mobile-nav-btn{
+  border:0;background:transparent;color:#cbd5e1;text-align:left;border-radius:10px;
+  padding:11px;display:flex;gap:10px;align-items:center;font-weight:700;
+}
+.nav-btn:hover,.nav-btn.active,.mobile-nav-btn.active{background:#12304e;color:#fff}
+.nav-icon{width:22px;text-align:center}
+.sidebar-user{
+  margin-top:auto;border-top:1px solid #ffffff14;padding:15px 10px;
+  color:#cbd5e1;font-size:13px;
+}
+.content{margin-left:245px;min-width:0;width:calc(100% - 245px)}
+.topbar{
+  position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);
+  padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:15px;
+}
+.topbar-title{font-weight:900;font-size:20px}
+.topbar-title span{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:3px}
+.topbar-user{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:38px;height:38px;border-radius:50%;background:#e8f2fb;color:var(--blue);
+  display:grid;place-items:center;font-weight:900;
+}
+.btn{
+  border:0;border-radius:9px;padding:10px 14px;background:#eef2f7;color:#172033;font-weight:800
+}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-danger{background:#fee2e2;color:#991b1b}
+.btn-success{background:#dcfce7;color:#166534}
+.btn-small{padding:7px 9px;font-size:12px}
+.page{padding:22px;max-width:1550px;margin:auto}
+.app-section{display:none}
+.app-section.active{display:block}
+.page-header{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px
+}
+.page-header h2{margin:0;font-size:24px}
+.page-header p{margin:5px 0 0;color:var(--muted)}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.search-box{flex:1}
+.toolbar input,.toolbar select{
+  height:44px;width:100%;border:1px solid #d7dce3;background:#fff;border-radius:9px;padding:0 12px
+}
+.table-card{
+  background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto;
+  box-shadow:0 2px 10px #00000008
+}
+.table-card table{width:100%;border-collapse:collapse;min-width:850px}
+.table-card th{
+  background:#f8fafc;text-align:left;color:#64748b;font-size:11px;
+  text-transform:uppercase;letter-spacing:.04em;padding:12px
+}
+.table-card td{
+  border-top:1px solid #eef0f3;padding:12px;font-size:13px;vertical-align:middle
+}
+.table-actions{display:flex;gap:5px;flex-wrap:wrap}
+.action-btn{border:0;background:#f1f5f9;border-radius:7px;padding:7px 9px}
+.action-btn.danger{background:#fee2e2;color:#991b1b}
+.action-btn.blue{background:#e0f2fe;color:#075985}
+.status{
+  display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;
+  font-size:11px;font-weight:800;white-space:nowrap
+}
+.status-storage{background:#e0f2fe;color:#075985}
+.status-under-repair{background:#fef3c7;color:#92400e}
+.status-completed{background:#dcfce7;color:#166534}
+.status-released{background:#e0e7ff;color:#3730a3}
+.status-pending{background:#fef3c7;color:#92400e}
+.status-approved{background:#dbeafe;color:#1d4ed8}
+.status-ordered{background:#e0f2fe;color:#075985}
+.status-paid{background:#dcfce7;color:#166534}
+.status-part-paid{background:#dbeafe;color:#1d4ed8}
+.status-unpaid{background:#fee2e2;color:#991b1b}
+.status-rejected{background:#fee2e2;color:#991b1b}
+
+.dashboard-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px
+}
+.kpi-card{
+  background:linear-gradient(135deg,#fff,#f8fbff);border:1px solid var(--line);
+  border-radius:14px;padding:17px;box-shadow:0 2px 10px #00000008;cursor:pointer
+}
+.kpi-label{font-size:12px;color:var(--muted)}
+.kpi-value{font-size:23px;font-weight:900;margin-top:7px}
+.kpi-card small{display:block;color:#94a3b8;margin-top:5px}
+.dashboard-main{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+.dashboard-card{
+  background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid var(--line);
+  border-radius:14px;padding:16px
+}
+.dashboard-card h3{margin:0 0 14px}
+.chart-placeholder{
+  height:230px;box-shadow:inset 0 0 0 1px #eef2f7;border-radius:10px;
+  background:linear-gradient(180deg,#f8fafc,#fff);display:flex;align-items:flex-end;
+  gap:9px;padding:18px
+}
+.chart-bar{flex:1;background:#dbeafe;border-radius:6px 6px 2px 2px;min-height:25px}
+.status-summary{display:grid;gap:9px}
+.status-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px;border:1px solid #edf0f4;border-radius:10px
+}
+.activity-list{display:grid;gap:9px}
+.activity-item{
+  display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #edf0f4;border-radius:10px
+}
+.activity-icon{
+  width:32px;height:32px;border-radius:9px;background:#eff6ff;display:grid;place-items:center
+}
+.activity-main{flex:1;display:grid;gap:2px}
+.activity-main span{font-size:12px;color:var(--muted)}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.form-group{display:grid;gap:6px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:12px;font-weight:800;color:#344054}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;border:1px solid #d7dce3;border-radius:9px;padding:11px;background:#fff
+}
+.form-group textarea{min-height:90px;resize:vertical}
+.readonly{background:#f8fafc!important}
+.money-total{font-weight:900}
+
+.modal{
+  position:fixed;inset:0;background:#0008;display:none;align-items:center;
+  justify-content:center;padding:15px;z-index:100
+}
+.modal.show{display:flex}
+.modal-content{
+  background:#fff;width:min(820px,100%);max-height:92vh;overflow:auto;
+  border-radius:16px;box-shadow:0 20px 70px #0006
+}
+.modal-header{
+  display:flex;justify-content:space-between;align-items:center;padding:17px 19px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2
+}
+.modal-header h3{margin:0}
+.modal-close{border:0;background:transparent;font-size:22px;padding:4px}
+.modal-body{padding:18px}
+.modal-footer{
+  padding:14px 18px;border-top:1px solid var(--line);
+  display:flex;justify-content:flex-end;gap:8px
+}
+.preview-paper{padding:25px;background:#fff}
+.preview-head{text-align:center;border-bottom:2px solid #07111f;padding-bottom:15px;margin-bottom:18px}
+.preview-head h1{margin:0;font-size:21px}
+.preview-head p{margin:4px 0;color:#64748b;font-size:12px}
+.preview-table{width:100%;border-collapse:collapse;margin-top:15px}
+.preview-table th,.preview-table td{border:1px solid #dfe4ea;padding:9px;text-align:left;font-size:12px}
+.preview-table th{background:#f8fafc}
+.preview-total{margin-top:16px;margin-left:auto;width:300px;display:grid;gap:7px}
+.preview-total div{display:flex;justify-content:space-between}
+.preview-total .grand{font-weight:900;border-top:2px solid #07111f;padding-top:8px}
+.mobile-bottom-nav{display:none}
+.mobile-only{display:none}
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  z-index:300;color:#fff;padding:11px 16px;border-radius:9px;
+  display:none;box-shadow:0 8px 25px #0004;font-weight:700
+}
+
+@media(max-width:1100px){
+  .dashboard-grid{grid-template-columns:repeat(2,1fr)}
+  .dashboard-main{grid-template-columns:1fr}
+}
+@media(max-width:1050px){
+  .sidebar{width:220px}
+  .content{margin-left:220px;width:calc(100% - 220px)}
+}
+@media(max-width:720px){
+  .sidebar{display:none}
+  .content{margin-left:0;width:100%;padding-bottom:76px}
+  .topbar{padding:13px 14px}
+  .page{padding:12px}
+  .topbar-user .btn{display:none}
+  .dashboard-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi-card{padding:13px}
+  .kpi-value{font-size:18px}
+  .page-header{flex-direction:column}
+  .header-actions{width:100%}
+  .header-actions .btn{flex:1}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.full{grid-column:auto}
+  .mobile-bottom-nav{
+    position:fixed;display:grid;grid-template-columns:repeat(7,1fr);
+    left:0;right:0;bottom:0;background:#07111f;border-top:1px solid #ffffff12;
+    z-index:50;padding:5px 2px
+  }
+  .mobile-nav-btn{
+    display:grid;gap:2px;justify-items:center;text-align:center;
+    padding:6px 2px;font-size:9px
+  }
+  .mobile-nav-btn span:first-child{font-size:16px}
+  .dashboard-card{padding:13px}
+  .login-card{padding:26px}
+}
+@media(max-width:420px){
+  .dashboard-grid{grid-template-columns:1fr 1fr}
+  .topbar-title{font-size:17px}
+  .avatar{width:34px;height:34px}
+  .mobile-nav-btn{font-size:8px}
+}
 </style>
 </head>
+
 <body>
 
 <!-- LOGIN -->
 <div id="loginPage">
   <div class="login-card">
+    <div class="login-logo">GO</div>
     <div class="login-brand">Garage Operations Pro</div>
     <p class="login-sub">SMART FLEET. HIGHER PERFORMANCE.</p>
+
     <form id="loginForm" class="login-form">
       <input id="username" type="text" placeholder="Username" autocomplete="username" required>
       <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
-      <button type="submit">Sign in</button>
+      <button type="submit">Sign in to Garage Operations</button>
     </form>
+
     <div id="loginMsg" class="login-msg"></div>
+    <div class="login-footer">Fleet • Workshop • Finance • Operations</div>
   </div>
 </div>
 
 <!-- APPLICATION -->
 <div id="app" class="app-shell" style="display:none">
+
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-title">GO</div>
-      <div class="brand-sub">GARAGE OPERATIONS PRO</div>
+      <div class="brand-mark">GO</div>
+      <div class="brand-title">Garage Operations Pro</div>
+      <div class="brand-sub">SMART FLEET. HIGHER PERFORMANCE.</div>
     </div>
+
     <nav>
-      <button class="nav-btn active" data-section="dashboard" onclick="showSection('dashboard',this)"><span class="nav-icon">⌂</span>Dashboard</button>
-      <button class="nav-btn" data-section="vehicles" onclick="showSection('vehicles',this)"><span class="nav-icon">🚘</span>Vehicles</button>
-      <button class="nav-btn" data-section="expenses" onclick="showSection('expenses',this)"><span class="nav-icon">💳</span>Expenses</button>
-      <button class="nav-btn" data-section="pettyCash" onclick="showSection('pettyCash',this)"><span class="nav-icon">💵</span>Petty Cash</button>
-      <button class="nav-btn" data-section="requisitions" onclick="showSection('requisitions',this)"><span class="nav-icon">📋</span>Requisitions</button>
+      <button class="nav-btn active" data-section="dashboard" onclick="showSection('dashboard',this)">
+        <span class="nav-icon">⌂</span>Dashboard
+      </button>
+
+      <button class="nav-btn" data-section="vehicles" onclick="showSection('vehicles',this)">
+        <span class="nav-icon">🚘</span>Vehicles
+      </button>
+
+      <button class="nav-btn" data-section="expenses" onclick="showSection('expenses',this)">
+        <span class="nav-icon">💳</span>Expenses
+      </button>
+
+      <button class="nav-btn" data-section="pettyCash" onclick="showSection('pettyCash',this)">
+        <span class="nav-icon">💵</span>Petty Cash
+      </button>
+
+      <button class="nav-btn" data-section="requisitions" onclick="showSection('requisitions',this)">
+        <span class="nav-icon">📋</span>Requisitions
+      </button>
+
+      <button class="nav-btn" data-section="invoices" onclick="showSection('invoices',this)">
+        <span class="nav-icon">🧾</span>Invoices
+      </button>
+
+      <button class="nav-btn" data-section="gatePasses" onclick="showSection('gatePasses',this)">
+        <span class="nav-icon">🎫</span>Gate Passes
+      </button>
     </nav>
-    <div class="sidebar-user">Signed in as <strong id="sidebarUser">Josephine</strong></div>
+
+    <div class="sidebar-user">
+      Signed in as <strong id="sidebarUser">Josephine</strong>
+    </div>
   </aside>
 
   <div class="content">
+
     <header class="topbar">
-      <div class="topbar-title">Garage Operations Pro<span>Garage Operations Pro</span></div>
-      <div class="topbar-user"><div class="avatar" id="welcomeUser">J</div><button class="btn" id="logout">Sign out</button></div>
+      <div class="topbar-title">
+        Garage Operations Pro
+        <span>Garage Operations • Fleet • Finance</span>
+      </div>
+
+      <div class="topbar-user">
+        <div class="avatar" id="welcomeUser">J</div>
+        <button class="btn" id="logout">Sign out</button>
+      </div>
     </header>
 
     <main class="page">
+
       <!-- DASHBOARD -->
       <section id="dashboard" class="app-section" style="display:block">
-        <div class="page-header"><div><h2>Dashboard</h2><p>Live overview of vehicles, workshop costs and requisitions.</p></div></div>
+
+        <div class="page-header">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Live overview of vehicles, workshop costs and customer operations.</p>
+          </div>
+        </div>
+
         <div class="dashboard-grid">
-          <div class="kpi-card" onclick="showSection('vehicles')"><div class="kpi-label">Total Vehicles</div><div class="kpi-value" id="dashVehicles">0</div><small>All registered vehicles</small></div>
-          <div class="kpi-card" onclick="showSection('vehicles')"><div class="kpi-label">Under Repair</div><div class="kpi-value" id="dashRepair">0</div><small>Vehicles currently in repair</small></div>
-          <div class="kpi-card" onclick="showSection('vehicles')"><div class="kpi-label">Outstanding</div><div class="kpi-value" id="dashOutstanding">KSh 0</div><small>Customer balances</small></div>
-          <div class="kpi-card" onclick="showSection('requisitions')"><div class="kpi-label">Requisitions</div><div class="kpi-value" id="dashReq">0</div><small>Unique requisitions</small></div>
-          <div class="kpi-card"><div class="kpi-label">Total Billed</div><div class="kpi-value" id="dashBilled">KSh 0</div></div>
-          <div class="kpi-card"><div class="kpi-label">Total Paid</div><div class="kpi-value" id="dashPaid">KSh 0</div></div>
-          <div class="kpi-card" onclick="showSection('expenses')"><div class="kpi-label">Total Expenses</div><div class="kpi-value" id="dashExpenses">KSh 0</div></div>
-          <div class="kpi-card" onclick="showSection('pettyCash')"><div class="kpi-label">Petty Cash</div><div class="kpi-value" id="dashPetty">KSh 0</div></div>
+
+          <div class="kpi-card" onclick="showSection('vehicles')">
+            <div class="kpi-label">Total Vehicles</div>
+            <div class="kpi-value" id="dashVehicles">0</div>
+            <small>All registered vehicles</small>
+          </div>
+
+          <div class="kpi-card" onclick="showSection('vehicles')">
+            <div class="kpi-label">Under Repair</div>
+            <div class="kpi-value" id="dashRepair">0</div>
+            <small>Vehicles currently in repair</small>
+          </div>
+
+          <div class="kpi-card" onclick="showSection('vehicles')">
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value" id="dashOutstanding">KSh 0</div>
+            <small>Customer balances</small>
+          </div>
+
+          <div class="kpi-card" onclick="showSection('requisitions')">
+            <div class="kpi-label">Requisitions</div>
+            <div class="kpi-value" id="dashReq">0</div>
+            <small>Total requisition records</small>
+          </div>
+
+          <div class="kpi-card" onclick="showSection('invoices')">
+            <div class="kpi-label">Invoices</div>
+            <div class="kpi-value" id="dashInvoices">0</div>
+            <small>Invoices issued</small>
+          </div>
+
+          <div class="kpi-card" onclick="showSection('gatePasses')">
+            <div class="kpi-label">Gate Passes</div>
+            <div class="kpi-value" id="dashGatePasses">0</div>
+            <small>Vehicle release records</small>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Total Billed</div>
+            <div class="kpi-value" id="dashBilled">KSh 0</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Total Paid</div>
+            <div class="kpi-value" id="dashPaid">KSh 0</div>
+          </div>
+
+          <div class="kpi-card" onclick="showSection('expenses')">
+            <div class="kpi-label">Total Expenses</div>
+            <div class="kpi-value" id="dashExpenses">KSh 0</div>
+          </div>
+
+          <div class="kpi-card" onclick="showSection('pettyCash')">
+            <div class="kpi-label">Petty Cash</div>
+            <div class="kpi-value" id="dashPetty">KSh 0</div>
+          </div>
+
         </div>
+
         <div class="dashboard-main">
-          <div class="dashboard-card"><h3>Monthly Expenses</h3><div class="chart-placeholder"><div class="chart-bar" style="height:35%"></div><div class="chart-bar" style="height:52%"></div><div class="chart-bar" style="height:42%"></div><div class="chart-bar" style="height:68%"></div><div class="chart-bar" style="height:58%"></div><div class="chart-bar" style="height:76%"></div><div class="chart-bar" style="height:48%"></div><div class="chart-bar" style="height:88%"></div></div></div>
-          <div class="dashboard-card"><h3>Vehicle Status</h3><div style="display:grid;place-items:center;height:230px;color:#64748b;font-size:13px">Live status data is shown in Vehicles.</div></div>
+
+          <div class="dashboard-card">
+            <h3>Monthly Expenses</h3>
+            <div class="chart-placeholder" id="monthlyExpenseChart"></div>
+          </div>
+
+          <div class="dashboard-card">
+            <h3>Vehicle Status</h3>
+            <div class="status-summary" id="vehicleStatusSummary"></div>
+          </div>
+
         </div>
-        <div class="dashboard-card" style="margin-top:14px"><h3>Recent Activity</h3><div id="dashboardActivity" class="activity-list"></div></div>
-        <div class="dashboard-card" style="margin-top:14px"><h3>Requisition Summary</h3><div style="display:flex;justify-content:space-between;gap:12px"><span>Total Requisitions <strong id="dashReqCount">0</strong></span><strong id="dashReqTotal">KSh 0</strong></div></div>
+
+        <div class="dashboard-card" style="margin-top:14px">
+          <h3>Recent Activity</h3>
+          <div id="dashboardActivity" class="activity-list"></div>
+        </div>
+
+        <div class="dashboard-card" style="margin-top:14px">
+          <h3>Requisition Summary</h3>
+          <div style="display:flex;justify-content:space-between;gap:12px">
+            <span>Total Requisitions <strong id="dashReqCount">0</strong></span>
+            <strong id="dashReqTotal">KSh 0</strong>
+          </div>
+        </div>
+
       </section>
 
       <!-- VEHICLES -->
       <section id="vehicles" class="app-section">
-        <div class="page-header"><div><h2>Vehicles</h2><p>Manage repair and storage vehicles.</p></div><div class="header-actions"><button class="btn" id="printVehicles" onclick="printVehicles()">🖨 Print</button><button class="btn btn-primary" id="openVehicleModal" onclick="openVehicleModal()">+ Add Vehicle</button></div></div>
-        <div class="toolbar"><div class="search-box"><input id="vehicleSearch" type="search" placeholder="Search registration, customer, model or color..."></div><select id="vehicleStatusFilter" style="max-width:200px"><option value="">All statuses</option><option value="Storage">Storage</option><option value="Under Repair">Under Repair</option><option value="Completed">Completed</option><option value="Released">Released</option></select></div>
-        <div class="table-card"><table><thead><tr><th>Registration</th><th>Customer</th><th>Date In</th><th>Job Type</th><th>Status</th><th>Storage Days</th><th>Billed</th><th>Paid</th><th>Outstanding</th><th>Expenses</th><th>Actions</th></tr></thead><tbody id="vehiclesTableBody"></tbody></table></div>
+
+        <div class="page-header">
+          <div>
+            <h2>Vehicles</h2>
+            <p>Manage repair and storage vehicles.</p>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn" onclick="printVehicles()">🖨 Print</button>
+            <button class="btn btn-primary" onclick="openVehicleModal()">+ Add Vehicle</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input id="vehicleSearch" type="search" placeholder="Search registration, customer, model or color...">
+          </div>
+
+          <select id="vehicleStatusFilter" style="max-width:200px">
+            <option value="">All statuses</option>
+            <option>Storage</option>
+            <option>Under Repair</option>
+            <option>Completed</option>
+            <option>Released</option>
+          </select>
+        </div>
+
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Registration</th>
+                <th>Customer</th>
+                <th>Date In</th>
+                <th>Job Type</th>
+                <th>Status</th>
+                <th>Storage Days</th>
+                <th>Billed</th>
+                <th>Paid</th>
+                <th>Outstanding</th>
+                <th>Expenses</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="vehiclesTableBody"></tbody>
+          </table>
+        </div>
+
       </section>
 
       <!-- EXPENSES -->
       <section id="expenses" class="app-section">
-        <div class="page-header"><div><h2>Expenses</h2><p>Track vehicle and general workshop expenses.</p></div><div class="header-actions"><button class="btn" onclick="printExpenses()">🖨 Print</button><button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button></div></div>
-        <div class="toolbar"><div class="search-box"><input id="expenseSearch" type="search" placeholder="Search vehicle, description or category..."></div><select id="expenseCategoryFilter" style="max-width:200px"><option value="">All categories</option><option>Parts</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Other</option></select></div>
-        <div class="table-card"><table><thead><tr><th>Date</th><th>Vehicle</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="expensesTableBody"></tbody></table></div>
+
+        <div class="page-header">
+          <div>
+            <h2>Expenses</h2>
+            <p>Track vehicle and general workshop expenses.</p>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn" onclick="printExpenses()">🖨 Print</button>
+            <button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input id="expenseSearch" type="search" placeholder="Search vehicle, description or category...">
+          </div>
+
+          <select id="expenseCategoryFilter" style="max-width:200px">
+            <option value="">All categories</option>
+            <option>Parts</option>
+            <option>Materials</option>
+            <option>Labour</option>
+            <option>Transport</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Vehicle</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="expensesTableBody"></tbody>
+          </table>
+        </div>
+
       </section>
 
       <!-- PETTY CASH -->
       <section id="pettyCash" class="app-section">
-        <div class="page-header"><div><h2>Petty Cash</h2><p>Record small operational payments.</p></div><div class="header-actions"><button class="btn" onclick="printPettyCash()">🖨 Print</button><button class="btn btn-primary" onclick="openPettyModal()">+ Add Petty Cash</button></div></div>
-        <div class="toolbar"><div class="search-box"><input id="pettySearch" type="search" placeholder="Search description, paid to or category..."></div><select id="pettyCategoryFilter" style="max-width:200px"><option value="">All categories</option><option>Parts</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Other</option></select></div>
-        <div class="table-card"><table><thead><tr><th>Date</th><th>Description</th><th>Paid To</th><th>Category</th><th>Amount</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="pettyTableBody"></tbody></table></div>
+
+        <div class="page-header">
+          <div>
+            <h2>Petty Cash</h2>
+            <p>Record small operational payments.</p>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn" onclick="printPettyCash()">🖨 Print</button>
+            <button class="btn btn-primary" onclick="openPettyModal()">+ Add Petty Cash</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input id="pettySearch" type="search" placeholder="Search description, paid to or category...">
+          </div>
+
+          <select id="pettyCategoryFilter" style="max-width:200px">
+            <option value="">All categories</option>
+            <option>Parts</option>
+            <option>Materials</option>
+            <option>Labour</option>
+            <option>Transport</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Paid To</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pettyTableBody"></tbody>
+          </table>
+        </div>
+
       </section>
 
       <!-- REQUISITIONS -->
       <section id="requisitions" class="app-section">
-        <div class="page-header"><div><h2>Requisitions</h2><p>Request and track workshop items and costs.</p></div><div class="header-actions"><button class="btn" onclick="printRequisitions()">🖨 Print</button><button class="btn btn-primary" onclick="openReqModal()">+ New Requisition</button></div></div>
-        <div class="toolbar"><div class="search-box"><input id="reqSearch" type="search" placeholder="Search requisition, vehicle, item or requester..."></div><select id="reqStatusFilter" style="max-width:200px"><option value="">All statuses</option><option>Pending</option><option>Approved</option><option>Ordered</option><option>Completed</option><option>Rejected</option></select></div>
-        <div class="dashboard-card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px"><strong>Overall Requisition Total</strong><strong id="reqOverallTotal">KSh 0</strong></div></div>
-        <div class="table-card"><table><thead><tr><th>Req No.</th><th>Date</th><th>Requested By</th><th>Vehicle</th><th>Description</th><th>Qty</th><th>Unit Cost</th><th>Total</th><th>Expense Type</th><th>Status</th><th>Actions</th></tr></thead><tbody id="requisitionsTableBody"></tbody></table></div>
+
+        <div class="page-header">
+          <div>
+            <h2>Requisitions</h2>
+            <p>Request and track workshop items and costs.</p>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn" onclick="printRequisitions()">🖨 Print</button>
+            <button class="btn btn-primary" onclick="openReqModal()">+ New Requisition</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input id="reqSearch" type="search" placeholder="Search requisition, vehicle, item or requester...">
+          </div>
+
+          <select id="reqStatusFilter" style="max-width:200px">
+            <option value="">All statuses</option>
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>Ordered</option>
+            <option>Completed</option>
+            <option>Rejected</option>
+          </select>
+        </div>
+
+        <div class="dashboard-card" style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;gap:10px">
+            <strong>Overall Requisition Total</strong>
+            <strong id="reqOverallTotal">KSh 0</strong>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Req No.</th>
+                <th>Date</th>
+                <th>Requested By</th>
+                <th>Vehicle</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Cost</th>
+                <th>Total</th>
+                <th>Expense Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requisitionsTableBody"></tbody>
+          </table>
+        </div>
+
       </section>
+
+      <!-- INVOICES -->
+      <section id="invoices" class="app-section">
+
+        <div class="page-header">
+          <div>
+            <h2>Invoices</h2>
+            <p>Create, track, print and manage customer invoices.</p>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn" onclick="printInvoices()">🖨 Print</button>
+            <button class="btn btn-primary" onclick="openInvoiceModal()">+ New Invoice</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input id="invoiceSearch" type="search" placeholder="Search invoice, vehicle or customer...">
+          </div>
+
+          <select id="invoiceStatusFilter" style="max-width:200px">
+            <option value="">All statuses</option>
+            <option>Unpaid</option>
+            <option>Part Paid</option>
+            <option>Paid</option>
+          </select>
+        </div>
+
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice No.</th>
+                <th>Date</th>
+                <th>Vehicle</th>
+                <th>Customer</th>
+                <th>Subtotal</th>
+                <th>Paid</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="invoicesTableBody"></tbody>
+          </table>
+        </div>
+
+      </section>
+
+      <!-- GATE PASSES -->
+      <section id="gatePasses" class="app-section">
+
+        <div class="page-header">
+          <div>
+            <h2>Gate Passes</h2>
+            <p>Control and document vehicle release from the garage.</p>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn" onclick="printGatePasses()">🖨 Print</button>
+            <button class="btn btn-primary" onclick="openGatePassModal()">+ New Gate Pass</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input id="gateSearch" type="search" placeholder="Search gate pass, vehicle or customer...">
+          </div>
+
+          <select id="gateStatusFilter" style="max-width:200px">
+            <option value="">All statuses</option>
+            <option>Pending</option>
+            <option>Released</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Gate Pass</th>
+                <th>Date</th>
+                <th>Vehicle</th>
+                <th>Customer</th>
+                <th>Released To</th>
+                <th>Invoice</th>
+                <th>Paid</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="gatePassesTableBody"></tbody>
+          </table>
+        </div>
+
+      </section>
+
     </main>
   </div>
 </div>
 
 <!-- MOBILE NAV -->
 <nav class="mobile-bottom-nav">
-  <button class="mobile-nav-btn active" data-section="dashboard" onclick="showSection('dashboard',this)"><span>⌂</span><span>Home</span></button>
-  <button class="mobile-nav-btn" data-section="vehicles" onclick="showSection('vehicles',this)"><span>🚘</span><span>Vehicles</span></button>
-  <button class="mobile-nav-btn" data-section="expenses" onclick="showSection('expenses',this)"><span>💳</span><span>Expenses</span></button>
-  <button class="mobile-nav-btn" data-section="pettyCash" onclick="showSection('pettyCash',this)"><span>💵</span><span>Petty</span></button>
-  <button class="mobile-nav-btn" data-section="requisitions" onclick="showSection('requisitions',this)"><span>📋</span><span>Reqs</span></button>
+
+  <button class="mobile-nav-btn active" data-section="dashboard" onclick="showSection('dashboard',this)">
+    <span>⌂</span><span>Home</span>
+  </button>
+
+  <button class="mobile-nav-btn" data-section="vehicles" onclick="showSection('vehicles',this)">
+    <span>🚘</span><span>Vehicles</span>
+  </button>
+
+  <button class="mobile-nav-btn" data-section="expenses" onclick="showSection('expenses',this)">
+    <span>💳</span><span>Expenses</span>
+  </button>
+
+  <button class="mobile-nav-btn" data-section="pettyCash" onclick="showSection('pettyCash',this)">
+    <span>💵</span><span>Petty</span>
+  </button>
+
+  <button class="mobile-nav-btn" data-section="requisitions" onclick="showSection('requisitions',this)">
+    <span>📋</span><span>Reqs</span>
+  </button>
+
+  <button class="mobile-nav-btn" data-section="invoices" onclick="showSection('invoices',this)">
+    <span>🧾</span><span>Invoice</span>
+  </button>
+
+  <button class="mobile-nav-btn" data-section="gatePasses" onclick="showSection('gatePasses',this)">
+    <span>🎫</span><span>Gate</span>
+  </button>
+
 </nav>
 
 <!-- VEHICLE MODAL -->
 <div id="vehicleModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header"><h3 id="vehicleModalTitle">Add Vehicle</h3><button class="modal-close" type="button" onclick="closeModal('vehicleModal')">×</button></div>
-    <form id="vehicleForm">
-      <div class="modal-body"><input id="vehicleId" type="hidden">
-        <div class="form-grid">
-          <div class="form-group"><label>Registration / Chassis No.</label><input id="vehicleRegistration" required placeholder="e.g. KBN 123A / Chassis No."></div>
-          <div class="form-group"><label>Customer</label><input id="vehicleCustomer" required placeholder="Customer name"></div>
-          <div class="form-group"><label>Model</label><input id="vehicleModel" placeholder="e.g. Toyota Probox"></div>
-          <div class="form-group"><label>Model Year</label><input id="vehicleModelYear" type="number" min="1900" max="2100" inputmode="numeric" placeholder="e.g. 2018"></div>
-          <div class="form-group"><label>Color</label><input id="vehicleColor" placeholder="e.g. White"></div>
-          <div class="form-group"><label>Date In</label><input id="vehicleDateIn" type="date" required></div>
-          <div class="form-group"><label>Date Out</label><input id="vehicleDateOut" type="date"></div>
-          <div class="form-group"><label>Storage Days</label><input id="vehicleStorageDays" class="readonly" type="number" readonly value="0"></div>
-          <div class="form-group"><label>Job Type</label><select id="vehicleJobType"><option value="Repair">Repair</option><option value="Storage">Storage</option></select></div>
-          <div class="form-group"><label>Status</label><select id="vehicleStatus"><option value="Storage">Storage</option><option value="Under Repair">Under Repair</option><option value="Completed">Completed</option><option value="Released">Released</option></select></div>
-          <div class="form-group"><label>Released To</label><input id="vehicleReleasedTo" placeholder="Name of person receiving vehicle"></div>
-          <div class="form-group"><label>Released Contact</label><input id="vehicleReleasedContact" type="tel" placeholder="Phone number"></div>
-          <div class="form-group"><label>Billed (KSh)</label><input id="vehicleBilled" type="number" min="0" step="0.01" value="0" inputmode="decimal"></div>
-          <div class="form-group"><label>Paid (KSh)</label><input id="vehiclePaid" type="number" min="0" step="0.01" value="0" inputmode="decimal"></div>
-          <div class="form-group full"><label>Description</label><textarea id="vehicleDescription" placeholder="Vehicle work or storage notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="modal-footer"><button type="button" class="btn" onclick="closeModal('vehicleModal')">Cancel</button><button type="submit" class="btn btn-primary">Save Vehicle</button></div>
-    </form>
-  </div>
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="vehicleModalTitle">Add Vehicle</h3>
+<button class="modal-close" type="button" onclick="closeModal('vehicleModal')">×</button>
+</div>
+
+<form id="vehicleForm">
+
+<div class="modal-body">
+<input id="vehicleId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Registration / Chassis No.</label>
+<input id="vehicleRegistration" required placeholder="e.g. KBN 123A / Chassis No.">
+</div>
+
+<div class="form-group">
+<label>Customer</label>
+<input id="vehicleCustomer" required placeholder="Customer name">
+</div>
+
+<div class="form-group">
+<label>Model</label>
+<input id="vehicleModel" placeholder="e.g. Toyota Probox">
+</div>
+
+<div class="form-group">
+<label>Model Year</label>
+<input id="vehicleModelYear" type="number" min="1900" max="2100">
+</div>
+
+<div class="form-group">
+<label>Color</label>
+<input id="vehicleColor" placeholder="e.g. White">
+</div>
+
+<div class="form-group">
+<label>Date In</label>
+<input id="vehicleDateIn" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Date Out</label>
+<input id="vehicleDateOut" type="date">
+</div>
+
+<div class="form-group">
+<label>Storage Days</label>
+<input id="vehicleStorageDays" class="readonly" type="number" readonly value="0">
+</div>
+
+<div class="form-group">
+<label>Job Type</label>
+<select id="vehicleJobType">
+<option value="Repair">Repair</option>
+<option value="Storage">Storage</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Status</label>
+<select id="vehicleStatus">
+<option value="Storage">Storage</option>
+<option value="Under Repair">Under Repair</option>
+<option value="Completed">Completed</option>
+<option value="Released">Released</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Released To</label>
+<input id="vehicleReleasedTo">
+</div>
+
+<div class="form-group">
+<label>Released Contact</label>
+<input id="vehicleReleasedContact" type="tel">
+</div>
+
+<div class="form-group">
+<label>Billed (KSh)</label>
+<input id="vehicleBilled" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group">
+<label>Paid (KSh)</label>
+<input id="vehiclePaid" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group full">
+<label>Description</label>
+<textarea id="vehicleDescription"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+<button type="button" class="btn" onclick="closeModal('vehicleModal')">Cancel</button>
+<button type="submit" class="btn btn-primary">Save Vehicle</button>
+</div>
+
+</form>
+</div>
 </div>
 
 <!-- EXPENSE MODAL -->
-<div id="expenseModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="expenseModalTitle">Add Expense</h3><button class="modal-close" type="button" onclick="closeModal('expenseModal')">×</button></div><form id="expenseForm"><div class="modal-body"><input id="expenseId" type="hidden"><div class="form-grid"><div class="form-group"><label>Vehicle</label><select id="expenseVehicle"></select></div><div class="form-group"><label>Date</label><input id="expenseDate" type="date" required></div><div class="form-group"><label>Category</label><select id="expenseCategory"><option>Parts</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Other</option></select></div><div class="form-group"><label>Amount (KSh)</label><input id="expenseAmount" type="number" min="0" step="0.01" required></div><div class="form-group full"><label>Description</label><input id="expenseDescription" required placeholder="e.g. Windscreen"></div></div></div><div class="modal-footer"><button type="button" class="btn" onclick="closeModal('expenseModal')">Cancel</button><button class="btn btn-primary">Save Expense</button></div></form></div></div>
+<div id="expenseModal" class="modal">
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="expenseModalTitle">Add Expense</h3>
+<button class="modal-close" type="button" onclick="closeModal('expenseModal')">×</button>
+</div>
+
+<form id="expenseForm">
+
+<div class="modal-body">
+<input id="expenseId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Vehicle</label>
+<select id="expenseVehicle"></select>
+</div>
+
+<div class="form-group">
+<label>Date</label>
+<input id="expenseDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Category</label>
+<select id="expenseCategory">
+<option>Parts</option>
+<option>Materials</option>
+<option>Labour</option>
+<option>Transport</option>
+<option>Other</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Amount (KSh)</label>
+<input id="expenseAmount" type="number" min="0" step="0.01" required>
+</div>
+
+<div class="form-group full">
+<label>Description</label>
+<input id="expenseDescription" required>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+<button type="button" class="btn" onclick="closeModal('expenseModal')">Cancel</button>
+<button class="btn btn-primary">Save Expense</button>
+</div>
+
+</form>
+</div>
+</div>
 
 <!-- PETTY CASH MODAL -->
-<div id="pettyModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="pettyModalTitle">Add Petty Cash</h3><button class="modal-close" type="button" onclick="closeModal('pettyModal')">×</button></div><form id="pettyForm"><div class="modal-body"><input id="pettyId" type="hidden"><div class="form-grid"><div class="form-group"><label>Date</label><input id="pettyDate" type="date" required></div><div class="form-group"><label>Paid To</label><input id="pettyPaidTo" placeholder="Person / supplier"></div><div class="form-group"><label>Category</label><select id="pettyCategory"><option>Parts</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Other</option></select></div><div class="form-group"><label>Amount (KSh)</label><input id="pettyAmount" type="number" min="0" step="0.01" required></div><div class="form-group full"><label>Description</label><input id="pettyDescription" required placeholder="What was paid for?"></div><div class="form-group full"><label>Notes</label><textarea id="pettyNotes" placeholder="Additional notes..."></textarea></div></div></div><div class="modal-footer"><button type="button" class="btn" onclick="closeModal('pettyModal')">Cancel</button><button class="btn btn-primary">Save Petty Cash</button></div></form></div></div>
+<div id="pettyModal" class="modal">
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="pettyModalTitle">Add Petty Cash</h3>
+<button class="modal-close" type="button" onclick="closeModal('pettyModal')">×</button>
+</div>
+
+<form id="pettyForm">
+
+<div class="modal-body">
+<input id="pettyId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Date</label>
+<input id="pettyDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Paid To</label>
+<input id="pettyPaidTo">
+</div>
+
+<div class="form-group">
+<label>Category</label>
+<select id="pettyCategory">
+<option>Parts</option>
+<option>Materials</option>
+<option>Labour</option>
+<option>Transport</option>
+<option>Other</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Amount (KSh)</label>
+<input id="pettyAmount" type="number" min="0" step="0.01" required>
+</div>
+
+<div class="form-group full">
+<label>Description</label>
+<input id="pettyDescription" required>
+</div>
+
+<div class="form-group full">
+<label>Notes</label>
+<textarea id="pettyNotes"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+<button type="button" class="btn" onclick="closeModal('pettyModal')">Cancel</button>
+<button class="btn btn-primary">Save Petty Cash</button>
+</div>
+
+</form>
+</div>
+</div>
 
 <!-- REQUISITION MODAL -->
-<div id="reqModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="reqModalTitle">New Requisition</h3><button class="modal-close" type="button" onclick="closeModal('reqModal')">×</button></div><form id="reqForm"><div class="modal-body"><input id="reqId" type="hidden"><div class="form-grid"><div class="form-group"><label>Req No.</label><input id="reqNo" required placeholder="REQ-2026-0001"></div><div class="form-group"><label>Date</label><input id="reqDate" type="date" required></div><div class="form-group"><label>Requested By</label><input id="reqRequestedBy" required placeholder="Name"></div><div class="form-group"><label>Vehicle</label><select id="reqVehicle"></select></div><div class="form-group full"><label>Item Description</label><input id="reqItemDescription" required placeholder="e.g. Brake pads"></div><div class="form-group"><label>Quantity</label><input id="reqQuantity" type="number" min="0" step="0.01" value="1"></div><div class="form-group"><label>Unit Cost (KSh)</label><input id="reqUnitCost" type="number" min="0" step="0.01" value="0"></div><div class="form-group"><label>Total (KSh)</label><input id="reqTotal" class="readonly" type="number" readonly value="0"></div><div class="form-group"><label>Status</label><select id="reqStatus"><option>Pending</option><option>Approved</option><option>Ordered</option><option>Completed</option><option>Rejected</option></select></div><div class="form-group"><label>Category</label><select id="reqCategory"><option value="">Select</option><option>Parts</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Other</option></select></div><div class="form-group"><label>Expense Type</label><select id="reqExpenseType"><option value="">Select</option><option>Parts</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Other</option></select></div><div class="form-group full"><label>Notes</label><textarea id="reqNotes" placeholder="Additional notes..."></textarea></div></div></div><div class="modal-footer"><button type="button" class="btn" onclick="closeModal('reqModal')">Cancel</button><button class="btn btn-primary">Save Requisition</button></div></form></div></div>
+<div id="reqModal" class="modal">
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="reqModalTitle">New Requisition</h3>
+<button class="modal-close" type="button" onclick="closeModal('reqModal')">×</button>
+</div>
+
+<form id="reqForm">
+
+<div class="modal-body">
+<input id="reqId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Req No.</label>
+<input id="reqNo" required placeholder="REQ-2026-0001">
+</div>
+
+<div class="form-group">
+<label>Date</label>
+<input id="reqDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Requested By</label>
+<input id="reqRequestedBy" required>
+</div>
+
+<div class="form-group">
+<label>Vehicle</label>
+<select id="reqVehicle"></select>
+</div>
+
+<div class="form-group full">
+<label>Item Description</label>
+<input id="reqItemDescription" required>
+</div>
+
+<div class="form-group">
+<label>Quantity</label>
+<input id="reqQuantity" type="number" min="0" step="0.01" value="1">
+</div>
+
+<div class="form-group">
+<label>Unit Cost (KSh)</label>
+<input id="reqUnitCost" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group">
+<label>Total (KSh)</label>
+<input id="reqTotal" class="readonly" type="number" readonly value="0">
+</div>
+
+<div class="form-group">
+<label>Status</label>
+<select id="reqStatus">
+<option>Pending</option>
+<option>Approved</option>
+<option>Ordered</option>
+<option>Completed</option>
+<option>Rejected</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Category</label>
+<select id="reqCategory">
+<option value="">Select</option>
+<option>Parts</option>
+<option>Materials</option>
+<option>Labour</option>
+<option>Transport</option>
+<option>Other</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Expense Type</label>
+<select id="reqExpenseType">
+<option value="">Select</option>
+<option>Parts</option>
+<option>Materials</option>
+<option>Labour</option>
+<option>Transport</option>
+<option>Other</option>
+</select>
+</div>
+
+<div class="form-group full">
+<label>Notes</label>
+<textarea id="reqNotes"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+<button type="button" class="btn" onclick="closeModal('reqModal')">Cancel</button>
+<button class="btn btn-primary">Save Requisition</button>
+</div>
+
+</form>
+</div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div id="invoiceModal" class="modal">
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="invoiceModalTitle">New Invoice</h3>
+<button class="modal-close" type="button" onclick="closeModal('invoiceModal')">×</button>
+</div>
+
+<form id="invoiceForm">
+
+<div class="modal-body">
+<input id="invoiceId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Invoice No.</label>
+<input id="invoiceNo" required placeholder="INV-2026-0001">
+</div>
+
+<div class="form-group">
+<label>Invoice Date</label>
+<input id="invoiceDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Vehicle</label>
+<select id="invoiceVehicle"></select>
+</div>
+
+<div class="form-group">
+<label>Customer</label>
+<input id="invoiceCustomer" required>
+</div>
+
+<div class="form-group full">
+<label>Job Description</label>
+<textarea id="invoiceJobDescription" required></textarea>
+</div>
+
+<div class="form-group">
+<label>Labour (KSh)</label>
+<input id="invoiceLabour" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group">
+<label>Parts (KSh)</label>
+<input id="invoiceParts" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group">
+<label>Other (KSh)</label>
+<input id="invoiceOther" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group">
+<label>Subtotal (KSh)</label>
+<input id="invoiceSubtotal" class="readonly" type="number" readonly value="0">
+</div>
+
+<div class="form-group">
+<label>Paid (KSh)</label>
+<input id="invoicePaid" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group">
+<label>Balance (KSh)</label>
+<input id="invoiceBalance" class="readonly" type="number" readonly value="0">
+</div>
+
+<div class="form-group">
+<label>Status</label>
+<select id="invoiceStatus">
+<option>Unpaid</option>
+<option>Part Paid</option>
+<option>Paid</option>
+</select>
+</div>
+
+<div class="form-group full">
+<label>Notes</label>
+<textarea id="invoiceNotes"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+<button type="button" class="btn" onclick="closeModal('invoiceModal')">Cancel</button>
+<button class="btn btn-primary">Save Invoice</button>
+</div>
+
+</form>
+</div>
+</div>
+
+<!-- GATE PASS MODAL -->
+<div id="gatePassModal" class="modal">
+<div class="modal-content">
+
+<div class="modal-header">
+<h3 id="gatePassModalTitle">New Gate Pass</h3>
+<button class="modal-close" type="button" onclick="closeModal('gatePassModal')">×</button>
+</div>
+
+<form id="gatePassForm">
+
+<div class="modal-body">
+<input id="gatePassId" type="hidden">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Gate Pass No.</label>
+<input id="gatePassNo" required placeholder="GP-2026-0001">
+</div>
+
+<div class="form-group">
+<label>Pass Date</label>
+<input id="gatePassDate" type="date" required>
+</div>
+
+<div class="form-group">
+<label>Vehicle</label>
+<select id="gateVehicle"></select>
+</div>
+
+<div class="form-group">
+<label>Vehicle Registration</label>
+<input id="gateVehicleRegistration" class="readonly" readonly>
+</div>
+
+<div class="form-group">
+<label>Customer</label>
+<input id="gateCustomer">
+</div>
+
+<div class="form-group">
+<label>Released To</label>
+<input id="gateReleasedTo" required>
+</div>
+
+<div class="form-group">
+<label>Released Contact</label>
+<input id="gateReleasedContact" type="tel">
+</div>
+
+<div class="form-group">
+<label>Invoice No.</label>
+<input id="gateInvoice">
+</div>
+
+<div class="form-group">
+<label>Amount Paid (KSh)</label>
+<input id="gatePaid" type="number" min="0" step="0.01" value="0">
+</div>
+
+<div class="form-group">
+<label>Balance (KSh)</label>
+<input id="gateBalance" class="readonly" type="number" readonly value="0">
+</div>
+
+<div class="form-group">
+<label>Authorized By</label>
+<input id="gateAuthorizedBy" value="Josephine">
+</div>
+
+<div class="form-group">
+<label>Status</label>
+<select id="gateStatus">
+<option>Pending</option>
+<option>Released</option>
+<option>Cancelled</option>
+</select>
+</div>
+
+<div class="form-group full">
+<label>Notes</label>
+<textarea id="gateNotes"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="modal-footer">
+<button type="button" class="btn" onclick="closeModal('gatePassModal')">Cancel</button>
+<button class="btn btn-primary">Save Gate Pass</button>
+</div>
+
+</form>
+</div>
+</div>
 
 <!-- PREVIEW MODALS -->
-<div id="reqPreviewModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Requisition Preview</h3><button class="modal-close" type="button" onclick="closeModal('reqPreviewModal')">×</button></div><div class="modal-body" id="reqPreviewContent"></div><div class="modal-footer"><button class="btn" onclick="closeModal('reqPreviewModal')">Close</button><button class="btn btn-primary" onclick="printSelectedReq()">🖨 Print</button></div></div></div>
-<div id="vehicleExpensePreviewModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Vehicle Expense Summary</h3><button class="modal-close" type="button" onclick="closeModal('vehicleExpensePreviewModal')">×</button></div><div class="modal-body" id="vehicleExpensePreviewContent"></div><div class="modal-footer"><button class="btn" onclick="closeModal('vehicleExpensePreviewModal')">Close</button><button class="btn btn-primary" onclick="printVehicleExpensePreview()">🖨 Print</button></div></div></div>
+<div id="previewModal" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<h3 id="previewTitle">Preview</h3>
+<button class="modal-close" type="button" onclick="closeModal('previewModal')">×</button>
+</div>
+<div class="modal-body" id="previewContent"></div>
+<div class="modal-footer">
+<button class="btn" onclick="closeModal('previewModal')">Close</button>
+<button class="btn btn-primary" onclick="printCurrentPreview()">🖨 Print</button>
+</div>
+</div>
+</div>
+
+<div id="vehicleExpensePreviewModal" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<h3>Vehicle Expense Summary</h3>
+<button class="modal-close" type="button" onclick="closeModal('vehicleExpensePreviewModal')">×</button>
+</div>
+<div class="modal-body" id="vehicleExpensePreviewContent"></div>
+<div class="modal-footer">
+<button class="btn" onclick="closeModal('vehicleExpensePreviewModal')">Close</button>
+<button class="btn btn-primary" onclick="printVehicleExpensePreview()">🖨 Print</button>
+</div>
+</div>
+</div>
 
 <div id="toast"></div>
 
 <script>
 (function(){
-  const users={josephine:'1234',boss:'1234',staff:'1234'};
+  const users={
+    josephine:'1234',
+    boss:'1234',
+    staff:'1234'
+  };
+
   const form=document.getElementById('loginForm');
   const login=document.getElementById('loginPage');
   const app=document.getElementById('app');
   const msg=document.getElementById('loginMsg');
   const logout=document.getElementById('logout');
-  function showApp(){login.style.display='none';app.style.display='flex'}
-  if(sessionStorage.getItem('garageLoggedIn')==='true') showApp();
-  form.addEventListener('submit',function(e){e.preventDefault();const u=document.getElementById('username').value.trim().toLowerCase();const p=document.getElementById('password').value;if(users[u]===p){sessionStorage.setItem('garageLoggedIn','true');sessionStorage.setItem('garageUser',u);msg.textContent='';showApp();window.location.reload()}else{msg.textContent='Invalid username or password.'}});
-  logout.addEventListener('click',function(){sessionStorage.removeItem('garageLoggedIn');sessionStorage.removeItem('garageUser');location.reload()});
+
+  function showApp(){
+    login.style.display='none';
+    app.style.display='flex';
+  }
+
+  if(sessionStorage.getItem('garageLoggedIn')==='true'){
+    showApp();
+  }
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+
+    const u=document.getElementById('username').value.trim().toLowerCase();
+    const p=document.getElementById('password').value;
+
+    if(users[u]===p){
+      sessionStorage.setItem('garageLoggedIn','true');
+      sessionStorage.setItem('garageUser',u);
+      msg.textContent='';
+      showApp();
+      window.location.reload();
+    }else{
+      msg.textContent='Invalid username or password.';
+    }
+  });
+
+  logout.addEventListener('click',function(){
+    sessionStorage.removeItem('garageLoggedIn');
+    sessionStorage.removeItem('garageUser');
+    location.reload();
+  });
 })();
 </script>
+
 <script type="module" src="./app.js"></script>
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(function(){});
+}
+</script>
+
 </body>
 </html>
