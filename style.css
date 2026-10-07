@@ -1,13 +1,39 @@
+.storage-box{
+  background:#f7f9fb;
+  border:1px solid #dce3ea;
+  border-radius:10px;
+  padding:12px;
+}
 
-.storage-box{background:#f7f9fb;border:1px solid #dce3ea;border-radius:10px;padding:12px}.storage-box h3{margin:0 0 10px;font-size:15px}.storage-summary{background:#f7f9fb;border-left:4px solid #132238;border-radius:8px;padding:10px;margin:10px 0;display:grid;gap:4px}.storage-summary b{margin-bottom:3px}
+.storage-box h3{
+  margin:0 0 10px;
+  font-size:15px;
+}
+
+.storage-summary{
+  background:#f7f9fb;
+  border-left:4px solid #132238;
+  border-radius:8px;
+  padding:10px;
+  margin:10px 0;
+  display:grid;
+  gap:4px;
+}
+
+.storage-summary b{
+  margin-bottom:3px;
+}
 
 
-   
-/* Vehicle CRUD icons - horizontal only */
+/* =========================================================
+   VEHICLE CRUD ICONS - HORIZONTAL
+   ========================================================= */
+
 #vehiclesTableBody .table-actions{
   display:flex !important;
   flex-direction:row !important;
   align-items:center !important;
+  justify-content:flex-start !important;
   gap:6px !important;
   flex-wrap:nowrap !important;
   white-space:nowrap !important;
@@ -22,114 +48,74 @@
   min-width:34px !important;
   height:34px !important;
   padding:0 !important;
+  margin:0 !important;
 }
 
-@media(max-width:720px){
+
+/* =========================================================
+   ADD VEHICLE
+   DATE IN + DATE OUT HORIZONTAL
+   ========================================================= */
+
+#vehicleModal .form-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:12px !important;
+}
+
+#vehicleModal .form-grid > *{
+  min-width:0 !important;
+}
+
+#vehicleModal #vehicleDateIn,
+#vehicleModal #vehicleDateOut{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  display:block !important;
+}
+
+
+/* =========================================================
+   PHONE
+   KEEP DATE IN + DATE OUT ON THE SAME ROW
+   ========================================================= */
+
+@media(max-width:600px){
+
+  #vehicleModal .form-grid{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:8px !important;
+  }
+
+  #vehicleModal .form-grid > *{
+    min-width:0 !important;
+    width:100% !important;
+  }
+
+  #vehicleModal input[type="date"]{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    font-size:12px !important;
+    padding:9px 5px !important;
+  }
+
   #vehiclesTableBody .table-actions{
+    display:flex !important;
     flex-direction:row !important;
     flex-wrap:nowrap !important;
     gap:5px !important;
+    white-space:nowrap !important;
   }
 
   #vehiclesTableBody .table-actions .action-btn{
     width:32px !important;
     min-width:32px !important;
     height:32px !important;
-  }
-} 
-
-/* Add Vehicle - keep Date In and Date Out side by side */
-#vehicleModal .form-grid{
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-}
-
-#vehicleModal .form-grid > div{
-  min-width:0 !important;
-}
-
-@media(max-width:600px){
-  #vehicleModal .form-grid{
-    grid-template-columns:1fr !important;
+    flex:0 0 32px !important;
   }
 }
-
-/* =========================================================
-   ADD VEHICLE - PHONE DATE ROW
-   Keep Date In + Date Out side by side on phone
-   ========================================================= */
-
-#vehicleModal .form-grid{
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-}
-
-#vehicleModal #vehicleDateIn,
-#vehicleModal #vehicleDateOut{
-  width:100% !important;
-  min-width:0 !important;
-}
-
-#vehicleModal #vehicleDateIn{
-  grid-column:1 !important;
-}
-
-#vehicleModal #vehicleDateOut{
-  grid-column:2 !important;
-}
-
-/* Phone */
-@media(max-width:600px){
-  #vehicleModal .form-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
-
-  #vehicleModal .form-group{
-    min-width:0 !important;
-  }
-
-  #vehicleModal input[type="date"]{
-    width:100% !important;
-    min-width:0 !important;
-    font-size:13px !important;
-  }
-} 
-
-/* =========================================================
-   ADD VEHICLE - PHONE DATE ROW
-   Keep Date In + Date Out side by side on phone
-   ========================================================= */
-
-#vehicleModal .form-grid{
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-}
-
-#vehicleModal #vehicleDateIn,
-#vehicleModal #vehicleDateOut{
-  width:100% !important;
-  min-width:0 !important;
-}
-
-#vehicleModal #vehicleDateIn{
-  grid-column:1 !important;
-}
-
-#vehicleModal #vehicleDateOut{
-  grid-column:2 !important;
-}
-
-/* Phone */
-@media(max-width:600px){
-  #vehicleModal .form-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
-
-  #vehicleModal .form-group{
-    min-width:0 !important;
-  }
-
-  #vehicleModal input[type="date"]{
-    width:100% !important;
-    min-width:0 !important;
-    font-size:13px !important;
-  }
-}
-
