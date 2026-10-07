@@ -2,3 +2,71 @@
 @media print{header,.tabs,.stats,.panel:first-child{display:none!important}}
 
 .storage-box{background:#f7f9fb;border:1px solid #dce3ea;border-radius:10px;padding:12px}.storage-box h3{margin:0 0 10px;font-size:15px}.storage-summary{background:#f7f9fb;border-left:4px solid #132238;border-radius:8px;padding:10px;margin:10px 0;display:grid;gap:4px}.storage-summary b{margin-bottom:3px}
+/* =========================================================
+   ADD VEHICLE - HORIZONTAL ICON / ACTION ALIGNMENT
+   ========================================================= */
+
+#vehicleModal .form-group,
+#vehicleModal .form-row {
+    min-width: 0;
+}
+
+#vehicleModal .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+#vehicleModal .form-row > .form-group {
+    flex: 1 1 180px;
+}
+
+/* Horizontal vehicle action buttons */
+#vehicleModal .modal-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Icons inside labels/buttons stay aligned */
+#vehicleModal label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+#vehicleModal button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+
+/* Phone layout */
+@media (max-width: 600px) {
+    #vehicleModal .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    #vehicleModal .form-row > .form-group {
+        min-width: 0;
+        width: 100%;
+    }
+
+    #vehicleModal .modal-footer {
+        display: flex;
+        flex-direction: row;
+        justify-content: stretch;
+    }
+
+    #vehicleModal .modal-footer button {
+        flex: 1 1 0;
+    }
+}
