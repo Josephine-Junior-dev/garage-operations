@@ -1,15 +1,24 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 /* =========================================================
-   GARAGE OPERATIONS PRO - SHORT COMPLETE APP.JS
+   GARAGE OPERATIONS PRO
+   COMPLETE SHORT APP.JS
    ========================================================= */
 
-const SUPABASE_URL = "https://ptluwoeogfkqavhspdjj.supabase.co";
+const SUPABASE_URL =
+  "https://ptluwoeogfkqavhspdjj.supabase.co";
 
-/* Use your existing Supabase publishable/anon key here */
-const SUPABASE_KEY = "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
+const SUPABASE_KEY =
+  "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+/* =========================================================
+   DATA
+   ========================================================= */
 
 let vehicles = [];
 let expenses = [];
@@ -20,19 +29,20 @@ let gatePasses = [];
 
 let selectedVehicle = null;
 let previewHTML = "";
-let vehicleExpenseHTML = "";
 
 const $ = id => document.getElementById(id);
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () =>
+  new Date().toISOString().slice(0, 10);
 
-const money = n =>
-  "KSh " + Number(n || 0).toLocaleString("en-KE", {
+const num = value => Number(value || 0);
+
+const money = value =>
+  "KSh " +
+  num(value).toLocaleString("en-KE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-
-const num = n => Number(n || 0);
 
 const esc = value =>
   String(value ?? "")
@@ -43,7 +53,7 @@ const esc = value =>
     .replace(/'/g, "&#039;");
 
 /* =========================================================
-   REGISTRATION NORMALIZATION
+   HELPERS
    ========================================================= */
 
 function normalizeRegistration(value) {
@@ -54,24 +64,17 @@ function normalizeRegistration(value) {
 
 function vehicleLabel(v) {
   if (!v) return "General";
-  return v.registration || v.chassis_no || "Vehicle";
+  return (
+    v.registration ||
+    v.chassis_no ||
+    "Vehicle"
+  );
 }
 
 function findVehicle(id) {
-  return vehicles.find(v => String(v.id) === String(id));
-}
-
-function storageDays(v) {
-  if (!v || !v.date_in) return 0;
-
-  const start = new Date(v.date_in + "T00:00:00");
-  const end = v.date_out
-    ? new Date(v.date_out + "T00:00:00")
-    : new Date();
-
-  const days = Math.floor((end - start) / 86400000);
-
-  return Math.max(0, days);
+  return vehicles.find(
+    v => String(v.id) === String(id)
+  );
 }
 
 function statusClass(value) {
@@ -80,32 +83,55 @@ function statusClass(value) {
     .replace(/\s+/g, "-");
 }
 
-/* =========================================================
-   TOAST / MODALS
-   ========================================================= */
+function storageDays(v) {
+  if (!v?.date_in) return 0;
+
+  const start =
+    new Date(v.date_in + "T00:00:00");
+
+  const end = v.date_out
+    ? new Date(v.date_out + "T00:00:00")
+    : new Date();
+
+  return Math.max(
+    0,
+    Math.floor(
+      (end - start) / 86400000
+    )
+  );
+}
 
 function toast(message, error = false) {
   const el = $("toast");
-  if (!el) return;
+  if (!el) {
+    console.log(message);
+    return;
+  }
 
   el.textContent = message;
   el.style.display = "block";
-  el.style.background = error ? "#b42318" : "#07111f";
+  el.style.background = error
+    ? "#b42318"
+    : "#07111f";
 
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => {
-    el.style.display = "none";
-  }, 3500);
-}
+  clearTimeout(window.__garageToast);
 
-function closeModal(id) {
-  const el = $(id);
-  if (el) el.classList.remove("show");
+  window.__garageToast =
+    setTimeout(() => {
+      el.style.display = "none";
+    }, 3500);
 }
 
 function openModal(id) {
-  const el = $(id);
-  if (el) el.classList.add("show");
+  $(id)?.classList.add("show");
+}
+
+function closeModal(id) {
+  $(id)?.classList.remove("show");
+}
+
+function listen(id, event, fn) {
+  $(id)?.addEventListener(event, fn);
 }
 
 /* =========================================================
@@ -114,26 +140,44 @@ function openModal(id) {
 
 async function loadTable(table) {
   try {
-    const { data, error } = await supabase
-      .from(table)
-      .select("*");
+    const { data, error } =
+      await supabase
+        .from(table)
+        .select("*");
 
     if (error) {
-      console.error("LOAD " + table, error);
-      toast("Could not load " + table + ": " + error.message, true);
+      console.error(
+        "Supabase loading " + table,
+        error
+      );
+
+      toast(
+        "Could not load " +
+          table +
+          ": " +
+          error.message,
+        true
+      );
+
       return [];
     }
 
     return data || [];
-  } catch (e) {
-    console.error(e);
-    toast("Could not load " + table, true);
+  } catch (error) {
+    console.error(error);
     return [];
   }
 }
 
 async function loadAllData() {
-  const results = await Promise.all([
+  const [
+    v,
+    e,
+    p,
+    r,
+    i,
+    g
+  ] = await Promise.all([
     loadTable("vehicles"),
     loadTable("expenses"),
     loadTable("petty_cash"),
@@ -142,97 +186,48 @@ async function loadAllData() {
     loadTable("gate_passes")
   ]);
 
-  vehicles = results[0] || [];
-  expenses = results[1] || [];
-  pettyCash = results[2] || [];
-  requisitions = results[3] || [];
-  invoices = results[4] || [];
-  gatePasses = results[5] || [];
+  vehicles = v;
+  expenses = e;
+  pettyCash = p;
+  requisitions = r;
+  invoices = i;
+  gatePasses = g;
 
-  /*
-    IMPORTANT:
-    Clean duplicate vehicles every time data is loaded.
-    This protects the display even if duplicates already
-    exist in Supabase.
-  */
-  await cleanDuplicateVehicles();
+  await removeDuplicateVehicles();
 
   renderEverything();
 }
 
 /* =========================================================
-   DUPLICATE VEHICLE CLEANER
+   DUPLICATE VEHICLE PROTECTION
    ========================================================= */
 
-async function cleanDuplicateVehicles() {
-  const seen = new Map();
-  const duplicates = [];
+function findDuplicate(
+  registration,
+  currentId = ""
+) {
+  const key =
+    normalizeRegistration(registration);
 
-  for (const v of vehicles) {
-    const key = normalizeRegistration(v.registration);
+  if (!key) return null;
 
-    if (!key) continue;
+  return (
+    vehicles.find(v => {
+      const same =
+        normalizeRegistration(
+          v.registration
+        ) === key;
 
-    if (!seen.has(key)) {
-      seen.set(key, v);
-    } else {
-      duplicates.push(v);
-    }
-  }
+      const current =
+        currentId &&
+        String(v.id) === String(currentId);
 
-  if (!duplicates.length) return;
-
-  console.warn("Duplicate vehicles found:", duplicates);
-
-  for (const duplicate of duplicates) {
-    try {
-      /*
-        Delete linked records first.
-        This prevents foreign-key problems.
-      */
-      await deleteLinkedVehicleRecords(duplicate.id);
-
-      const { error } = await supabase
-        .from("vehicles")
-        .delete()
-        .eq("id", duplicate.id);
-
-      if (error) {
-        console.error(
-          "Could not remove duplicate vehicle:",
-          duplicate.registration,
-          error
-        );
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  /*
-    Reload clean list from database.
-  */
-  const { data, error } = await supabase
-    .from("vehicles")
-    .select("*");
-
-  if (!error && data) {
-    vehicles = data;
-  }
-
-  toast(
-    duplicates.length +
-      " duplicate vehicle record" +
-      (duplicates.length === 1 ? "" : "s") +
-      " removed."
+      return same && !current;
+    }) || null
   );
 }
 
-/* =========================================================
-   DELETE LINKED RECORDS
-   ========================================================= */
-
-async function deleteLinkedVehicleRecords(vehicleId) {
+async function removeLinkedRecords(vehicleId) {
   const tables = [
     "expenses",
     "requisitions",
@@ -242,23 +237,96 @@ async function deleteLinkedVehicleRecords(vehicleId) {
 
   for (const table of tables) {
     try {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq("vehicle_id", vehicleId);
+      const { error } =
+        await supabase
+          .from(table)
+          .delete()
+          .eq("vehicle_id", vehicleId);
 
-      /*
-        If an optional table does not exist, continue.
-      */
       if (error) {
         console.warn(
-          "Linked delete " + table + ":",
+          "Could not delete linked " +
+            table +
+            ":",
           error.message
         );
       }
-    } catch (e) {
-      console.warn(table, e);
+    } catch (error) {
+      console.warn(table, error);
     }
+  }
+}
+
+async function removeDuplicateVehicles() {
+  const seen = new Map();
+  const duplicates = [];
+
+  for (const vehicle of vehicles) {
+    const key =
+      normalizeRegistration(
+        vehicle.registration
+      );
+
+    if (!key) continue;
+
+    if (!seen.has(key)) {
+      seen.set(key, vehicle);
+    } else {
+      /*
+        Keep the first record and remove
+        subsequent duplicates.
+      */
+      duplicates.push(vehicle);
+    }
+  }
+
+  if (!duplicates.length) return;
+
+  let removed = 0;
+
+  for (const duplicate of duplicates) {
+    try {
+      await removeLinkedRecords(
+        duplicate.id
+      );
+
+      const { error } =
+        await supabase
+          .from("vehicles")
+          .delete()
+          .eq("id", duplicate.id);
+
+      if (!error) {
+        removed++;
+      } else {
+        console.error(
+          "Duplicate vehicle delete failed:",
+          duplicate,
+          error
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  /*
+    Refresh vehicles after duplicate cleanup.
+  */
+  const { data } =
+    await supabase
+      .from("vehicles")
+      .select("*");
+
+  if (data) vehicles = data;
+
+  if (removed) {
+    toast(
+      removed +
+        " duplicate vehicle" +
+        (removed === 1 ? "" : "s") +
+        " removed."
+    );
   }
 }
 
@@ -266,11 +334,13 @@ async function deleteLinkedVehicleRecords(vehicleId) {
    NAVIGATION
    ========================================================= */
 
-function showSection(section, button) {
-  document.querySelectorAll(".app-section").forEach(el => {
-    el.classList.remove("active");
-    el.style.display = "none";
-  });
+function showSection(section) {
+  document
+    .querySelectorAll(".app-section")
+    .forEach(el => {
+      el.classList.remove("active");
+      el.style.display = "none";
+    });
 
   const target = $(section);
 
@@ -280,23 +350,111 @@ function showSection(section, button) {
   }
 
   document
-    .querySelectorAll(".nav-btn,.mobile-nav-btn")
-    .forEach(btn => btn.classList.remove("active"));
+    .querySelectorAll(
+      ".nav-btn,.mobile-nav-btn"
+    )
+    .forEach(btn =>
+      btn.classList.remove("active")
+    );
 
   document
     .querySelectorAll(
       `[data-section="${section}"]`
     )
-    .forEach(btn => btn.classList.add("active"));
+    .forEach(btn =>
+      btn.classList.add("active")
+    );
 
-  if (button) button.classList.add("active");
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+/* =========================================================
+   CLICKABLE DASHBOARD CARDS
+   ========================================================= */
+
+function setupDashboardCards() {
+  const map = {
+    dashVehicles: "vehicles",
+    dashExpenses: "expenses",
+    dashPetty: "pettyCash",
+    dashReq: "requisitions",
+    dashInvoices: "invoices",
+    dashGatePasses: "gatePasses",
+    dashRepair: "vehicles",
+    dashOutstanding: "vehicles",
+    dashBilled: "vehicles",
+    dashPaid: "vehicles"
+  };
+
+  Object.entries(map).forEach(
+    ([id, section]) => {
+      const card = $(id)?.closest(
+        ".stat-card,.dashboard-card,.summary-card,.card"
+      );
+
+      if (!card) return;
+
+      card.style.cursor = "pointer";
+
+      card.addEventListener(
+        "click",
+        event => {
+          if (
+            event.target.closest(
+              "button,a,input,select"
+            )
+          )
+            return;
+
+          showSection(section);
+
+          if (
+            section === "vehicles"
+          ) {
+            renderVehicles();
+          }
+
+          if (
+            section === "expenses"
+          ) {
+            renderExpenses();
+          }
+        }
+      );
+    }
+  );
+
+  /*
+    Also support cards with data-section.
+  */
+  document
+    .querySelectorAll(
+      "[data-dashboard-section]"
+    )
+    .forEach(card => {
+      card.style.cursor = "pointer";
+
+      card.addEventListener(
+        "click",
+        () =>
+          showSection(
+            card.dataset.dashboardSection
+          )
+      );
+    });
 }
 
 /* =========================================================
    VEHICLE SELECTS
    ========================================================= */
 
-function fillVehicleSelect(id, selected = "") {
+function fillVehicleSelect(
+  id,
+  selected = ""
+) {
   const select = $(id);
   if (!select) return;
 
@@ -305,43 +463,44 @@ function fillVehicleSelect(id, selected = "") {
     vehicles
       .slice()
       .sort((a, b) =>
-        vehicleLabel(a).localeCompare(vehicleLabel(b))
+        vehicleLabel(a).localeCompare(
+          vehicleLabel(b)
+        )
       )
       .map(
         v =>
-          `<option value="${esc(v.id)}" ${
-            String(v.id) === String(selected)
-              ? "selected"
-              : ""
-          }>${esc(vehicleLabel(v))}${
-            v.customer
-              ? " — " + esc(v.customer)
-              : ""
-          }</option>`
+          `<option value="${esc(v.id)}"
+            ${
+              String(v.id) ===
+              String(selected)
+                ? "selected"
+                : ""
+            }>
+            ${esc(vehicleLabel(v))}
+            ${
+              v.customer
+                ? " — " +
+                  esc(v.customer)
+                : ""
+            }
+          </option>`
       )
       .join("");
 }
 
 function updateAllVehicleSelects() {
-  fillVehicleSelect(
+  [
     "expenseVehicle",
-    $("expenseVehicle")?.value
-  );
-
-  fillVehicleSelect(
     "reqVehicle",
-    $("reqVehicle")?.value
-  );
-
-  fillVehicleSelect(
     "invoiceVehicle",
-    $("invoiceVehicle")?.value
-  );
-
-  fillVehicleSelect(
-    "gateVehicle",
-    $("gateVehicle")?.value
-  );
+    "gateVehicle"
+  ].forEach(id => {
+    if ($(id))
+      fillVehicleSelect(
+        id,
+        $(id).value
+      );
+  });
 }
 
 /* =========================================================
@@ -349,59 +508,113 @@ function updateAllVehicleSelects() {
    ========================================================= */
 
 function renderDashboard() {
-  const billed = vehicles.reduce(
-    (s, v) => s + num(v.billed),
-    0
-  );
+  const billed =
+    vehicles.reduce(
+      (s, v) => s + num(v.billed),
+      0
+    );
 
-  const paid = vehicles.reduce(
-    (s, v) => s + num(v.paid),
-    0
-  );
+  const paid =
+    vehicles.reduce(
+      (s, v) => s + num(v.paid),
+      0
+    );
 
-  const outstanding = vehicles.reduce(
-    (s, v) =>
-      s + Math.max(0, num(v.billed) - num(v.paid)),
-    0
-  );
+  const outstanding =
+    vehicles.reduce(
+      (s, v) =>
+        s +
+        Math.max(
+          0,
+          num(v.billed) -
+            num(v.paid)
+        ),
+      0
+    );
 
-  const totalExpenses = expenses.reduce(
-    (s, e) => s + num(e.amount),
-    0
-  );
+  const expenseTotal =
+    expenses.reduce(
+      (s, e) => s + num(e.amount),
+      0
+    );
 
-  const totalPetty = pettyCash.reduce(
-    (s, p) => s + num(p.amount),
-    0
-  );
+  const pettyTotal =
+    pettyCash.reduce(
+      (s, p) => s + num(p.amount),
+      0
+    );
 
-  const repairCount = vehicles.filter(
-    v => v.status === "Under Repair"
-  ).length;
+  const repair =
+    vehicles.filter(
+      v => v.status === "Under Repair"
+    ).length;
 
   const set = (id, value) => {
-    const el = $(id);
-    if (el) el.textContent = value;
+    if ($(id))
+      $(id).textContent = value;
   };
 
-  set("dashVehicles", vehicles.length);
-  set("dashRepair", repairCount);
-  set("dashOutstanding", money(outstanding));
-  set("dashReq", requisitions.length);
-  set("dashInvoices", invoices.length);
-  set("dashGatePasses", gatePasses.length);
-  set("dashBilled", money(billed));
-  set("dashPaid", money(paid));
-  set("dashExpenses", money(totalExpenses));
-  set("dashPetty", money(totalPetty));
+  set(
+    "dashVehicles",
+    vehicles.length
+  );
 
-  set("dashReqCount", requisitions.length);
+  set(
+    "dashRepair",
+    repair
+  );
+
+  set(
+    "dashOutstanding",
+    money(outstanding)
+  );
+
+  set(
+    "dashReq",
+    requisitions.length
+  );
+
+  set(
+    "dashInvoices",
+    invoices.length
+  );
+
+  set(
+    "dashGatePasses",
+    gatePasses.length
+  );
+
+  set(
+    "dashBilled",
+    money(billed)
+  );
+
+  set(
+    "dashPaid",
+    money(paid)
+  );
+
+  set(
+    "dashExpenses",
+    money(expenseTotal)
+  );
+
+  set(
+    "dashPetty",
+    money(pettyTotal)
+  );
+
+  set(
+    "dashReqCount",
+    requisitions.length
+  );
 
   set(
     "dashReqTotal",
     money(
       requisitions.reduce(
-        (s, r) => s + num(r.total_amount),
+        (s, r) =>
+          s + num(r.total_amount),
         0
       )
     )
@@ -411,125 +624,78 @@ function renderDashboard() {
     "reqOverallTotal",
     money(
       requisitions.reduce(
-        (s, r) => s + num(r.total_amount),
+        (s, r) =>
+          s + num(r.total_amount),
         0
       )
     )
   );
 
-  const statusBox = $("vehicleStatusSummary");
-
-  if (statusBox) {
-    const statuses = [
-      "Storage",
-      "Under Repair",
-      "Completed",
-      "Released"
-    ];
-
-    statusBox.innerHTML = statuses
-      .map(status => {
-        const count = vehicles.filter(
-          v => v.status === status
-        ).length;
-
-        return `
-          <div class="status-row">
-            <span>
-              <span class="status status-${statusClass(status)}">
-                ${esc(status)}
-              </span>
-            </span>
-            <strong>${count}</strong>
-          </div>
-        `;
-      })
-      .join("");
-  }
-
-  renderChart();
+  renderStatusSummary();
   renderActivity();
 }
 
-function renderChart() {
-  const box = $("monthlyExpenseChart");
+function renderStatusSummary() {
+  const box =
+    $("vehicleStatusSummary");
+
   if (!box) return;
 
-  const months = [];
+  const statuses = [
+    "Storage",
+    "Under Repair",
+    "Completed",
+    "Released"
+  ];
 
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
+  box.innerHTML = statuses
+    .map(status => {
+      const count =
+        vehicles.filter(
+          v => v.status === status
+        ).length;
 
-    months.push({
-      key:
-        d.getFullYear() +
-        "-" +
-        String(d.getMonth() + 1).padStart(2, "0"),
-      name: d.toLocaleString("en", {
-        month: "short"
-      }),
-      total: 0
-    });
-  }
-
-  expenses.forEach(e => {
-    const date = String(
-      e.expense_date || e.date || ""
-    ).slice(0, 7);
-
-    const month = months.find(
-      m => m.key === date
-    );
-
-    if (month) month.total += num(e.amount);
-  });
-
-  const max = Math.max(
-    ...months.map(m => m.total),
-    1
-  );
-
-  box.innerHTML = months
-    .map(
-      m => `
-        <div style="flex:1;text-align:center">
-          <div
-            class="chart-bar"
-            style="height:${Math.max(
-              25,
-              (m.total / max) * 170
-            )}px"
-            title="${esc(money(m.total))}">
-          </div>
-          <small>${esc(m.name)}</small>
+      return `
+        <div class="status-row">
+          <span>
+            <span class="status status-${statusClass(
+              status
+            )}">
+              ${esc(status)}
+            </span>
+          </span>
+          <strong>${count}</strong>
         </div>
-      `
-    )
+      `;
+    })
     .join("");
 }
 
 function renderActivity() {
-  const box = $("dashboardActivity");
+  const box =
+    $("dashboardActivity");
+
   if (!box) return;
 
   const items = [];
 
-  vehicles.slice(0, 5).forEach(v => {
+  vehicles.slice(0, 5).forEach(v =>
     items.push({
       icon: "🚘",
       title: vehicleLabel(v),
       text: v.status || "Vehicle"
-    });
-  });
+    })
+  );
 
-  expenses.slice(0, 5).forEach(e => {
+  expenses.slice(0, 5).forEach(e =>
     items.push({
       icon: "💳",
-      title: e.description || "Expense",
+      title:
+        e.description ||
+        "Expense",
       text: money(e.amount)
-    });
-  });
+    })
+  );
 
   box.innerHTML =
     items
@@ -537,18 +703,22 @@ function renderActivity() {
       .map(
         x => `
           <div class="activity-item">
-            <div class="activity-icon">${x.icon}</div>
+            <div class="activity-icon">
+              ${x.icon}
+            </div>
             <div class="activity-main">
-              <strong>${esc(x.title)}</strong>
-              <span>${esc(x.text)}</span>
+              <strong>
+                ${esc(x.title)}
+              </strong>
+              <span>
+                ${esc(x.text)}
+              </span>
             </div>
           </div>
         `
       )
       .join("") ||
-    `<div class="activity-item">
-       No recent activity.
-     </div>`;
+    "No recent activity.";
 }
 
 /* =========================================================
@@ -557,18 +727,29 @@ function renderActivity() {
 
 function vehicleExpenseTotal(id) {
   return expenses
-    .filter(e => String(e.vehicle_id) === String(id))
-    .reduce((s, e) => s + num(e.amount), 0);
+    .filter(
+      e =>
+        String(e.vehicle_id) ===
+        String(id)
+    )
+    .reduce(
+      (s, e) => s + num(e.amount),
+      0
+    );
 }
 
-function getFilteredVehicles() {
+function filteredVehicles() {
   const search =
-    String($("vehicleSearch")?.value || "")
+    String(
+      $("vehicleSearch")?.value ||
+        ""
+    )
       .trim()
       .toLowerCase();
 
   const status =
-    $("vehicleStatusFilter")?.value || "";
+    $("vehicleStatusFilter")
+      ?.value || "";
 
   return vehicles.filter(v => {
     const text = [
@@ -582,37 +763,58 @@ function getFilteredVehicles() {
       .toLowerCase();
 
     return (
-      (!search || text.includes(search)) &&
-      (!status || v.status === status)
+      (!search ||
+        text.includes(search)) &&
+      (!status ||
+        v.status === status)
     );
   });
 }
 
 function renderVehicles() {
-  const body = $("vehiclesTableBody");
+  const body =
+    $("vehiclesTableBody");
+
   if (!body) return;
 
-  const rows = getFilteredVehicles();
+  const rows =
+    filteredVehicles();
 
   body.innerHTML = rows.length
     ? rows
         .map(v => {
-          const billed = num(v.billed);
-          const paid = num(v.paid);
-          const outstanding = Math.max(
-            0,
-            billed - paid
-          );
-          const exp = vehicleExpenseTotal(v.id);
+          const billed =
+            num(v.billed);
+
+          const paid =
+            num(v.paid);
+
+          const balance =
+            Math.max(
+              0,
+              billed - paid
+            );
 
           return `
             <tr>
               <td>
-                <strong>${esc(vehicleLabel(v))}</strong>
+                <strong>
+                  ${esc(vehicleLabel(v))}
+                </strong>
               </td>
-              <td>${esc(v.customer)}</td>
-              <td>${esc(v.date_in || "")}</td>
-              <td>${esc(v.job_type || "")}</td>
+
+              <td>${esc(
+                v.customer
+              )}</td>
+
+              <td>${esc(
+                v.date_in || ""
+              )}</td>
+
+              <td>${esc(
+                v.job_type || ""
+              )}</td>
+
               <td>
                 <span class="status status-${statusClass(
                   v.status
@@ -620,19 +822,33 @@ function renderVehicles() {
                   ${esc(v.status || "")}
                 </span>
               </td>
-              <td>${storageDays(v)}</td>
-              <td>${money(billed)}</td>
-              <td>${money(paid)}</td>
-              <td>${money(outstanding)}</td>
+
               <td>
-                <strong>${money(exp)}</strong>
+                ${storageDays(v)}
               </td>
+
+              <td>${money(billed)}</td>
+
+              <td>${money(paid)}</td>
+
+              <td>${money(balance)}</td>
+
+              <td>
+                <strong>
+                  ${money(
+                    vehicleExpenseTotal(
+                      v.id
+                    )
+                  )}
+                </strong>
+              </td>
+
               <td>
                 <div class="table-actions">
                   <button
                     class="action-btn blue"
                     onclick="viewVehicleExpenses('${esc(v.id)}')"
-                    title="Expenses">
+                    title="Vehicle Expenses">
                     💳
                   </button>
 
@@ -671,64 +887,73 @@ function renderVehicles() {
         .join("")
     : `
       <tr>
-        <td colspan="11" style="text-align:center;padding:25px">
+        <td
+          colspan="12"
+          style="text-align:center;padding:25px">
           No vehicles found.
         </td>
       </tr>
     `;
 }
 
+/* =========================================================
+   VEHICLE FORM
+   ========================================================= */
+
 function openVehicleModal(id = "") {
-  const v = id ? findVehicle(id) : null;
+  const v =
+    id ? findVehicle(id) : null;
 
   $("vehicleForm")?.reset();
 
-  $("vehicleId").value = v?.id || "";
-  $("vehicleModalTitle").textContent = v
-    ? "Edit Vehicle"
-    : "Add Vehicle";
+  if ($("vehicleId"))
+    $("vehicleId").value =
+      v?.id || "";
 
-  $("vehicleRegistration").value =
-    v?.registration || "";
+  if ($("vehicleModalTitle"))
+    $("vehicleModalTitle")
+      .textContent =
+      v
+        ? "Edit Vehicle"
+        : "Add Vehicle";
 
-  $("vehicleCustomer").value =
-    v?.customer || "";
+  const values = {
+    vehicleRegistration:
+      v?.registration || "",
+    vehicleCustomer:
+      v?.customer || "",
+    vehicleModel:
+      v?.model || "",
+    vehicleModelYear:
+      v?.model_year || "",
+    vehicleColor:
+      v?.color || "",
+    vehicleDateIn:
+      v?.date_in || today(),
+    vehicleDateOut:
+      v?.date_out || "",
+    vehicleJobType:
+      v?.job_type || "Repair",
+    vehicleStatus:
+      v?.status || "Storage",
+    vehicleReleasedTo:
+      v?.released_to || "",
+    vehicleReleasedContact:
+      v?.released_contact || "",
+    vehicleBilled:
+      v?.billed ?? 0,
+    vehiclePaid:
+      v?.paid ?? 0,
+    vehicleDescription:
+      v?.description || ""
+  };
 
-  $("vehicleModel").value =
-    v?.model || "";
-
-  $("vehicleModelYear").value =
-    v?.model_year || "";
-
-  $("vehicleColor").value =
-    v?.color || "";
-
-  $("vehicleDateIn").value =
-    v?.date_in || today();
-
-  $("vehicleDateOut").value =
-    v?.date_out || "";
-
-  $("vehicleJobType").value =
-    v?.job_type || "Repair";
-
-  $("vehicleStatus").value =
-    v?.status || "Storage";
-
-  $("vehicleReleasedTo").value =
-    v?.released_to || "";
-
-  $("vehicleReleasedContact").value =
-    v?.released_contact || "";
-
-  $("vehicleBilled").value =
-    v?.billed ?? 0;
-
-  $("vehiclePaid").value =
-    v?.paid ?? 0;
-
-  $("vehicleDescription").value =
-    v?.description || "";
+  Object.entries(values).forEach(
+    ([id, value]) => {
+      if ($(id))
+        $(id).value = value;
+    }
+  );
 
   updateVehicleStorageDays();
 
@@ -740,74 +965,55 @@ function editVehicle(id) {
 }
 
 function updateVehicleStorageDays() {
-  const start = $("vehicleDateIn")?.value;
-  const end = $("vehicleDateOut")?.value;
-
-  if (!start) return;
+  if (!$("vehicleStorageDays"))
+    return;
 
   const v = {
-    date_in: start,
-    date_out: end
+    date_in:
+      $("vehicleDateIn")?.value,
+    date_out:
+      $("vehicleDateOut")?.value
   };
 
-  if ($("vehicleStorageDays")) {
-    $("vehicleStorageDays").value =
-      storageDays(v);
-  }
+  $("vehicleStorageDays").value =
+    storageDays(v);
 }
 
-function duplicateVehicle(
-  registration,
-  currentId = ""
-) {
-  const key = normalizeRegistration(registration);
+async function saveVehicle(event) {
+  event.preventDefault();
 
-  if (!key) return null;
-
-  return (
-    vehicles.find(v => {
-      const same =
-        normalizeRegistration(v.registration) ===
-        key;
-
-      const isCurrent =
-        currentId &&
-        String(v.id) === String(currentId);
-
-      return same && !isCurrent;
-    }) || null
-  );
-}
-
-async function saveVehicle(e) {
-  e.preventDefault();
-
-  const id = $("vehicleId").value.trim();
+  const id =
+    $("vehicleId")?.value.trim();
 
   const registration =
-    $("vehicleRegistration").value.trim();
+    $("vehicleRegistration")
+      ?.value.trim();
 
-  const duplicate = duplicateVehicle(
-    registration,
-    id
-  );
+  if (!registration) {
+    toast(
+      "Registration / Chassis No. is required.",
+      true
+    );
+    return;
+  }
 
-  /*
-    NEVER allow duplicate registration.
-  */
+  const duplicate =
+    findDuplicate(
+      registration,
+      id
+    );
+
   if (duplicate) {
     toast(
-      `${vehicleLabel(
-        duplicate
-      )} is already registered. Duplicate vehicle was not added.`,
+      vehicleLabel(duplicate) +
+        " already exists. Duplicate was NOT added.",
       true
     );
 
     /*
-      If there are already duplicate records,
-      clean them immediately.
+      Clean existing duplicate records too.
     */
-    await cleanDuplicateVehicles();
+    await removeDuplicateVehicles();
 
     return;
   }
@@ -815,72 +1021,80 @@ async function saveVehicle(e) {
   const payload = {
     registration,
     customer:
-      $("vehicleCustomer").value.trim(),
-
+      $("vehicleCustomer")
+        ?.value.trim() || "",
     model:
-      $("vehicleModel").value.trim(),
-
+      $("vehicleModel")
+        ?.value.trim() || "",
     model_year:
-      $("vehicleModelYear").value
-        ? Number($("vehicleModelYear").value)
+      $("vehicleModelYear")
+        ?.value
+        ? Number(
+            $("vehicleModelYear").value
+          )
         : null,
-
     color:
-      $("vehicleColor").value.trim(),
-
+      $("vehicleColor")
+        ?.value.trim() || "",
     date_in:
-      $("vehicleDateIn").value,
-
+      $("vehicleDateIn")?.value ||
+      null,
     date_out:
-      $("vehicleDateOut").value || null,
-
+      $("vehicleDateOut")?.value ||
+      null,
     job_type:
-      $("vehicleJobType").value,
-
+      $("vehicleJobType")?.value ||
+      "Repair",
     status:
-      $("vehicleStatus").value,
-
+      $("vehicleStatus")?.value ||
+      "Storage",
     released_to:
-      $("vehicleReleasedTo").value.trim(),
-
+      $("vehicleReleasedTo")
+        ?.value.trim() || "",
     released_contact:
-      $("vehicleReleasedContact").value.trim(),
-
+      $("vehicleReleasedContact")
+        ?.value.trim() || "",
     billed:
-      num($("vehicleBilled").value),
-
+      num(
+        $("vehicleBilled")
+          ?.value
+      ),
     paid:
-      num($("vehiclePaid").value),
-
+      num(
+        $("vehiclePaid")
+          ?.value
+      ),
     description:
-      $("vehicleDescription").value.trim()
+      $("vehicleDescription")
+        ?.value.trim() || ""
   };
 
   let result;
 
   if (id) {
-    result = await supabase
-      .from("vehicles")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
+    result =
+      await supabase
+        .from("vehicles")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .single();
   } else {
-    result = await supabase
-      .from("vehicles")
-      .insert(payload)
-      .select()
-      .single();
+    result =
+      await supabase
+        .from("vehicles")
+        .insert(payload)
+        .select()
+        .single();
   }
 
   if (result.error) {
-    /*
-      If another user/device inserted the same vehicle
-      at the same time, check database again.
-    */
+    const message =
+      result.error.message || "";
+
     if (
       /duplicate|unique/i.test(
-        result.error.message
+        message
       )
     ) {
       toast(
@@ -889,8 +1103,8 @@ async function saveVehicle(e) {
       );
     } else {
       toast(
-        "Vehicle could not be saved: " +
-          result.error.message,
+        "Vehicle save failed: " +
+          message,
         true
       );
     }
@@ -902,8 +1116,8 @@ async function saveVehicle(e) {
 
   toast(
     id
-      ? "Vehicle updated successfully."
-      : "Vehicle added successfully."
+      ? "Vehicle updated."
+      : "Vehicle added."
   );
 
   await loadAllData();
@@ -912,74 +1126,102 @@ async function saveVehicle(e) {
 async function deleteVehicle(id) {
   const v = findVehicle(id);
 
-  if (!v) return;
+  if (!v) {
+    toast(
+      "Vehicle not found.",
+      true
+    );
+    return;
+  }
 
   const registration =
     vehicleLabel(v);
 
-  if (
-    !confirm(
-      `Delete ${registration} permanently?\n\nIts linked expenses, requisitions, invoices and gate passes will also be deleted.`
-    )
-  ) {
-    return;
-  }
+  const ok = confirm(
+    "DELETE " +
+      registration +
+      "?\n\n" +
+      "This will also remove its linked expenses, requisitions, invoices and gate passes."
+  );
 
-  /*
-    Remove linked records first.
-  */
-  await deleteLinkedVehicleRecords(id);
+  if (!ok) return;
 
-  const { error } = await supabase
-    .from("vehicles")
-    .delete()
-    .eq("id", id);
+  try {
+    /*
+      Delete linked records first.
+    */
+    await removeLinkedRecords(id);
 
-  if (error) {
+    /*
+      Delete vehicle.
+    */
+    const { error } =
+      await supabase
+        .from("vehicles")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+      toast(
+        "Vehicle was NOT deleted: " +
+          error.message,
+        true
+      );
+
+      await loadAllData();
+      return;
+    }
+
+    /*
+      Immediately remove locally.
+    */
+    vehicles =
+      vehicles.filter(
+        x =>
+          String(x.id) !==
+          String(id)
+      );
+
+    renderEverything();
+
+    /*
+      Verify against database.
+    */
+    const { data, error: checkError } =
+      await supabase
+        .from("vehicles")
+        .select("id")
+        .eq("id", id);
+
+    if (checkError) {
+      console.warn(checkError);
+    }
+
+    if (data?.length) {
+      toast(
+        "Vehicle still exists in Supabase. Check database permissions/RLS.",
+        true
+      );
+
+      await loadAllData();
+      return;
+    }
+
     toast(
-      "Vehicle was NOT deleted: " +
+      registration +
+        " deleted successfully."
+    );
+  } catch (error) {
+    console.error(error);
+
+    toast(
+      "Vehicle deletion failed: " +
         error.message,
       true
     );
 
-    /*
-      Reload so the screen exactly matches
-      the database.
-    */
     await loadAllData();
-    return;
   }
-
-  /*
-    Remove immediately from local array.
-  */
-  vehicles = vehicles.filter(
-    x => String(x.id) !== String(id)
-  );
-
-  renderEverything();
-
-  /*
-    Verify deletion.
-  */
-  const { data: check } = await supabase
-    .from("vehicles")
-    .select("id,registration")
-    .eq("id", id);
-
-  if (check && check.length) {
-    toast(
-      "Delete did not complete in Supabase.",
-      true
-    );
-
-    await loadAllData();
-    return;
-  }
-
-  toast(
-    registration + " deleted successfully."
-  );
 }
 
 /* =========================================================
@@ -988,83 +1230,108 @@ async function deleteVehicle(id) {
 
 function viewVehicleExpenses(id) {
   const v = findVehicle(id);
+
   if (!v) return;
 
   selectedVehicle = v;
 
-  const list = expenses.filter(
-    e =>
-      String(e.vehicle_id) ===
-      String(id)
-  );
+  const rows =
+    expenses.filter(
+      e =>
+        String(e.vehicle_id) ===
+        String(id)
+    );
 
-  const total = list.reduce(
-    (s, e) => s + num(e.amount),
-    0
-  );
+  const total =
+    rows.reduce(
+      (s, e) => s + num(e.amount),
+      0
+    );
 
-  vehicleExpenseHTML = `
+  const html = `
     <div class="preview-paper">
+
       <div class="preview-head">
         <h1>VEHICLE EXPENSE REPORT</h1>
         <p>
-          Vehicle: <strong>${esc(
-            vehicleLabel(v)
-          )}</strong>
+          Vehicle:
+          <strong>
+            ${esc(vehicleLabel(v))}
+          </strong>
         </p>
         <p>
-          Customer: ${esc(v.customer || "")}
+          Customer:
+          ${esc(v.customer || "")}
         </p>
       </div>
 
-      ${
-        list.length
-          ? `
-        <table class="preview-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${list
-              .map(
-                e => `
-              <tr>
-                <td>${esc(
-                  e.expense_date || ""
-                )}</td>
-                <td>${esc(
-                  e.description || ""
-                )}</td>
-                <td>${esc(
-                  e.category || ""
-                )}</td>
-                <td>${money(e.amount)}</td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
-        </table>
-        `
-          : `<p>No expenses recorded for this vehicle.</p>`
-      }
+      <table class="preview-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            rows.length
+              ? rows
+                  .map(
+                    e => `
+                      <tr>
+                        <td>${esc(
+                          e.expense_date ||
+                            ""
+                        )}</td>
+                        <td>${esc(
+                          e.description ||
+                            ""
+                        )}</td>
+                        <td>${esc(
+                          e.category ||
+                            ""
+                        )}</td>
+                        <td>${money(
+                          e.amount
+                        )}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")
+              : `
+                <tr>
+                  <td colspan="4">
+                    No expenses recorded.
+                  </td>
+                </tr>
+              `
+          }
+        </tbody>
+      </table>
 
       <div class="preview-total">
-        <div>
-          <span>Total Expenses</span>
-          <strong>${money(total)}</strong>
+        <div class="grand">
+          <span>TOTAL EXPENSES</span>
+          <strong>
+            ${money(total)}
+          </strong>
         </div>
       </div>
+
     </div>
   `;
 
-  $("vehicleExpensePreviewContent").innerHTML =
-    vehicleExpenseHTML;
+  previewHTML = html;
+
+  if (
+    $("vehicleExpensePreviewContent")
+  ) {
+    $("vehicleExpensePreviewContent")
+      .innerHTML = html;
+  }
 
   openModal(
     "vehicleExpensePreviewModal"
@@ -1072,29 +1339,35 @@ function viewVehicleExpenses(id) {
 }
 
 function printVehicleExpensePreview() {
-  if (!vehicleExpenseHTML) return;
-
-  printHTML(
-    vehicleExpenseHTML,
-    "Vehicle Expense Report"
-  );
+  if (previewHTML)
+    printHTML(
+      previewHTML,
+      "Vehicle Expense Report"
+    );
 }
 
 /* =========================================================
    EXPENSES
    ========================================================= */
 
-function getFilteredExpenses() {
+function filteredExpenses() {
   const search =
-    String($("expenseSearch")?.value || "")
+    String(
+      $("expenseSearch")?.value ||
+        ""
+    )
       .trim()
       .toLowerCase();
 
   const category =
-    $("expenseCategoryFilter")?.value || "";
+    $("expenseCategoryFilter")
+      ?.value || "";
 
   return expenses.filter(e => {
-    const v = findVehicle(e.vehicle_id);
+    const v =
+      findVehicle(
+        e.vehicle_id
+      );
 
     const text = [
       vehicleLabel(v),
@@ -1107,59 +1380,68 @@ function getFilteredExpenses() {
       .toLowerCase();
 
     return (
-      (!search || text.includes(search)) &&
-      (!category || e.category === category)
+      (!search ||
+        text.includes(search)) &&
+      (!category ||
+        e.category === category)
     );
   });
 }
 
 function renderExpenses() {
-  const body = $("expensesTableBody");
+  const body =
+    $("expensesTableBody");
+
   if (!body) return;
 
-  const rows = getFilteredExpenses();
+  const rows =
+    filteredExpenses();
 
   body.innerHTML = rows.length
     ? rows
         .map(e => {
-          const v = findVehicle(e.vehicle_id);
+          const v =
+            findVehicle(
+              e.vehicle_id
+            );
 
           return `
             <tr>
               <td>${esc(
                 e.expense_date || ""
               )}</td>
+
               <td>
-                <strong>${esc(
-                  vehicleLabel(v)
-                )}</strong>
+                <strong>
+                  ${esc(vehicleLabel(v))}
+                </strong>
               </td>
+
               <td>${esc(
                 e.description || ""
               )}</td>
+
               <td>${esc(
                 e.category || ""
               )}</td>
+
               <td>
-                <strong>${money(
-                  e.amount
-                )}</strong>
+                <strong>
+                  ${money(e.amount)}
+                </strong>
               </td>
+
               <td>
                 <div class="table-actions">
                   <button
                     class="action-btn"
-                    onclick="editExpense('${esc(
-                      e.id
-                    )}')">
+                    onclick="editExpense('${esc(e.id)}')">
                     ✏️
                   </button>
 
                   <button
                     class="action-btn danger"
-                    onclick="deleteExpense('${esc(
-                      e.id
-                    )}')">
+                    onclick="deleteExpense('${esc(e.id)}')">
                     🗑
                   </button>
                 </div>
@@ -1179,39 +1461,50 @@ function renderExpenses() {
 }
 
 function openExpenseModal(id = "") {
-  const e = id
-    ? expenses.find(
-        x => String(x.id) === String(id)
-      )
-    : null;
+  const e =
+    id
+      ? expenses.find(
+          x =>
+            String(x.id) ===
+            String(id)
+        )
+      : null;
 
   $("expenseForm")?.reset();
 
-  $("expenseId").value = e?.id || "";
+  if ($("expenseId"))
+    $("expenseId").value =
+      e?.id || "";
 
-  $("expenseDate").value =
-    e?.expense_date || today();
-
-  $("expenseVehicle").value =
-    e?.vehicle_id || "";
-
-  $("expenseCategory").value =
-    e?.category || "Parts";
-
-  $("expenseAmount").value =
-    e?.amount ?? "";
-
-  $("expenseDescription").value =
-    e?.description || "";
+  if ($("expenseDate"))
+    $("expenseDate").value =
+      e?.expense_date ||
+      today();
 
   updateAllVehicleSelects();
 
-  if (e)
+  if ($("expenseVehicle"))
     $("expenseVehicle").value =
-      e.vehicle_id || "";
+      e?.vehicle_id || "";
 
-  $("expenseModalTitle").textContent =
-    e ? "Edit Expense" : "Add Expense";
+  if ($("expenseCategory"))
+    $("expenseCategory").value =
+      e?.category || "Parts";
+
+  if ($("expenseAmount"))
+    $("expenseAmount").value =
+      e?.amount ?? "";
+
+  if ($("expenseDescription"))
+    $("expenseDescription").value =
+      e?.description || "";
+
+  if ($("expenseModalTitle"))
+    $("expenseModalTitle")
+      .textContent =
+      e
+        ? "Edit Expense"
+        : "Add Expense";
 
   openModal("expenseModal");
 }
@@ -1220,26 +1513,30 @@ function editExpense(id) {
   openExpenseModal(id);
 }
 
-async function saveExpense(e) {
-  e.preventDefault();
+async function saveExpense(event) {
+  event.preventDefault();
 
-  const id = $("expenseId").value;
+  const id =
+    $("expenseId")?.value;
 
   const payload = {
     vehicle_id:
-      $("expenseVehicle").value || null,
-
+      $("expenseVehicle")
+        ?.value || null,
     expense_date:
-      $("expenseDate").value,
-
+      $("expenseDate")?.value ||
+      today(),
     description:
-      $("expenseDescription").value.trim(),
-
+      $("expenseDescription")
+        ?.value.trim() || "",
     category:
-      $("expenseCategory").value,
-
+      $("expenseCategory")
+        ?.value || "Other",
     amount:
-      num($("expenseAmount").value)
+      num(
+        $("expenseAmount")
+          ?.value
+      )
   };
 
   const result = id
@@ -1266,17 +1563,22 @@ async function saveExpense(e) {
 }
 
 async function deleteExpense(id) {
-  if (!confirm("Delete this expense?"))
+  if (
+    !confirm(
+      "Delete this expense?"
+    )
+  )
     return;
 
-  const { error } = await supabase
-    .from("expenses")
-    .delete()
-    .eq("id", id);
+  const { error } =
+    await supabase
+      .from("expenses")
+      .delete()
+      .eq("id", id);
 
   if (error) {
     toast(
-      "Could not delete expense: " +
+      "Expense delete failed: " +
         error.message,
       true
     );
@@ -1288,25 +1590,36 @@ async function deleteExpense(id) {
 }
 
 function printExpenses() {
-  const rows = getFilteredExpenses();
+  /*
+    IMPORTANT:
+    Uses EXACTLY the same filtered
+    rows displayed on screen.
+  */
+  const rows =
+    filteredExpenses();
 
   const search =
-    $("expenseSearch")?.value || "";
+    $("expenseSearch")?.value ||
+    "";
 
-  const total = rows.reduce(
-    (s, e) => s + num(e.amount),
-    0
-  );
+  const total =
+    rows.reduce(
+      (s, e) => s + num(e.amount),
+      0
+    );
 
   const html = `
     <div class="preview-paper">
+
       <div class="preview-head">
         <h1>EXPENSE REPORT</h1>
+
         <p>
           ${
             search
-              ? "Search: " + esc(search)
-              : "Current filtered results"
+              ? "Vehicle / Search: " +
+                esc(search)
+              : "Current filtered expenses"
           }
         </p>
       </div>
@@ -1321,29 +1634,38 @@ function printExpenses() {
             <th>Amount</th>
           </tr>
         </thead>
+
         <tbody>
           ${
             rows.length
               ? rows
                   .map(e => {
-                    const v = findVehicle(
-                      e.vehicle_id
-                    );
+                    const v =
+                      findVehicle(
+                        e.vehicle_id
+                      );
 
                     return `
                       <tr>
                         <td>${esc(
-                          e.expense_date || ""
+                          e.expense_date ||
+                            ""
                         )}</td>
+
                         <td>${esc(
                           vehicleLabel(v)
                         )}</td>
+
                         <td>${esc(
-                          e.description || ""
+                          e.description ||
+                            ""
                         )}</td>
+
                         <td>${esc(
-                          e.category || ""
+                          e.category ||
+                            ""
                         )}</td>
+
                         <td>${money(
                           e.amount
                         )}</td>
@@ -1365,26 +1687,35 @@ function printExpenses() {
       <div class="preview-total">
         <div class="grand">
           <span>TOTAL</span>
-          <strong>${money(total)}</strong>
+          <strong>
+            ${money(total)}
+          </strong>
         </div>
       </div>
+
     </div>
   `;
 
-  printHTML(html, "Expense Report");
+  printHTML(
+    html,
+    "Vehicle Expense Report"
+  );
 }
 
 /* =========================================================
    PETTY CASH
    ========================================================= */
 
-function getFilteredPetty() {
+function filteredPetty() {
   const search =
-    String($("pettySearch")?.value || "")
-      .toLowerCase();
+    String(
+      $("pettySearch")?.value ||
+        ""
+    ).toLowerCase();
 
   const category =
-    $("pettyCategoryFilter")?.value || "";
+    $("pettyCategoryFilter")
+      ?.value || "";
 
   return pettyCash.filter(p => {
     const text = [
@@ -1397,59 +1728,69 @@ function getFilteredPetty() {
       .toLowerCase();
 
     return (
-      (!search || text.includes(search)) &&
-      (!category || p.category === category)
+      (!search ||
+        text.includes(search)) &&
+      (!category ||
+        p.category === category)
     );
   });
 }
 
 function renderPettyCash() {
-  const body = $("pettyTableBody");
+  const body =
+    $("pettyTableBody");
+
   if (!body) return;
 
-  const rows = getFilteredPetty();
+  const rows =
+    filteredPetty();
 
   body.innerHTML = rows.length
     ? rows
         .map(
           p => `
-          <tr>
-            <td>${esc(
-              p.cash_date || ""
-            )}</td>
-            <td>${esc(
-              p.description || ""
-            )}</td>
-            <td>${esc(
-              p.paid_to || ""
-            )}</td>
-            <td>${esc(
-              p.category || ""
-            )}</td>
-            <td>${money(p.amount)}</td>
-            <td>${esc(
-              p.notes || ""
-            )}</td>
-            <td>
-              <div class="table-actions">
-                <button
-                  class="action-btn"
-                  onclick="editPetty('${esc(
-                    p.id
-                  )}')">
-                  ✏️
-                </button>
-                <button
-                  class="action-btn danger"
-                  onclick="deletePetty('${esc(
-                    p.id
-                  )}')">
-                  🗑
-                </button>
-              </div>
-            </td>
-          </tr>
-        `
+            <tr>
+              <td>${esc(
+                p.cash_date || ""
+              )}</td>
+
+              <td>${esc(
+                p.description || ""
+              )}</td>
+
+              <td>${esc(
+                p.paid_to || ""
+              )}</td>
+
+              <td>${esc(
+                p.category || ""
+              )}</td>
+
+              <td>${money(
+                p.amount
+              )}</td>
+
+              <td>${esc(
+                p.notes || ""
+              )}</td>
+
+              <td>
+                <div class="table-actions">
+                  <button
+                    class="action-btn"
+                    onclick="editPetty('${esc(p.id)}')">
+                    ✏️
+                  </button>
+
+                  <button
+                    class="action-btn danger"
+                    onclick="deletePetty('${esc(p.id)}')">
+                    🗑
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `
         )
         .join("")
     : `
@@ -1463,30 +1804,51 @@ function renderPettyCash() {
 }
 
 function openPettyModal(id = "") {
-  const p = id
-    ? pettyCash.find(
-        x => String(x.id) === String(id)
-      )
-    : null;
+  const p =
+    id
+      ? pettyCash.find(
+          x =>
+            String(x.id) ===
+            String(id)
+        )
+      : null;
 
   $("pettyForm")?.reset();
 
-  $("pettyId").value = p?.id || "";
-  $("pettyDate").value =
-    p?.cash_date || today();
-  $("pettyPaidTo").value =
-    p?.paid_to || "";
-  $("pettyCategory").value =
-    p?.category || "Other";
-  $("pettyAmount").value =
-    p?.amount ?? "";
-  $("pettyDescription").value =
-    p?.description || "";
-  $("pettyNotes").value =
-    p?.notes || "";
+  if ($("pettyId"))
+    $("pettyId").value =
+      p?.id || "";
 
-  $("pettyModalTitle").textContent =
-    p ? "Edit Petty Cash" : "Add Petty Cash";
+  if ($("pettyDate"))
+    $("pettyDate").value =
+      p?.cash_date || today();
+
+  if ($("pettyPaidTo"))
+    $("pettyPaidTo").value =
+      p?.paid_to || "";
+
+  if ($("pettyCategory"))
+    $("pettyCategory").value =
+      p?.category || "Other";
+
+  if ($("pettyAmount"))
+    $("pettyAmount").value =
+      p?.amount ?? "";
+
+  if ($("pettyDescription"))
+    $("pettyDescription").value =
+      p?.description || "";
+
+  if ($("pettyNotes"))
+    $("pettyNotes").value =
+      p?.notes || "";
+
+  if ($("pettyModalTitle"))
+    $("pettyModalTitle")
+      .textContent =
+      p
+        ? "Edit Petty Cash"
+        : "Add Petty Cash";
 
   openModal("pettyModal");
 }
@@ -1495,20 +1857,33 @@ function editPetty(id) {
   openPettyModal(id);
 }
 
-async function savePetty(e) {
-  e.preventDefault();
+async function savePetty(event) {
+  event.preventDefault();
 
-  const id = $("pettyId").value;
+  const id =
+    $("pettyId")?.value;
 
   const payload = {
-    cash_date: $("pettyDate").value,
-    paid_to: $("pettyPaidTo").value.trim(),
-    category: $("pettyCategory").value,
-    amount: num($("pettyAmount").value),
+    cash_date:
+      $("pettyDate")?.value ||
+      today(),
+    paid_to:
+      $("pettyPaidTo")
+        ?.value.trim() || "",
+    category:
+      $("pettyCategory")
+        ?.value || "Other",
+    amount:
+      num(
+        $("pettyAmount")
+          ?.value
+      ),
     description:
-      $("pettyDescription").value.trim(),
+      $("pettyDescription")
+        ?.value.trim() || "",
     notes:
-      $("pettyNotes").value.trim()
+      $("pettyNotes")
+        ?.value.trim() || ""
   };
 
   const result = id
@@ -1535,101 +1910,121 @@ async function savePetty(e) {
 }
 
 async function deletePetty(id) {
-  if (!confirm("Delete this petty cash record?"))
+  if (
+    !confirm(
+      "Delete this petty cash record?"
+    )
+  )
     return;
 
-  const { error } = await supabase
-    .from("petty_cash")
-    .delete()
-    .eq("id", id);
+  const { error } =
+    await supabase
+      .from("petty_cash")
+      .delete()
+      .eq("id", id);
 
   if (error) {
     toast(
-      "Delete failed: " + error.message,
+      "Delete failed: " +
+        error.message,
       true
     );
     return;
   }
 
-  await loadAllData();
   toast("Petty cash deleted.");
+  await loadAllData();
 }
 
 function printPettyCash() {
-  const rows = getFilteredPetty();
+  const rows =
+    filteredPetty();
 
-  const html = `
-    <div class="preview-paper">
-      <div class="preview-head">
-        <h1>PETTY CASH REPORT</h1>
-      </div>
+  const total =
+    rows.reduce(
+      (s, p) => s + num(p.amount),
+      0
+    );
 
-      <table class="preview-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Paid To</th>
-            <th>Category</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(
-              p => `
-              <tr>
-                <td>${esc(
-                  p.cash_date || ""
-                )}</td>
-                <td>${esc(
-                  p.description || ""
-                )}</td>
-                <td>${esc(
-                  p.paid_to || ""
-                )}</td>
-                <td>${esc(
-                  p.category || ""
-                )}</td>
-                <td>${money(p.amount)}</td>
-              </tr>
-            `
-            )
-            .join("")}
-        </tbody>
-      </table>
+  printHTML(
+    `
+      <div class="preview-paper">
+        <div class="preview-head">
+          <h1>PETTY CASH REPORT</h1>
+        </div>
 
-      <div class="preview-total">
-        <div class="grand">
-          <span>TOTAL</span>
-          <strong>${money(
-            rows.reduce(
-              (s, p) => s + num(p.amount),
-              0
-            )
-          )}</strong>
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Paid To</th>
+              <th>Category</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows
+              .map(
+                p => `
+                  <tr>
+                    <td>${esc(
+                      p.cash_date
+                    )}</td>
+                    <td>${esc(
+                      p.description
+                    )}</td>
+                    <td>${esc(
+                      p.paid_to
+                    )}</td>
+                    <td>${esc(
+                      p.category
+                    )}</td>
+                    <td>${money(
+                      p.amount
+                    )}</td>
+                  </tr>
+                `
+              )
+              .join("")}
+          </tbody>
+        </table>
+
+        <div class="preview-total">
+          <div class="grand">
+            <span>TOTAL</span>
+            <strong>
+              ${money(total)}
+            </strong>
+          </div>
         </div>
       </div>
-    </div>
-  `;
-
-  printHTML(html, "Petty Cash Report");
+    `,
+    "Petty Cash"
+  );
 }
 
 /* =========================================================
    REQUISITIONS
    ========================================================= */
 
-function getFilteredReqs() {
+function filteredReqs() {
   const search =
-    String($("reqSearch")?.value || "")
-      .toLowerCase();
+    String(
+      $("reqSearch")?.value ||
+        ""
+    ).toLowerCase();
 
   const status =
-    $("reqStatusFilter")?.value || "";
+    $("reqStatusFilter")
+      ?.value || "";
 
   return requisitions.filter(r => {
-    const v = findVehicle(r.vehicle_id);
+    const v =
+      findVehicle(
+        r.vehicle_id
+      );
 
     const text = [
       r.req_no,
@@ -1642,8 +2037,10 @@ function getFilteredReqs() {
       .toLowerCase();
 
     return (
-      (!search || text.includes(search)) &&
-      (!status || r.status === status)
+      (!search ||
+        text.includes(search)) &&
+      (!status ||
+        r.status === status)
     );
   });
 }
@@ -1654,27 +2051,33 @@ function renderRequisitions() {
 
   if (!body) return;
 
-  const rows = getFilteredReqs();
+  const rows =
+    filteredReqs();
 
   body.innerHTML = rows.length
     ? rows
         .map(r => {
-          const v = findVehicle(
-            r.vehicle_id
-          );
+          const v =
+            findVehicle(
+              r.vehicle_id
+            );
 
           return `
             <tr>
               <td>${esc(r.req_no)}</td>
               <td>${esc(r.req_date)}</td>
-              <td>${esc(r.requested_by)}</td>
+              <td>${esc(
+                r.requested_by
+              )}</td>
               <td>${esc(
                 vehicleLabel(v)
               )}</td>
               <td>${esc(
                 r.item_description
               )}</td>
-              <td>${num(r.quantity)}</td>
+              <td>${num(
+                r.quantity
+              )}</td>
               <td>${money(
                 r.unit_cost
               )}</td>
@@ -1682,8 +2085,8 @@ function renderRequisitions() {
                 r.total_amount
               )}</td>
               <td>${esc(
-                r.expense_type ||
-                  r.category ||
+                r.category ||
+                  r.expense_type ||
                   ""
               )}</td>
               <td>
@@ -1697,16 +2100,13 @@ function renderRequisitions() {
                 <div class="table-actions">
                   <button
                     class="action-btn"
-                    onclick="editReq('${esc(
-                      r.id
-                    )}')">
+                    onclick="editReq('${esc(r.id)}')">
                     ✏️
                   </button>
+
                   <button
                     class="action-btn danger"
-                    onclick="deleteReq('${esc(
-                      r.id
-                    )}')">
+                    onclick="deleteReq('${esc(r.id)}')">
                     🗑
                   </button>
                 </div>
@@ -1726,61 +2126,89 @@ function renderRequisitions() {
 }
 
 function updateReqTotal() {
-  const q = num($("reqQuantity")?.value);
-  const c = num($("reqUnitCost")?.value);
+  const total =
+    num(
+      $("reqQuantity")
+        ?.value
+    ) *
+    num(
+      $("reqUnitCost")
+        ?.value
+    );
 
   if ($("reqTotal"))
-    $("reqTotal").value = q * c;
+    $("reqTotal").value =
+      total;
 }
 
 function openReqModal(id = "") {
-  const r = id
-    ? requisitions.find(
-        x => String(x.id) === String(id)
-      )
-    : null;
+  const r =
+    id
+      ? requisitions.find(
+          x =>
+            String(x.id) ===
+            String(id)
+        )
+      : null;
 
   $("reqForm")?.reset();
 
-  $("reqId").value = r?.id || "";
-  $("reqNo").value =
-    r?.req_no ||
-    "REQ-" +
-      new Date().getFullYear() +
-      "-" +
-      String(
-        requisitions.length + 1
-      ).padStart(4, "0");
+  if ($("reqId"))
+    $("reqId").value =
+      r?.id || "";
 
-  $("reqDate").value =
-    r?.req_date || today();
+  if ($("reqNo"))
+    $("reqNo").value =
+      r?.req_no ||
+      "REQ-" +
+        new Date()
+          .getFullYear() +
+        "-" +
+        String(
+          requisitions.length +
+            1
+        ).padStart(4, "0");
 
-  $("reqRequestedBy").value =
-    r?.requested_by || "";
+  if ($("reqDate"))
+    $("reqDate").value =
+      r?.req_date || today();
 
-  $("reqItemDescription").value =
-    r?.item_description || "";
+  if ($("reqRequestedBy"))
+    $("reqRequestedBy").value =
+      r?.requested_by || "";
 
-  $("reqQuantity").value =
-    r?.quantity ?? 1;
+  if ($("reqItemDescription"))
+    $("reqItemDescription")
+      .value =
+      r?.item_description || "";
 
-  $("reqUnitCost").value =
-    r?.unit_cost ?? 0;
+  if ($("reqQuantity"))
+    $("reqQuantity").value =
+      r?.quantity ?? 1;
 
-  $("reqTotal").value =
-    r?.total_amount ?? 0;
+  if ($("reqUnitCost"))
+    $("reqUnitCost").value =
+      r?.unit_cost ?? 0;
 
-  $("reqStatus").value =
-    r?.status || "Pending";
+  if ($("reqTotal"))
+    $("reqTotal").value =
+      r?.total_amount ?? 0;
 
-  $("reqCategory").value =
-    r?.category || "";
+  if ($("reqStatus"))
+    $("reqStatus").value =
+      r?.status || "Pending";
 
-  $("reqExpenseType").value =
-    r?.expense_type || "";
+  if ($("reqCategory"))
+    $("reqCategory").value =
+      r?.category || "";
 
-  $("reqNotes").value =
-    r?.notes || "";
+  if ($("reqExpenseType"))
+    $("reqExpenseType").value =
+      r?.expense_type || "";
+
+  if ($("reqNotes"))
+    $("reqNotes").value =
+      r?.notes || "";
 
   updateAllVehicleSelects();
 
@@ -1788,10 +2216,12 @@ function openReqModal(id = "") {
     $("reqVehicle").value =
       r?.vehicle_id || "";
 
-  $("reqModalTitle").textContent =
-    r
-      ? "Edit Requisition"
-      : "New Requisition";
+  if ($("reqModalTitle"))
+    $("reqModalTitle")
+      .textContent =
+      r
+        ? "Edit Requisition"
+        : "New Requisition";
 
   openModal("reqModal");
 }
@@ -1800,51 +2230,54 @@ function editReq(id) {
   openReqModal(id);
 }
 
-async function saveReq(e) {
-  e.preventDefault();
+async function saveReq(event) {
+  event.preventDefault();
 
-  const id = $("reqId").value;
+  const id =
+    $("reqId")?.value;
 
   const quantity =
-    num($("reqQuantity").value);
+    num(
+      $("reqQuantity")
+        ?.value
+    );
 
   const unitCost =
-    num($("reqUnitCost").value);
+    num(
+      $("reqUnitCost")
+        ?.value
+    );
 
   const payload = {
     req_no:
-      $("reqNo").value.trim(),
-
+      $("reqNo")?.value.trim(),
     req_date:
-      $("reqDate").value,
-
+      $("reqDate")?.value,
     requested_by:
-      $("reqRequestedBy").value.trim(),
-
+      $("reqRequestedBy")
+        ?.value.trim(),
     vehicle_id:
-      $("reqVehicle").value || null,
-
+      $("reqVehicle")?.value ||
+      null,
     item_description:
-      $("reqItemDescription").value.trim(),
-
+      $("reqItemDescription")
+        ?.value.trim(),
     quantity,
-
     unit_cost: unitCost,
-
     total_amount:
       quantity * unitCost,
-
     status:
-      $("reqStatus").value,
-
+      $("reqStatus")?.value ||
+      "Pending",
     category:
-      $("reqCategory").value,
-
+      $("reqCategory")?.value ||
+      "",
     expense_type:
-      $("reqExpenseType").value,
-
+      $("reqExpenseType")
+        ?.value || "",
     notes:
-      $("reqNotes").value.trim()
+      $("reqNotes")
+        ?.value.trim() || ""
   };
 
   const result = id
@@ -1871,90 +2304,108 @@ async function saveReq(e) {
 }
 
 async function deleteReq(id) {
-  if (!confirm("Delete this requisition?"))
+  if (
+    !confirm(
+      "Delete this requisition?"
+    )
+  )
     return;
 
-  const { error } = await supabase
-    .from("requisitions")
-    .delete()
-    .eq("id", id);
+  const { error } =
+    await supabase
+      .from("requisitions")
+      .delete()
+      .eq("id", id);
 
   if (error) {
     toast(
-      "Delete failed: " + error.message,
+      "Delete failed: " +
+        error.message,
       true
     );
     return;
   }
 
-  await loadAllData();
   toast("Requisition deleted.");
+  await loadAllData();
 }
 
 function printRequisitions() {
-  const rows = getFilteredReqs();
+  const rows =
+    filteredReqs();
 
-  const html = `
-    <div class="preview-paper">
-      <div class="preview-head">
-        <h1>REQUISITION REPORT</h1>
+  printHTML(
+    `
+      <div class="preview-paper">
+        <div class="preview-head">
+          <h1>REQUISITION REPORT</h1>
+        </div>
+
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Req No.</th>
+              <th>Date</th>
+              <th>Requested By</th>
+              <th>Vehicle</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows
+              .map(r => {
+                const v =
+                  findVehicle(
+                    r.vehicle_id
+                  );
+
+                return `
+                  <tr>
+                    <td>${esc(
+                      r.req_no
+                    )}</td>
+                    <td>${esc(
+                      r.req_date
+                    )}</td>
+                    <td>${esc(
+                      r.requested_by
+                    )}</td>
+                    <td>${esc(
+                      vehicleLabel(v)
+                    )}</td>
+                    <td>${esc(
+                      r.item_description
+                    )}</td>
+                    <td>${num(
+                      r.quantity
+                    )}</td>
+                    <td>${money(
+                      r.total_amount
+                    )}</td>
+                    <td>${esc(
+                      r.status
+                    )}</td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
       </div>
-
-      <table class="preview-table">
-        <thead>
-          <tr>
-            <th>Req No.</th>
-            <th>Date</th>
-            <th>Requested By</th>
-            <th>Vehicle</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Total</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(r => {
-              const v = findVehicle(
-                r.vehicle_id
-              );
-
-              return `
-                <tr>
-                  <td>${esc(r.req_no)}</td>
-                  <td>${esc(r.req_date)}</td>
-                  <td>${esc(
-                    r.requested_by
-                  )}</td>
-                  <td>${esc(
-                    vehicleLabel(v)
-                  )}</td>
-                  <td>${esc(
-                    r.item_description
-                  )}</td>
-                  <td>${num(r.quantity)}</td>
-                  <td>${money(
-                    r.total_amount
-                  )}</td>
-                  <td>${esc(r.status)}</td>
-                </tr>
-              `;
-            })
-            .join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  printHTML(html, "Requisitions");
+    `,
+    "Requisitions"
+  );
 }
 
 /* =========================================================
    INVOICES
    ========================================================= */
 
-function invoiceSubtotal(i) {
+function invoiceTotal(i) {
   return (
     num(i.labour) +
     num(i.parts) +
@@ -1965,35 +2416,47 @@ function invoiceSubtotal(i) {
 function invoiceBalance(i) {
   return Math.max(
     0,
-    invoiceSubtotal(i) -
+    invoiceTotal(i) -
       num(i.paid)
   );
 }
 
 function invoiceStatus(i) {
-  const total = invoiceSubtotal(i);
-  const paid = num(i.paid);
+  const total =
+    invoiceTotal(i);
 
-  if (paid <= 0) return "Unpaid";
-  if (paid >= total) return "Paid";
+  const paid =
+    num(i.paid);
+
+  if (paid <= 0)
+    return "Unpaid";
+
+  if (paid >= total)
+    return "Paid";
+
   return "Part Paid";
 }
 
-function getFilteredInvoices() {
+function filteredInvoices() {
   const search =
-    String($("invoiceSearch")?.value || "")
-      .toLowerCase();
+    String(
+      $("invoiceSearch")
+        ?.value || ""
+    ).toLowerCase();
 
   const status =
-    $("invoiceStatusFilter")?.value || "";
+    $("invoiceStatusFilter")
+      ?.value || "";
 
   return invoices.filter(i => {
-    const v = findVehicle(
-      i.vehicle_id
-    );
+    const v =
+      findVehicle(
+        i.vehicle_id
+      );
 
-    const actualStatus =
-      i.status || invoiceStatus(i);
+    const actual =
+      i.status ||
+      invoiceStatus(i);
 
     const text = [
       i.invoice_no,
@@ -2004,8 +2467,10 @@ function getFilteredInvoices() {
       .toLowerCase();
 
     return (
-      (!search || text.includes(search)) &&
-      (!status || actualStatus === status)
+      (!search ||
+        text.includes(search)) &&
+      (!status ||
+        actual === status)
     );
   });
 }
@@ -2017,17 +2482,18 @@ function renderInvoices() {
   if (!body) return;
 
   const rows =
-    getFilteredInvoices();
+    filteredInvoices();
 
   body.innerHTML = rows.length
     ? rows
         .map(i => {
-          const v = findVehicle(
-            i.vehicle_id
-          );
+          const v =
+            findVehicle(
+              i.vehicle_id
+            );
 
-          const subtotal =
-            invoiceSubtotal(i);
+          const total =
+            invoiceTotal(i);
 
           const balance =
             invoiceBalance(i);
@@ -2041,24 +2507,29 @@ function renderInvoices() {
               <td>${esc(
                 i.invoice_no
               )}</td>
+
               <td>${esc(
                 i.invoice_date
               )}</td>
+
               <td>${esc(
                 vehicleLabel(v)
               )}</td>
+
               <td>${esc(
                 i.customer
               )}</td>
-              <td>${money(
-                subtotal
-              )}</td>
+
+              <td>${money(total)}</td>
+
               <td>${money(
                 i.paid
               )}</td>
+
               <td>${money(
                 balance
               )}</td>
+
               <td>
                 <span class="status status-${statusClass(
                   status
@@ -2066,20 +2537,18 @@ function renderInvoices() {
                   ${esc(status)}
                 </span>
               </td>
+
               <td>
                 <div class="table-actions">
                   <button
                     class="action-btn"
-                    onclick="editInvoice('${esc(
-                      i.id
-                    )}')">
+                    onclick="editInvoice('${esc(i.id)}')">
                     ✏️
                   </button>
+
                   <button
                     class="action-btn danger"
-                    onclick="deleteInvoice('${esc(
-                      i.id
-                    )}')">
+                    onclick="deleteInvoice('${esc(i.id)}')">
                     🗑
                   </button>
                 </div>
@@ -2099,208 +2568,237 @@ function renderInvoices() {
 }
 
 function updateInvoiceTotals() {
-  const labour =
-    num($("invoiceLabour")?.value);
-
-  const parts =
-    num($("invoiceParts")?.value);
-
-  const other =
-    num($("invoiceOther")?.value);
+  const total =
+    num(
+      $("invoiceLabour")
+        ?.value
+    ) +
+    num(
+      $("invoiceParts")
+        ?.value
+    ) +
+    num(
+      $("invoiceOther")
+        ?.value
+    );
 
   const paid =
-    num($("invoicePaid")?.value);
-
-  const subtotal =
-    labour + parts + other;
+    num(
+      $("invoicePaid")
+        ?.value
+    );
 
   if ($("invoiceSubtotal"))
     $("invoiceSubtotal").value =
-      subtotal;
+      total;
 
   if ($("invoiceBalance"))
     $("invoiceBalance").value =
-      Math.max(0, subtotal - paid);
+      Math.max(
+        0,
+        total - paid
+      );
 
-  if ($("invoiceStatus")) {
+  if ($("invoiceStatus"))
     $("invoiceStatus").value =
       paid <= 0
         ? "Unpaid"
-        : paid >= subtotal
+        : paid >= total
         ? "Paid"
         : "Part Paid";
-  }
 }
 
-function openInvoiceModal(vehicleId = "") {
-  const i = invoices.find(
-    x =>
-      vehicleId &&
-      String(x.vehicle_id) ===
-        String(vehicleId) &&
-      false
-  );
-
+function openInvoiceModal(
+  vehicleId = ""
+) {
   $("invoiceForm")?.reset();
 
-  $("invoiceId").value = i?.id || "";
+  if ($("invoiceId"))
+    $("invoiceId").value =
+      "";
 
-  $("invoiceNo").value =
-    i?.invoice_no ||
-    "INV-" +
-      new Date().getFullYear() +
+  if ($("invoiceNo"))
+    $("invoiceNo").value =
+      "INV-" +
+      new Date()
+        .getFullYear() +
       "-" +
       String(
         invoices.length + 1
       ).padStart(4, "0");
 
-  $("invoiceDate").value =
-    i?.invoice_date || today();
+  if ($("invoiceDate"))
+    $("invoiceDate").value =
+      today();
 
   updateAllVehicleSelects();
 
-  $("invoiceVehicle").value =
-    i?.vehicle_id ||
-    vehicleId ||
-    "";
+  if ($("invoiceVehicle"))
+    $("invoiceVehicle").value =
+      vehicleId || "";
 
-  const v = findVehicle(
-    $("invoiceVehicle").value
-  );
+  const v =
+    findVehicle(
+      $("invoiceVehicle")
+        ?.value
+    );
 
-  $("invoiceCustomer").value =
-    i?.customer ||
-    v?.customer ||
-    "";
+  if ($("invoiceCustomer"))
+    $("invoiceCustomer").value =
+      v?.customer || "";
 
-  $("invoiceJobDescription").value =
-    i?.job_description || "";
-
-  $("invoiceLabour").value =
-    i?.labour ?? 0;
-
-  $("invoiceParts").value =
-    i?.parts ?? 0;
-
-  $("invoiceOther").value =
-    i?.other ?? 0;
-
-  $("invoicePaid").value =
-    i?.paid ?? 0;
-
-  $("invoiceNotes").value =
-    i?.notes || "";
+  [
+    "invoiceLabour",
+    "invoiceParts",
+    "invoiceOther",
+    "invoicePaid"
+  ].forEach(id => {
+    if ($(id))
+      $(id).value = 0;
+  });
 
   updateInvoiceTotals();
 
-  $("invoiceModalTitle").textContent =
-    i ? "Edit Invoice" : "New Invoice";
+  if ($("invoiceModalTitle"))
+    $("invoiceModalTitle")
+      .textContent =
+      "New Invoice";
 
   openModal("invoiceModal");
 }
 
 function editInvoice(id) {
-  const i = invoices.find(
-    x => String(x.id) === String(id)
-  );
+  const i =
+    invoices.find(
+      x =>
+        String(x.id) ===
+        String(id)
+    );
 
   if (!i) return;
 
   $("invoiceForm")?.reset();
 
-  $("invoiceId").value = i.id;
-  $("invoiceNo").value =
-    i.invoice_no || "";
-  $("invoiceDate").value =
-    i.invoice_date || today();
+  const values = {
+    invoiceId: i.id,
+    invoiceNo:
+      i.invoice_no || "",
+    invoiceDate:
+      i.invoice_date ||
+      today(),
+    invoiceCustomer:
+      i.customer || "",
+    invoiceJobDescription:
+      i.job_description ||
+      "",
+    invoiceLabour:
+      i.labour ?? 0,
+    invoiceParts:
+      i.parts ?? 0,
+    invoiceOther:
+      i.other ?? 0,
+    invoicePaid:
+      i.paid ?? 0,
+    invoiceNotes:
+      i.notes || ""
+  };
 
   updateAllVehicleSelects();
 
-  $("invoiceVehicle").value =
-    i.vehicle_id || "";
+  Object.entries(values).forEach(
+    ([id, value]) => {
+      if ($(id))
+        $(id).value = value;
+    }
+  );
 
-  $("invoiceCustomer").value =
-    i.customer || "";
-
-  $("invoiceJobDescription").value =
-    i.job_description || "";
-
-  $("invoiceLabour").value =
-    i.labour ?? 0;
-
-  $("invoiceParts").value =
-    i.parts ?? 0;
-
-  $("invoiceOther").value =
-    i.other ?? 0;
-
-  $("invoicePaid").value =
-    i.paid ?? 0;
-
-  $("invoiceNotes").value =
-    i.notes || "";
+  if ($("invoiceVehicle"))
+    $("invoiceVehicle").value =
+      i.vehicle_id || "";
 
   updateInvoiceTotals();
 
-  $("invoiceModalTitle").textContent =
-    "Edit Invoice";
+  if ($("invoiceModalTitle"))
+    $("invoiceModalTitle")
+      .textContent =
+      "Edit Invoice";
 
   openModal("invoiceModal");
 }
 
-async function saveInvoice(e) {
-  e.preventDefault();
+async function saveInvoice(event) {
+  event.preventDefault();
 
   updateInvoiceTotals();
 
   const id =
-    $("invoiceId").value;
+    $("invoiceId")?.value;
 
-  const subtotal =
-    num($("invoiceLabour").value) +
-    num($("invoiceParts").value) +
-    num($("invoiceOther").value);
+  const labour =
+    num(
+      $("invoiceLabour")
+        ?.value
+    );
+
+  const parts =
+    num(
+      $("invoiceParts")
+        ?.value
+    );
+
+  const other =
+    num(
+      $("invoiceOther")
+        ?.value
+    );
 
   const paid =
-    num($("invoicePaid").value);
+    num(
+      $("invoicePaid")
+        ?.value
+    );
+
+  const subtotal =
+    labour + parts + other;
 
   const payload = {
     invoice_no:
-      $("invoiceNo").value.trim(),
-
+      $("invoiceNo")
+        ?.value.trim(),
     invoice_date:
-      $("invoiceDate").value,
-
+      $("invoiceDate")
+        ?.value,
     vehicle_id:
-      $("invoiceVehicle").value || null,
-
+      $("invoiceVehicle")
+        ?.value || null,
     customer:
-      $("invoiceCustomer").value.trim(),
-
+      $("invoiceCustomer")
+        ?.value.trim() || "",
     job_description:
-      $("invoiceJobDescription").value.trim(),
-
-    labour:
-      num($("invoiceLabour").value),
-
-    parts:
-      num($("invoiceParts").value),
-
-    other:
-      num($("invoiceOther").value),
-
+      $("invoiceJobDescription")
+        ?.value.trim() || "",
+    labour,
+    parts,
+    other,
     subtotal,
-
     paid,
-
     balance:
-      Math.max(0, subtotal - paid),
-
+      Math.max(
+        0,
+        subtotal - paid
+      ),
     status:
-      $("invoiceStatus").value,
-
+      $("invoiceStatus")
+        ?.value ||
+      invoiceStatus({
+        labour,
+        parts,
+        other,
+        paid
+      }),
     notes:
-      $("invoiceNotes").value.trim()
+      $("invoiceNotes")
+        ?.value.trim() || ""
   };
 
   const result = id
@@ -2327,112 +2825,124 @@ async function saveInvoice(e) {
 }
 
 async function deleteInvoice(id) {
-  if (!confirm("Delete this invoice?"))
+  if (
+    !confirm(
+      "Delete this invoice?"
+    )
+  )
     return;
 
-  const { error } = await supabase
-    .from("invoices")
-    .delete()
-    .eq("id", id);
+  const { error } =
+    await supabase
+      .from("invoices")
+      .delete()
+      .eq("id", id);
 
   if (error) {
     toast(
-      "Delete failed: " + error.message,
+      "Invoice delete failed: " +
+        error.message,
       true
     );
     return;
   }
 
-  await loadAllData();
   toast("Invoice deleted.");
+  await loadAllData();
 }
 
 function printInvoices() {
   const rows =
-    getFilteredInvoices();
+    filteredInvoices();
 
-  const html = `
-    <div class="preview-paper">
-      <div class="preview-head">
-        <h1>INVOICE REPORT</h1>
+  printHTML(
+    `
+      <div class="preview-paper">
+        <div class="preview-head">
+          <h1>INVOICE REPORT</h1>
+        </div>
+
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Date</th>
+              <th>Vehicle</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows
+              .map(i => {
+                const v =
+                  findVehicle(
+                    i.vehicle_id
+                  );
+
+                return `
+                  <tr>
+                    <td>${esc(
+                      i.invoice_no
+                    )}</td>
+                    <td>${esc(
+                      i.invoice_date
+                    )}</td>
+                    <td>${esc(
+                      vehicleLabel(v)
+                    )}</td>
+                    <td>${esc(
+                      i.customer
+                    )}</td>
+                    <td>${money(
+                      invoiceTotal(i)
+                    )}</td>
+                    <td>${money(
+                      i.paid
+                    )}</td>
+                    <td>${money(
+                      invoiceBalance(i)
+                    )}</td>
+                    <td>${esc(
+                      i.status ||
+                        invoiceStatus(i)
+                    )}</td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
       </div>
-
-      <table class="preview-table">
-        <thead>
-          <tr>
-            <th>Invoice</th>
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Customer</th>
-            <th>Subtotal</th>
-            <th>Paid</th>
-            <th>Balance</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(i => {
-              const v =
-                findVehicle(
-                  i.vehicle_id
-                );
-
-              return `
-                <tr>
-                  <td>${esc(
-                    i.invoice_no
-                  )}</td>
-                  <td>${esc(
-                    i.invoice_date
-                  )}</td>
-                  <td>${esc(
-                    vehicleLabel(v)
-                  )}</td>
-                  <td>${esc(
-                    i.customer
-                  )}</td>
-                  <td>${money(
-                    invoiceSubtotal(i)
-                  )}</td>
-                  <td>${money(
-                    i.paid
-                  )}</td>
-                  <td>${money(
-                    invoiceBalance(i)
-                  )}</td>
-                  <td>${esc(
-                    i.status ||
-                      invoiceStatus(i)
-                  )}</td>
-                </tr>
-              `;
-            })
-            .join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  printHTML(html, "Invoices");
+    `,
+    "Invoices"
+  );
 }
 
 /* =========================================================
    GATE PASSES
    ========================================================= */
 
-function getFilteredGatePasses() {
+function filteredGatePasses() {
   const search =
-    String($("gateSearch")?.value || "")
-      .toLowerCase();
+    String(
+      $("gateSearch")
+        ?.value || ""
+    ).toLowerCase();
 
   const status =
-    $("gateStatusFilter")?.value || "";
+    $("gateStatusFilter")
+      ?.value || "";
 
   return gatePasses.filter(g => {
-    const v = findVehicle(
-      g.vehicle_id
-    );
+    const v =
+      findVehicle(
+        g.vehicle_id
+      );
 
     const text = [
       g.gate_pass_no,
@@ -2445,8 +2955,10 @@ function getFilteredGatePasses() {
       .toLowerCase();
 
     return (
-      (!search || text.includes(search)) &&
-      (!status || g.status === status)
+      (!search ||
+        text.includes(search)) &&
+      (!status ||
+        g.status === status)
     );
   });
 }
@@ -2458,73 +2970,86 @@ function renderGatePasses() {
   if (!body) return;
 
   const rows =
-    getFilteredGatePasses();
+    filteredGatePasses();
 
   body.innerHTML = rows.length
     ? rows
         .map(g => {
           const v =
-            findVehicle(g.vehicle_id);
-
-          const billed =
-            num(v?.billed);
+            findVehicle(
+              g.vehicle_id
+            );
 
           const paid =
             num(g.paid);
 
           const balance =
-            Math.max(
-              0,
-              billed - paid
-            );
+            g.balance != null
+              ? num(g.balance)
+              : Math.max(
+                  0,
+                  num(v?.billed) -
+                    paid
+                );
 
           return `
             <tr>
               <td>${esc(
                 g.gate_pass_no
               )}</td>
+
               <td>${esc(
                 g.pass_date
               )}</td>
+
               <td>${esc(
                 vehicleLabel(v)
               )}</td>
+
               <td>${esc(
-                g.customer || v?.customer || ""
+                g.customer ||
+                  v?.customer ||
+                  ""
               )}</td>
+
               <td>${esc(
                 g.released_to
               )}</td>
+
               <td>${esc(
                 g.invoice_no || ""
               )}</td>
+
               <td>${money(
-                g.paid
+                paid
               )}</td>
+
               <td>${money(
-                g.balance ?? balance
+                balance
               )}</td>
+
               <td>
                 <span class="status status-${statusClass(
                   g.status
                 )}">
-                  ${esc(g.status)}
+                  ${esc(
+                    g.status ||
+                      "Pending"
+                  )}
                 </span>
               </td>
+
               <td>
                 <div class="table-actions">
                   <button
                     class="action-btn"
-                    onclick="editGatePass('${esc(
-                      g.id
-                    )}')">
+                    onclick="editGatePass('${esc(g.id)}')">
                     ✏️
                   </button>
+
                   <button
                     class="action-btn danger"
-                    onclick="deleteGatePass('${esc(
-                      g.id
-                    )}')">
+                    onclick="deleteGatePass('${esc(g.id)}')">
                     🗑
                   </button>
                 </div>
@@ -2544,70 +3069,101 @@ function renderGatePasses() {
 }
 
 function updateGateBalance() {
-  const vehicle =
+  const v =
     findVehicle(
-      $("gateVehicle")?.value
+      $("gateVehicle")
+        ?.value
     );
 
   const paid =
-    num($("gatePaid")?.value);
-
-  const billed =
-    num(vehicle?.billed);
+    num(
+      $("gatePaid")
+        ?.value
+    );
 
   if ($("gateBalance"))
     $("gateBalance").value =
-      Math.max(0, billed - paid);
+      Math.max(
+        0,
+        num(v?.billed) - paid
+      );
 }
 
 function fillGateVehicleData() {
   const v =
     findVehicle(
-      $("gateVehicle")?.value
+      $("gateVehicle")
+        ?.value
     );
 
-  if (!v) return;
+  if (!v) {
+    if ($("gateVehicleRegistration"))
+      $("gateVehicleRegistration")
+        .value = "";
 
-  $("gateVehicleRegistration").value =
-    vehicleLabel(v);
+    if ($("gateCustomer"))
+      $("gateCustomer").value =
+        "";
 
-  $("gateCustomer").value =
-    v.customer || "";
+    updateGateBalance();
+    return;
+  }
+
+  if ($("gateVehicleRegistration"))
+    $("gateVehicleRegistration")
+      .value =
+      vehicleLabel(v);
+
+  if ($("gateCustomer"))
+    $("gateCustomer").value =
+      v.customer || "";
 
   updateGateBalance();
 }
 
-function openGatePassModal(vehicleId = "") {
+function openGatePassModal(
+  vehicleId = ""
+) {
   $("gatePassForm")?.reset();
 
-  $("gatePassId").value = "";
+  if ($("gatePassId"))
+    $("gatePassId").value =
+      "";
 
-  $("gatePassNo").value =
-    "GP-" +
-    new Date().getFullYear() +
-    "-" +
-    String(
-      gatePasses.length + 1
-    ).padStart(4, "0");
+  if ($("gatePassNo"))
+    $("gatePassNo").value =
+      "GP-" +
+      new Date()
+        .getFullYear() +
+      "-" +
+      String(
+        gatePasses.length + 1
+      ).padStart(4, "0");
 
-  $("gatePassDate").value =
-    today();
+  if ($("gatePassDate"))
+    $("gatePassDate").value =
+      today();
 
   updateAllVehicleSelects();
 
-  $("gateVehicle").value =
-    vehicleId || "";
+  if ($("gateVehicle"))
+    $("gateVehicle").value =
+      vehicleId || "";
 
-  $("gateAuthorizedBy").value =
-    "Josephine";
+  if ($("gateAuthorizedBy"))
+    $("gateAuthorizedBy").value =
+      "Josephine";
 
-  $("gateStatus").value =
-    "Pending";
+  if ($("gateStatus"))
+    $("gateStatus").value =
+      "Pending";
 
   fillGateVehicleData();
 
-  $("gatePassModalTitle").textContent =
-    "New Gate Pass";
+  if ($("gatePassModalTitle"))
+    $("gatePassModalTitle")
+      .textContent =
+      "New Gate Pass";
 
   openModal("gatePassModal");
 }
@@ -2615,118 +3171,134 @@ function openGatePassModal(vehicleId = "") {
 function editGatePass(id) {
   const g =
     gatePasses.find(
-      x => String(x.id) === String(id)
+      x =>
+        String(x.id) ===
+        String(id)
     );
 
   if (!g) return;
 
   $("gatePassForm")?.reset();
 
-  $("gatePassId").value = g.id;
-  $("gatePassNo").value =
-    g.gate_pass_no || "";
-  $("gatePassDate").value =
-    g.pass_date || today();
+  const values = {
+    gatePassId: g.id,
+    gatePassNo:
+      g.gate_pass_no || "",
+    gatePassDate:
+      g.pass_date || today(),
+    gateCustomer:
+      g.customer || "",
+    gateReleasedTo:
+      g.released_to || "",
+    gateReleasedContact:
+      g.released_contact || "",
+    gateInvoice:
+      g.invoice_no || "",
+    gatePaid:
+      g.paid ?? 0,
+    gateAuthorizedBy:
+      g.authorized_by ||
+      "Josephine",
+    gateStatus:
+      g.status || "Pending",
+    gateNotes:
+      g.notes || ""
+  };
 
   updateAllVehicleSelects();
 
-  $("gateVehicle").value =
-    g.vehicle_id || "";
+  Object.entries(values).forEach(
+    ([id, value]) => {
+      if ($(id))
+        $(id).value = value;
+    }
+  );
 
-  $("gateVehicleRegistration").value =
-    g.vehicle_registration || "";
+  if ($("gateVehicle"))
+    $("gateVehicle").value =
+      g.vehicle_id || "";
 
-  $("gateCustomer").value =
-    g.customer || "";
+  fillGateVehicleData();
 
-  $("gateReleasedTo").value =
-    g.released_to || "";
-
-  $("gateReleasedContact").value =
-    g.released_contact || "";
-
-  $("gateInvoice").value =
-    g.invoice_no || "";
-
-  $("gatePaid").value =
-    g.paid ?? 0;
-
-  $("gateAuthorizedBy").value =
-    g.authorized_by || "Josephine";
-
-  $("gateStatus").value =
-    g.status || "Pending";
-
-  $("gateNotes").value =
-    g.notes || "";
-
-  updateGateBalance();
-
-  $("gatePassModalTitle").textContent =
-    "Edit Gate Pass";
+  if ($("gatePassModalTitle"))
+    $("gatePassModalTitle")
+      .textContent =
+      "Edit Gate Pass";
 
   openModal("gatePassModal");
 }
 
-async function saveGatePass(e) {
-  e.preventDefault();
-
-  updateGateBalance();
+async function saveGatePass(event) {
+  event.preventDefault();
 
   const id =
-    $("gatePassId").value;
+    $("gatePassId")
+      ?.value;
 
   const vehicle =
     findVehicle(
-      $("gateVehicle").value
+      $("gateVehicle")
+        ?.value
     );
 
   const paid =
-    num($("gatePaid").value);
+    num(
+      $("gatePaid")
+        ?.value
+    );
 
   const balance =
     Math.max(
       0,
-      num(vehicle?.billed) - paid
+      num(vehicle?.billed) -
+        paid
     );
 
   const payload = {
     gate_pass_no:
-      $("gatePassNo").value.trim(),
-
+      $("gatePassNo")
+        ?.value.trim(),
     pass_date:
-      $("gatePassDate").value,
-
+      $("gatePassDate")
+        ?.value ||
+      today(),
     vehicle_id:
-      $("gateVehicle").value || null,
-
+      $("gateVehicle")
+        ?.value || null,
     vehicle_registration:
-      vehicle?.registration || "",
-
+      vehicle?.registration ||
+      "",
     customer:
-      $("gateCustomer").value.trim(),
-
+      $("gateCustomer")
+        ?.value.trim() ||
+      vehicle?.customer ||
+      "",
     released_to:
-      $("gateReleasedTo").value.trim(),
-
+      $("gateReleasedTo")
+        ?.value.trim() ||
+      "",
     released_contact:
-      $("gateReleasedContact").value.trim(),
-
+      $("gateReleasedContact")
+        ?.value.trim() ||
+      "",
     invoice_no:
-      $("gateInvoice").value.trim(),
-
+      $("gateInvoice")
+        ?.value.trim() ||
+      "",
     paid,
-
     balance,
-
     authorized_by:
-      $("gateAuthorizedBy").value.trim(),
-
+      $("gateAuthorizedBy")
+        ?.value.trim() ||
+      "Josephine",
     status:
-      $("gateStatus").value,
-
+      $("gateStatus")
+        ?.value ||
+      "Pending",
     notes:
-      $("gateNotes").value.trim()
+      $("gateNotes")
+        ?.value.trim() ||
+      ""
   };
 
   const result = id
@@ -2739,108 +3311,130 @@ async function saveGatePass(e) {
         .insert(payload);
 
   if (result.error) {
+    console.error(
+      "GATE PASS ERROR",
+      result.error,
+      payload
+    );
+
     toast(
-      "Gate pass error: " +
+      "Gate Pass error: " +
         result.error.message,
       true
     );
+
     return;
   }
 
-  closeModal("gatePassModal");
-  toast("Gate pass saved.");
+  closeModal(
+    "gatePassModal"
+  );
+
+  toast(
+    id
+      ? "Gate Pass updated."
+      : "Gate Pass created."
+  );
+
   await loadAllData();
 }
 
 async function deleteGatePass(id) {
-  if (!confirm("Delete this gate pass?"))
+  if (
+    !confirm(
+      "Delete this Gate Pass?"
+    )
+  )
     return;
 
-  const { error } = await supabase
-    .from("gate_passes")
-    .delete()
-    .eq("id", id);
+  const { error } =
+    await supabase
+      .from("gate_passes")
+      .delete()
+      .eq("id", id);
 
   if (error) {
     toast(
-      "Delete failed: " +
+      "Gate Pass delete failed: " +
         error.message,
       true
     );
     return;
   }
 
+  toast("Gate Pass deleted.");
   await loadAllData();
-  toast("Gate pass deleted.");
 }
 
 function printGatePasses() {
   const rows =
-    getFilteredGatePasses();
+    filteredGatePasses();
 
-  const html = `
-    <div class="preview-paper">
-      <div class="preview-head">
-        <h1>GATE PASS REPORT</h1>
+  printHTML(
+    `
+      <div class="preview-paper">
+        <div class="preview-head">
+          <h1>GATE PASS REPORT</h1>
+        </div>
+
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Gate Pass</th>
+              <th>Date</th>
+              <th>Vehicle</th>
+              <th>Customer</th>
+              <th>Released To</th>
+              <th>Paid</th>
+              <th>Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows
+              .map(g => {
+                const v =
+                  findVehicle(
+                    g.vehicle_id
+                  );
+
+                return `
+                  <tr>
+                    <td>${esc(
+                      g.gate_pass_no
+                    )}</td>
+                    <td>${esc(
+                      g.pass_date
+                    )}</td>
+                    <td>${esc(
+                      vehicleLabel(v)
+                    )}</td>
+                    <td>${esc(
+                      g.customer
+                    )}</td>
+                    <td>${esc(
+                      g.released_to
+                    )}</td>
+                    <td>${money(
+                      g.paid
+                    )}</td>
+                    <td>${money(
+                      g.balance
+                    )}</td>
+                    <td>${esc(
+                      g.status
+                    )}</td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
       </div>
-
-      <table class="preview-table">
-        <thead>
-          <tr>
-            <th>Gate Pass</th>
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Customer</th>
-            <th>Released To</th>
-            <th>Paid</th>
-            <th>Balance</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(g => {
-              const v =
-                findVehicle(
-                  g.vehicle_id
-                );
-
-              return `
-                <tr>
-                  <td>${esc(
-                    g.gate_pass_no
-                  )}</td>
-                  <td>${esc(
-                    g.pass_date
-                  )}</td>
-                  <td>${esc(
-                    vehicleLabel(v)
-                  )}</td>
-                  <td>${esc(
-                    g.customer
-                  )}</td>
-                  <td>${esc(
-                    g.released_to
-                  )}</td>
-                  <td>${money(
-                    g.paid
-                  )}</td>
-                  <td>${money(
-                    g.balance
-                  )}</td>
-                  <td>${esc(
-                    g.status
-                  )}</td>
-                </tr>
-              `;
-            })
-            .join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  printHTML(html, "Gate Passes");
+    `,
+    "Gate Passes"
+  );
 }
 
 /* =========================================================
@@ -2849,86 +3443,95 @@ function printGatePasses() {
 
 function printVehicles() {
   const rows =
-    getFilteredVehicles();
+    filteredVehicles();
 
-  const html = `
-    <div class="preview-paper">
-      <div class="preview-head">
-        <h1>VEHICLE REPORT</h1>
+  printHTML(
+    `
+      <div class="preview-paper">
+
+        <div class="preview-head">
+          <h1>VEHICLE REPORT</h1>
+        </div>
+
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Registration</th>
+              <th>Customer</th>
+              <th>Date In</th>
+              <th>Job</th>
+              <th>Status</th>
+              <th>Storage Days</th>
+              <th>Billed</th>
+              <th>Paid</th>
+              <th>Expenses</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows
+              .map(
+                v => `
+                  <tr>
+                    <td>${esc(
+                      vehicleLabel(v)
+                    )}</td>
+                    <td>${esc(
+                      v.customer
+                    )}</td>
+                    <td>${esc(
+                      v.date_in
+                    )}</td>
+                    <td>${esc(
+                      v.job_type
+                    )}</td>
+                    <td>${esc(
+                      v.status
+                    )}</td>
+                    <td>${storageDays(
+                      v
+                    )}</td>
+                    <td>${money(
+                      v.billed
+                    )}</td>
+                    <td>${money(
+                      v.paid
+                    )}</td>
+                    <td>${money(
+                      vehicleExpenseTotal(
+                        v.id
+                      )
+                    )}</td>
+                  </tr>
+                `
+              )
+              .join("")}
+          </tbody>
+        </table>
       </div>
-
-      <table class="preview-table">
-        <thead>
-          <tr>
-            <th>Registration</th>
-            <th>Customer</th>
-            <th>Date In</th>
-            <th>Job</th>
-            <th>Status</th>
-            <th>Storage Days</th>
-            <th>Billed</th>
-            <th>Paid</th>
-            <th>Expenses</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(v => {
-              return `
-                <tr>
-                  <td>${esc(
-                    vehicleLabel(v)
-                  )}</td>
-                  <td>${esc(
-                    v.customer
-                  )}</td>
-                  <td>${esc(
-                    v.date_in
-                  )}</td>
-                  <td>${esc(
-                    v.job_type
-                  )}</td>
-                  <td>${esc(
-                    v.status
-                  )}</td>
-                  <td>${storageDays(v)}</td>
-                  <td>${money(
-                    v.billed
-                  )}</td>
-                  <td>${money(
-                    v.paid
-                  )}</td>
-                  <td>${money(
-                    vehicleExpenseTotal(
-                      v.id
-                    )
-                  )}</td>
-                </tr>
-              `;
-            })
-            .join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  printHTML(html, "Vehicles");
+    `,
+    "Vehicles"
+  );
 }
 
 /* =========================================================
-   PREVIEW / PRINT
+   PRINT ENGINE
    ========================================================= */
 
-function printHTML(html, title) {
-  const win = window.open(
-    "",
-    "_blank",
-    "width=1000,height=800"
-  );
+function printHTML(
+  html,
+  title
+) {
+  const win =
+    window.open(
+      "",
+      "_blank",
+      "width=1100,height=800"
+    );
 
   if (!win) {
     toast(
-      "Please allow pop-ups to print.",
+      "Allow pop-ups to print.",
       true
     );
     return;
@@ -2939,68 +3542,82 @@ function printHTML(html, title) {
     <html>
     <head>
       <title>${esc(title)}</title>
-      <meta name="viewport"
-            content="width=device-width,initial-scale=1">
+
+      <meta
+        name="viewport"
+        content="width=device-width,initial-scale=1"
+      >
+
       <style>
-        *{box-sizing:border-box}
+        *{
+          box-sizing:border-box;
+        }
+
         body{
           margin:0;
           padding:20px;
           font-family:Arial,sans-serif;
           color:#172033;
         }
+
         .preview-paper{
           max-width:1100px;
           margin:auto;
         }
+
         .preview-head{
           text-align:center;
           border-bottom:2px solid #07111f;
           padding-bottom:15px;
           margin-bottom:18px;
         }
+
         .preview-head h1{
           margin:0;
           font-size:22px;
         }
-        .preview-head p{
-          margin:5px 0;
-          color:#64748b;
-        }
+
         table{
           width:100%;
           border-collapse:collapse;
         }
+
         th,td{
           border:1px solid #dfe4ea;
           padding:8px;
           font-size:12px;
           text-align:left;
         }
+
         th{
           background:#f1f5f9;
         }
+
         .preview-total{
           margin-top:18px;
           margin-left:auto;
           max-width:350px;
         }
-        .preview-total div{
+
+        .grand{
           display:flex;
           justify-content:space-between;
-          padding:6px 0;
-        }
-        .grand{
           border-top:2px solid #07111f;
-          font-weight:900;
+          padding-top:8px;
+          font-weight:bold;
         }
+
         @media print{
-          body{padding:0}
+          body{
+            padding:0;
+          }
         }
       </style>
     </head>
+
     <body>
       ${html}
+
       <script>
         window.onload=function(){
           setTimeout(function(){
@@ -3024,7 +3641,7 @@ function printCurrentPreview() {
 }
 
 /* =========================================================
-   RENDER EVERYTHING
+   RENDER
    ========================================================= */
 
 function renderEverything() {
@@ -3039,211 +3656,17 @@ function renderEverything() {
 }
 
 /* =========================================================
-   EVENT LISTENERS
+   HORIZONTAL ACTION BUTTONS
    ========================================================= */
 
-function listen(id, event, fn) {
-  const el = $(id);
-  if (el)
-    el.addEventListener(event, fn);
-}
-
-listen(
-  "vehicleForm",
-  "submit",
-  saveVehicle
-);
-
-listen(
-  "expenseForm",
-  "submit",
-  saveExpense
-);
-
-listen(
-  "pettyForm",
-  "submit",
-  savePetty
-);
-
-listen(
-  "reqForm",
-  "submit",
-  saveReq
-);
-
-listen(
-  "invoiceForm",
-  "submit",
-  saveInvoice
-);
-
-listen(
-  "gatePassForm",
-  "submit",
-  saveGatePass
-);
-
-/* Vehicle filters */
-listen(
-  "vehicleSearch",
-  "input",
-  renderVehicles
-);
-
-listen(
-  "vehicleStatusFilter",
-  "change",
-  renderVehicles
-);
-
-/* Expense filters */
-listen(
-  "expenseSearch",
-  "input",
-  renderExpenses
-);
-
-listen(
-  "expenseCategoryFilter",
-  "change",
-  renderExpenses
-);
-
-/* Petty filters */
-listen(
-  "pettySearch",
-  "input",
-  renderPettyCash
-);
-
-listen(
-  "pettyCategoryFilter",
-  "change",
-  renderPettyCash
-);
-
-/* Requisition filters */
-listen(
-  "reqSearch",
-  "input",
-  renderRequisitions
-);
-
-listen(
-  "reqStatusFilter",
-  "change",
-  renderRequisitions
-);
-
-/* Invoice filters */
-listen(
-  "invoiceSearch",
-  "input",
-  renderInvoices
-);
-
-listen(
-  "invoiceStatusFilter",
-  "change",
-  renderInvoices
-);
-
-/* Gate filters */
-listen(
-  "gateSearch",
-  "input",
-  renderGatePasses
-);
-
-listen(
-  "gateStatusFilter",
-  "change",
-  renderGatePasses
-);
-
-/* Storage calculation */
-listen(
-  "vehicleDateIn",
-  "change",
-  updateVehicleStorageDays
-);
-
-listen(
-  "vehicleDateOut",
-  "change",
-  updateVehicleStorageDays
-);
-
-/* Requisition calculation */
-listen(
-  "reqQuantity",
-  "input",
-  updateReqTotal
-);
-
-listen(
-  "reqUnitCost",
-  "input",
-  updateReqTotal
-);
-
-/* Invoice calculations */
-[
-  "invoiceLabour",
-  "invoiceParts",
-  "invoiceOther",
-  "invoicePaid"
-].forEach(id =>
-  listen(
-    id,
-    "input",
-    updateInvoiceTotals
-  )
-);
-
-/* Gate calculations */
-listen(
-  "gateVehicle",
-  "change",
-  fillGateVehicleData
-);
-
-listen(
-  "gatePaid",
-  "input",
-  updateGateBalance
-);
-
-/* Invoice customer when vehicle changes */
-listen(
-  "invoiceVehicle",
-  "change",
-  () => {
-    const v = findVehicle(
-      $("invoiceVehicle").value
-    );
-
-    if (
-      v &&
-      $("invoiceCustomer")
-    ) {
-      $("invoiceCustomer").value =
-        v.customer || "";
-    }
-  }
-);
-
-/* =========================================================
-   ACTION BUTTON STYLE
-   ========================================================= */
-
-function actionButtonStyle() {
+function installActionCSS() {
   if ($("garageActionStyle"))
     return;
 
   const style =
-    document.createElement("style");
+    document.createElement(
+      "style"
+    );
 
   style.id =
     "garageActionStyle";
@@ -3253,33 +3676,39 @@ function actionButtonStyle() {
       display:flex!important;
       flex-direction:row!important;
       flex-wrap:nowrap!important;
-      align-items:center;
-      gap:5px;
-      min-width:max-content;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      gap:5px!important;
+      min-width:max-content!important;
+      white-space:nowrap!important;
     }
 
     .action-btn{
-      width:36px;
-      height:36px;
-      min-width:36px;
+      width:36px!important;
+      height:36px!important;
+      min-width:36px!important;
       padding:0!important;
+      margin:0!important;
+      flex:0 0 36px!important;
       display:inline-flex!important;
-      align-items:center;
-      justify-content:center;
-      flex:0 0 auto;
-      white-space:nowrap;
+      align-items:center!important;
+      justify-content:center!important;
+      white-space:nowrap!important;
     }
 
-    .table-card{
+    .table-card,
+    .table-responsive,
+    .table-wrap{
       overflow-x:auto!important;
     }
 
     @media(max-width:720px){
       .action-btn{
-        width:34px;
-        height:34px;
-        min-width:34px;
-        font-size:14px;
+        width:34px!important;
+        height:34px!important;
+        min-width:34px!important;
+        flex-basis:34px!important;
+        font-size:14px!important;
       }
     }
   `;
@@ -3288,7 +3717,217 @@ function actionButtonStyle() {
 }
 
 /* =========================================================
-   LOGIN DISPLAY
+   EVENTS
+   ========================================================= */
+
+function setupEvents() {
+
+  /* Forms */
+  listen(
+    "vehicleForm",
+    "submit",
+    saveVehicle
+  );
+
+  listen(
+    "expenseForm",
+    "submit",
+    saveExpense
+  );
+
+  listen(
+    "pettyForm",
+    "submit",
+    savePetty
+  );
+
+  listen(
+    "reqForm",
+    "submit",
+    saveReq
+  );
+
+  listen(
+    "invoiceForm",
+    "submit",
+    saveInvoice
+  );
+
+  listen(
+    "gatePassForm",
+    "submit",
+    saveGatePass
+  );
+
+  /* Vehicle */
+  listen(
+    "vehicleSearch",
+    "input",
+    renderVehicles
+  );
+
+  listen(
+    "vehicleStatusFilter",
+    "change",
+    renderVehicles
+  );
+
+  listen(
+    "vehicleDateIn",
+    "change",
+    updateVehicleStorageDays
+  );
+
+  listen(
+    "vehicleDateOut",
+    "change",
+    updateVehicleStorageDays
+  );
+
+  /* Expenses */
+  listen(
+    "expenseSearch",
+    "input",
+    renderExpenses
+  );
+
+  listen(
+    "expenseCategoryFilter",
+    "change",
+    renderExpenses
+  );
+
+  /* Petty */
+  listen(
+    "pettySearch",
+    "input",
+    renderPettyCash
+  );
+
+  listen(
+    "pettyCategoryFilter",
+    "change",
+    renderPettyCash
+  );
+
+  /* Requisitions */
+  listen(
+    "reqSearch",
+    "input",
+    renderRequisitions
+  );
+
+  listen(
+    "reqStatusFilter",
+    "change",
+    renderRequisitions
+  );
+
+  listen(
+    "reqQuantity",
+    "input",
+    updateReqTotal
+  );
+
+  listen(
+    "reqUnitCost",
+    "input",
+    updateReqTotal
+  );
+
+  /* Invoices */
+  listen(
+    "invoiceSearch",
+    "input",
+    renderInvoices
+  );
+
+  listen(
+    "invoiceStatusFilter",
+    "change",
+    renderInvoices
+  );
+
+  [
+    "invoiceLabour",
+    "invoiceParts",
+    "invoiceOther",
+    "invoicePaid"
+  ].forEach(id =>
+    listen(
+      id,
+      "input",
+      updateInvoiceTotals
+    )
+  );
+
+  listen(
+    "invoiceVehicle",
+    "change",
+    () => {
+      const v =
+        findVehicle(
+          $("invoiceVehicle")
+            ?.value
+        );
+
+      if (
+        v &&
+        $("invoiceCustomer")
+      ) {
+        $("invoiceCustomer")
+          .value =
+          v.customer || "";
+      }
+    }
+  );
+
+  /* Gate Pass */
+  listen(
+    "gateSearch",
+    "input",
+    renderGatePasses
+  );
+
+  listen(
+    "gateStatusFilter",
+    "change",
+    renderGatePasses
+  );
+
+  listen(
+    "gateVehicle",
+    "change",
+    fillGateVehicleData
+  );
+
+  listen(
+    "gatePaid",
+    "input",
+    updateGateBalance
+  );
+
+  /*
+    Close modal by clicking backdrop.
+  */
+  document.addEventListener(
+    "click",
+    event => {
+      if (
+        event.target.classList?.contains(
+          "modal"
+        )
+      ) {
+        event.target.classList.remove(
+          "show"
+        );
+      }
+    }
+  );
+}
+
+/* =========================================================
+   LOGIN
    ========================================================= */
 
 function setupUser() {
@@ -3302,29 +3941,54 @@ function setupUser() {
     user.slice(1);
 
   if ($("sidebarUser"))
-    $("sidebarUser").textContent =
-      name;
+    $("sidebarUser")
+      .textContent = name;
 
   if ($("welcomeUser"))
-    $("welcomeUser").textContent =
+    $("welcomeUser")
+      .textContent =
       name.charAt(0);
 }
 
 /* =========================================================
-   BACKDROP CLOSE
+   GLOBAL FUNCTIONS
+   =========================================================
+   Required because index.html uses onclick=""
    ========================================================= */
 
-document.addEventListener(
-  "click",
-  e => {
-    if (
-      e.target.classList &&
-      e.target.classList.contains("modal")
-    ) {
-      e.target.classList.remove(
-        "show"
-      );
-    }
+Object.assign(
+  window,
+  {
+    showSection,
+    openVehicleModal,
+    editVehicle,
+    deleteVehicle,
+    viewVehicleExpenses,
+    printVehicleExpensePreview,
+    openExpenseModal,
+    editExpense,
+    deleteExpense,
+    printExpenses,
+    openPettyModal,
+    editPetty,
+    deletePetty,
+    printPettyCash,
+    openReqModal,
+    editReq,
+    deleteReq,
+    printRequisitions,
+    openInvoiceModal,
+    editInvoice,
+    deleteInvoice,
+    printInvoices,
+    openGatePassModal,
+    editGatePass,
+    deleteGatePass,
+    printGatePasses,
+    printVehicles,
+    printCurrentPreview,
+    closeModal,
+    openModal
   }
 );
 
@@ -3333,12 +3997,13 @@ document.addEventListener(
    ========================================================= */
 
 async function startApp() {
-  actionButtonStyle();
+  installActionCSS();
   setupUser();
+  setupEvents();
 
   /*
-    Ensure app is visible when the existing
-    login script has authenticated the user.
+    Make sure login/app visibility
+    remains compatible with existing HTML.
   */
   if (
     sessionStorage.getItem(
@@ -3350,51 +4015,42 @@ async function startApp() {
         "none";
 
     if ($("app"))
-      $("app").style.display = "flex";
+      $("app").style.display =
+        "flex";
   }
-
-  showSection("dashboard");
 
   /*
     Default dates.
   */
-  if ($("vehicleDateIn") &&
-      !$("vehicleDateIn").value) {
-    $("vehicleDateIn").value =
-      today();
-  }
+  [
+    "vehicleDateIn",
+    "expenseDate",
+    "pettyDate",
+    "reqDate",
+    "invoiceDate",
+    "gatePassDate"
+  ].forEach(id => {
+    if (
+      $(id) &&
+      !$(id).value
+    ) {
+      $(id).value =
+        today();
+    }
+  });
 
-  if ($("expenseDate") &&
-      !$("expenseDate").value) {
-    $("expenseDate").value =
-      today();
-  }
+  showSection("dashboard");
 
-  if ($("pettyDate") &&
-      !$("pettyDate").value) {
-    $("pettyDate").value =
-      today();
-  }
-
-  if ($("reqDate") &&
-      !$("reqDate").value) {
-    $("reqDate").value =
-      today();
-  }
-
-  if ($("invoiceDate") &&
-      !$("invoiceDate").value) {
-    $("invoiceDate").value =
-      today();
-  }
-
-  if ($("gatePassDate") &&
-      !$("gatePassDate").value) {
-    $("gatePassDate").value =
-      today();
-  }
-
+  /*
+    Load everything from Supabase.
+  */
   await loadAllData();
+
+  /*
+    Dashboard cards are installed
+    AFTER the dashboard exists.
+  */
+  setupDashboardCards();
 }
 
 startApp();
