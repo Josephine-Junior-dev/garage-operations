@@ -2,21 +2,13 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 /* =========================================================
    GARAGE OPERATIONS PRO
-   COMPLETE APP.JS
+   COMPLETE REPLACEMENT APP.JS
    ========================================================= */
 
-const SUPABASE_URL =
-  "https://ptluwoeogfkqavhspdjj.supabase.co";
+const SUPABASE_URL = "https://ptluwoeogfkqavhspdjj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
 
-const SUPABASE_KEY =
-  "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
-
-const supabase =
-  createClient(SUPABASE_URL, SUPABASE_KEY);
-
-/* =========================================================
-   DATA
-   ========================================================= */
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let vehicles = [];
 let expenses = [];
@@ -26,7 +18,16 @@ let invoices = [];
 let gatePasses = [];
 let estimates = [];
 
+let editingVehicleId = null;
+let editingExpenseId = null;
+let editingPettyId = null;
+let editingReqId = null;
+let editingInvoiceId = null;
+let editingGatePassId = null;
+let editingEstimateId = null;
+
 let currentVehicleExpenseId = null;
+
 
 /* =========================================================
    HELPERS
@@ -34,5261 +35,1057 @@ let currentVehicleExpenseId = null;
 
 const $ = id => document.getElementById(id);
 
-function num(v) {
-  const n = Number(v);
+const esc = value => String(value ?? "")
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;");
+
+const num = value => {
+  const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+};
+
+const money = value =>
+  `KSh ${num(value).toLocaleString("en-KE",{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  })}`;
+
+const today = () => new Date().toISOString().slice(0,10);
+
+function normReg(v){
+  return String(v || "").toUpperCase().replace(/[\s-]/g,"");
 }
 
-function money(v) {
-  return "KSh " + num(v).toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+function dateText(v){
+  if(!v) return "";
+  const d = new Date(String(v).slice(0,10)+"T00:00:00");
+  return Number.isNaN(d.getTime()) ? String(v).slice(0,10) :
+    d.toLocaleDateString("en-KE",{year:"numeric",month:"short",day:"numeric"});
 }
 
-function today() {
-  const d = new Date();
+function storageDays(v){
+  if(!v?.date_in) return 0;
 
-  return (
-    d.getFullYear() +
-    "-" +
-    String(d.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(d.getDate()).padStart(2, "0")
+  const a = new Date(String(v.date_in).slice(0,10)+"T00:00:00");
+  const b = new Date(
+    (v.date_out || today()).toString().slice(0,10)+"T00:00:00"
   );
+
+  return Math.max(0,Math.floor((b-a)/86400000));
 }
 
-function esc(v) {
-  return String(v ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function norm(v) {
-  return String(v || "")
-    .trim()
-    .toUpperCase()
-    .replace(/[\s\-_/]+/g, "");
-}
-
-function vehicleById(id) {
-  return vehicles.find(
-    v => String(v.id) === String(id)
-  );
-}
-
-function toast(message, type = "") {
-  const el = $("toast");
-
-  if (!el) {
-    console.log(message);
+function toast(message,type="success"){
+  const t=$("toast");
+  if(!t){
+    alert(message);
     return;
   }
 
-  el.textContent = message;
-  el.className = "toast show " + type;
+  t.textContent=message;
+  t.style.display="block";
+  t.style.background=type==="error" ? "#991b1b" :
+                     type==="warning" ? "#92400e" : "#07111f";
 
   clearTimeout(window.__garageToast);
-
-  window.__garageToast =
-    setTimeout(() => {
-      el.className = "toast";
-    }, 3000);
+  window.__garageToast=setTimeout(()=>t.style.display="none",3000);
 }
+
+function openModal(id){
+  const x=$(id);
+  if(x){
+    x.style.display="flex";
+    x.classList.add("show");
+  }
+}
+
+function closeModal(id){
+  const x=$(id);
+  if(x){
+    x.style.display="none";
+    x.classList.remove("show");
+  }
+}
+
+function statusBadge(s){
+  const value=String(s||"Unknown");
+  const cls=value.toLowerCase().replace(/\s+/g,"-");
+  return `<span class="status status-${esc(cls)}">${esc(value)}</span>`;
+}
+
 
 /* =========================================================
-   MODALS
+   COMPANY DETAILS
    ========================================================= */
 
-function openModal(id) {
-  const el = $(id);
+const COMPANIES={
+  crystal:{
+    name:"CRYSTAL MOTORS (K) LTD",
+    address:"P.O. Box 54385 – 00200, Nairobi",
+    phone:"0722 707124 | 0723 914 222",
+    location:"Off Mombasa Road, Along Quarry Road, Near Mlolongo Weighbridge",
+    email:""
+  },
 
-  if (!el) return;
+  quarry:{
+    name:"QUARRY ROUTE MOTORS LTD",
+    address:"P.O. Box 54385 – 00200, Nairobi",
+    phone:"0722 707124 | 0723 914 222",
+    location:"Off Mombasa Road, Along Quarry Road, Near Mlolongo Weigh Bridge",
+    email:"info@quarryroutemotors.com | quarryroutemotorsltd@gmail.com"
+  },
 
-  el.style.display = "flex";
-  el.classList.add("show");
+  other:{
+    name:"",
+    address:"",
+    phone:"",
+    location:"",
+    email:""
+  }
+};
+
+function companyKey(value){
+  const x=String(value||"").toLowerCase();
+
+  if(x.includes("quarry")) return "quarry";
+  if(x.includes("other")) return "other";
+
+  return "crystal";
 }
 
-function closeModal(id) {
-  const el = $(id);
+function companyFromRow(row){
+  const key=companyKey(row?.company_name);
+  const c={...COMPANIES[key]};
 
-  if (!el) return;
+  if(key==="other"){
+    c.name=row?.company_name||"OTHER";
+    c.address=row?.company_address||"";
+    c.phone=row?.company_phone||"";
+    c.email=row?.company_email||"";
+  }
 
-  el.style.display = "none";
-  el.classList.remove("show");
+  return c;
 }
 
-function closeAllModals() {
-  document
-    .querySelectorAll(".modal")
-    .forEach(el => {
-      el.style.display = "none";
-      el.classList.remove("show");
-    });
-}
 
 /* =========================================================
-   STYLES
+   CSS FIXES
    ========================================================= */
 
-function injectStyles() {
-  if ($("garageAppStyles")) return;
+function injectStyles(){
 
-  const style = document.createElement("style");
+  if($("garageRuntimeStyles")) return;
 
-  style.id = "garageAppStyles";
+  const style=document.createElement("style");
+  style.id="garageRuntimeStyles";
 
-  style.textContent = `
-
-    /* =====================================================
-       TABLE LAYOUT
-       ===================================================== */
-
-    .table-container,
-    .table-wrap {
-      width:100% !important;
-      overflow-x:auto !important;
-      -webkit-overflow-scrolling:touch !important;
+  style.textContent=`
+    .table-actions{
+      display:flex!important;
+      flex-direction:row!important;
+      flex-wrap:nowrap!important;
+      align-items:center!important;
+      gap:5px!important;
+      white-space:nowrap!important;
     }
 
-    .table-container table,
-    .table-wrap table {
-      width:100%;
-      min-width:900px;
-      border-collapse:collapse;
+    .action-btn{
+      width:34px!important;
+      height:32px!important;
+      min-width:34px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:7px!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      font-size:15px!important;
+      line-height:1!important;
+      cursor:pointer!important;
+      background:#f1f5f9!important;
     }
 
-    .table-container th,
-    .table-container td,
-    .table-wrap th,
-    .table-wrap td {
-      padding:10px 12px !important;
-      vertical-align:middle !important;
-      white-space:nowrap;
-    }
-
-    /* Description can breathe */
-    #expensesTableBody td:nth-child(3) {
-      white-space:normal !important;
-      min-width:230px;
-      max-width:420px;
-    }
-
-    /* =====================================================
-       ACTION BUTTONS
-       ===================================================== */
-
-    .table-actions {
-      display:flex !important;
-      flex-direction:row !important;
-      flex-wrap:nowrap !important;
-      align-items:center !important;
-      justify-content:flex-start !important;
-      gap:5px !important;
-      white-space:nowrap !important;
-      min-width:max-content !important;
-    }
-
-    .action-btn {
-      width:34px !important;
-      height:32px !important;
-      min-width:34px !important;
-      max-width:34px !important;
-      padding:0 !important;
-      margin:0 !important;
-      border:0 !important;
-      border-radius:7px !important;
-      display:inline-flex !important;
-      align-items:center !important;
-      justify-content:center !important;
-      font-size:15px !important;
-      line-height:1 !important;
-      cursor:pointer !important;
-      flex:0 0 34px !important;
-    }
-
-    .action-btn:hover {
+    .action-btn:hover{
       transform:translateY(-1px);
       filter:brightness(.96);
     }
 
-    .action-btn.blue {
-      background:#e0f2fe !important;
-      color:#075985 !important;
+    .expense-total-card{
+      margin:0 0 12px;
+      padding:14px 18px;
+      border:1px solid #dbe4ee;
+      border-radius:12px;
+      background:#fff;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      box-shadow:0 2px 8px rgba(15,23,42,.05);
     }
 
-    .action-btn.green {
-      background:#dcfce7 !important;
-      color:#166534 !important;
-    }
-
-    .action-btn.orange {
-      background:#fef3c7 !important;
-      color:#92400e !important;
-    }
-
-    .action-btn.purple {
-      background:#ede9fe !important;
-      color:#5b21b6 !important;
-    }
-
-    .action-btn.gray {
-      background:#f1f5f9 !important;
-      color:#172033 !important;
-    }
-
-    .action-btn.danger {
-      background:#fee2e2 !important;
-      color:#991b1b !important;
-    }
-
-    /* =====================================================
-       EXPENSE SUMMARY
-       ===================================================== */
-
-    .garage-expense-summary {
-      display:grid;
-      grid-template-columns:
-        repeat(3,minmax(0,1fr));
-      gap:14px;
-      margin:0 0 18px 0;
-    }
-
-    .garage-expense-summary-card {
-      background:#ffffff;
-      border:1px solid #e2e8f0;
-      border-radius:14px;
-      padding:18px;
-      box-shadow:
-        0 4px 15px rgba(15,23,42,.05);
-    }
-
-    .garage-expense-summary-label {
-      font-size:12px;
+    .expense-total-card .label{
       font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      color:#64748b;
-      margin-bottom:7px;
+      color:#475569;
     }
 
-    .garage-expense-summary-value {
-      font-size:24px;
+    .expense-total-card .value{
+      font-size:21px;
       font-weight:800;
       color:#0f172a;
-      line-height:1.2;
     }
 
-    .garage-expense-summary-sub {
-      margin-top:5px;
-      color:#64748b;
-      font-size:12px;
+    .garage-company-box{
+      border:1px solid #dbe4ee;
+      border-radius:12px;
+      padding:14px;
+      margin:12px 0;
+      background:#f8fafc;
     }
 
-    .garage-expense-total {
-      background:
-        linear-gradient(
-          135deg,
-          #eff6ff,
-          #ffffff
-        );
-      border-color:#bfdbfe;
+    .garage-company-box h3{
+      margin:0 0 5px;
+      font-size:18px;
     }
 
-    .garage-expense-total
-    .garage-expense-summary-value {
-      color:#075985;
+    .estimate-items{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
     }
 
-    /* =====================================================
-       TOTAL ROW
-       ===================================================== */
-
-    .garage-expense-total-row td {
-      background:#f8fafc !important;
-      font-weight:800 !important;
-      border-top:2px solid #cbd5e1 !important;
+    .estimate-items th,
+    .estimate-items td{
+      border:1px solid #dbe4ee;
+      padding:7px;
     }
 
-    .garage-expense-total-row td:last-child {
-      color:#075985 !important;
-      font-size:16px !important;
+    #estimates{
+      width:100%;
+      box-sizing:border-box;
+      position:relative;
+      clear:both;
     }
 
-    /* =====================================================
-       ESTIMATES
-       ===================================================== */
-
-    #estimates {
-      display:none !important;
-      width:100% !important;
-      max-width:100% !important;
-      box-sizing:border-box !important;
-      clear:both !important;
-      float:none !important;
-      position:relative !important;
-      margin:0 !important;
-      padding:0 !important;
-      overflow:hidden !important;
-      z-index:1 !important;
-    }
-
-    #estimates.active {
-      display:block !important;
-    }
-
-    .garage-estimate-nav {
-      cursor:pointer !important;
-    }
-
-    #estimateModal {
-      z-index:99999 !important;
-    }
-
-    /* =====================================================
-       MOBILE
-       ===================================================== */
-
-    @media(max-width:720px) {
-
-      .garage-expense-summary {
-        grid-template-columns:1fr;
+    @media(max-width:720px){
+      .table-actions{
+        gap:4px!important;
       }
 
-      .action-btn {
-        width:32px !important;
-        height:30px !important;
-        min-width:32px !important;
-        max-width:32px !important;
-        flex:0 0 32px !important;
-        font-size:14px !important;
+      .action-btn{
+        width:32px!important;
+        min-width:32px!important;
+        height:30px!important;
+        font-size:14px!important;
       }
 
-      .table-actions {
-        gap:4px !important;
-      }
-
-      .table-container table,
-      .table-wrap table {
-        min-width:900px;
+      .expense-total-card{
+        padding:12px;
       }
     }
-
   `;
 
   document.head.appendChild(style);
 }
 
-/* =========================================================
-   BUTTONS
-   ========================================================= */
-
-function actionButton(
-  icon,
-  title,
-  functionName,
-  id,
-  color = "gray"
-) {
-  return `
-    <button
-      type="button"
-      class="action-btn ${color}"
-      title="${esc(title)}"
-      aria-label="${esc(title)}"
-      onclick="${functionName}('${esc(id)}')"
-    >${icon}</button>
-  `;
-}
-
-function vehicleActions(id) {
-  return `
-    <div class="table-actions">
-
-      ${actionButton(
-        "✏️",
-        "Edit vehicle",
-        "editVehicle",
-        id,
-        "blue"
-      )}
-
-      ${actionButton(
-        "🚘",
-        "Vehicle expenses",
-        "viewVehicleExpenses",
-        id,
-        "green"
-      )}
-
-      ${actionButton(
-        "👁️",
-        "View vehicle",
-        "viewVehicle",
-        id,
-        "gray"
-      )}
-
-      ${actionButton(
-        "📤",
-        "Share vehicle",
-        "shareVehicle",
-        id,
-        "purple"
-      )}
-
-      ${actionButton(
-        "🗑️",
-        "Delete vehicle",
-        "deleteVehicle",
-        id,
-        "danger"
-      )}
-
-    </div>
-  `;
-}
-
-function normalActions(
-  id,
-  edit,
-  view,
-  share,
-  del
-) {
-  return `
-    <div class="table-actions">
-
-      ${actionButton(
-        "✏️",
-        "Edit",
-        edit,
-        id,
-        "blue"
-      )}
-
-      ${actionButton(
-        "👁️",
-        "View",
-        view,
-        id,
-        "gray"
-      )}
-
-      ${actionButton(
-        "📤",
-        "Share",
-        share,
-        id,
-        "purple"
-      )}
-
-      ${actionButton(
-        "🗑️",
-        "Delete",
-        del,
-        id,
-        "danger"
-      )}
-
-    </div>
-  `;
-}
 
 /* =========================================================
-   DATABASE LOAD
+   SUPABASE LOADING
    ========================================================= */
 
-async function getRows(table) {
-  try {
+async function loadTable(table,order=null){
 
-    let result =
-      await supabase
-        .from(table)
-        .select("*")
-        .order(
-          "created_at",
-          { ascending:false }
-        );
+  try{
 
-    if (
-      result.error &&
-      /created_at/i.test(
-        result.error.message || ""
-      )
-    ) {
-      result =
-        await supabase
-          .from(table)
-          .select("*");
+    let q=supabase.from(table).select("*");
+
+    if(order) q=q.order(order,{ascending:false});
+
+    let r=await q;
+
+    if(r.error && order){
+      r=await supabase.from(table).select("*");
     }
 
-    if (result.error) {
+    return {
+      data:r.data||[],
+      error:r.error||null
+    };
 
-      console.warn(
-        table,
-        result.error.message
-      );
+  }catch(error){
 
-      return [];
-    }
+    console.error(table,error);
 
-    return result.data || [];
-
-  } catch(error) {
-
-    console.error(
-      "Loading " + table,
+    return {
+      data:[],
       error
-    );
-
-    return [];
+    };
   }
 }
 
-async function loadAllData() {
+async function loadAllData(){
 
-  const [
-    v,
-    e,
-    p,
-    r,
-    i,
-    g,
-    q
-  ] = await Promise.all([
-
-    getRows("vehicles"),
-
-    getRows("expenses"),
-
-    getRows("petty_cash"),
-
-    getRows("requisitions"),
-
-    getRows("invoices"),
-
-    getRows("gate_passes"),
-
-    getRows("estimates")
-
+  const results=await Promise.all([
+    loadTable("vehicles","created_at"),
+    loadTable("expenses","created_at"),
+    loadTable("petty_cash","created_at"),
+    loadTable("requisitions","created_at"),
+    loadTable("invoices","created_at"),
+    loadTable("gate_passes","created_at"),
+    loadTable("estimates","created_at")
   ]);
 
-  vehicles = v;
-  expenses = e;
-  pettyCash = p;
-  requisitions = r;
-  invoices = i;
-  gatePasses = g;
-  estimates = q;
+  vehicles=results[0].data;
+  expenses=results[1].data;
+  pettyCash=results[2].data;
+  requisitions=results[3].data;
+
+  invoices=results[4].data;
+  gatePasses=results[5].data;
+  estimates=results[6].data;
+
+  if(results[4].error)
+    console.warn("Invoices:",results[4].error.message);
+
+  if(results[5].error)
+    console.warn("Gate Passes:",results[5].error.message);
+
+  if(results[6].error)
+    console.warn("Estimates:",results[6].error.message);
 
   renderAll();
 }
 
-/* =========================================================
-   VEHICLE EXPENSE FUNCTIONS
-   ========================================================= */
-
-function vehicleExpenses(id) {
-  return expenses.filter(
-    e =>
-      String(e.vehicle_id) ===
-      String(id)
-  );
-}
-
-function vehicleExpenseTotal(id) {
-  return vehicleExpenses(id)
-    .reduce(
-      (sum,e) =>
-        sum + num(e.amount),
-      0
-    );
-}
-
-function storageDays(v) {
-
-  if (!v?.date_in)
-    return 0;
-
-  const start =
-    new Date(
-      v.date_in +
-      "T00:00:00"
-    );
-
-  const end =
-    v.date_out
-      ? new Date(
-          v.date_out +
-          "T00:00:00"
-        )
-      : new Date();
-
-  return Math.max(
-    0,
-    Math.floor(
-      (end - start) /
-      86400000
-    )
-  );
-}
 
 /* =========================================================
-   VEHICLES
+   NAVIGATION
    ========================================================= */
 
-function filteredVehicles() {
+function setupEstimateNavigation(){
 
-  const q =
-    norm(
-      $("vehicleSearch")?.value ||
-      ""
-    );
+  if(document.querySelector('[data-section="estimates"]')) return;
 
-  const status =
-    $("vehicleStatusFilter")?.value ||
-    "";
+  const gate=document.querySelector('[data-section="gate-passes"]');
 
-  return vehicles.filter(v => {
+  if(gate){
 
-    const text =
-      norm([
-        v.registration,
-        v.customer,
-        v.model,
-        v.model_year,
-        v.color,
-        v.job_type,
-        v.status,
-        v.description
-      ].join(" "));
+    const button=gate.cloneNode(true);
 
-    return (
-      (!q || text.includes(q)) &&
-      (!status || v.status === status)
-    );
-  });
-}
+    button.removeAttribute("onclick");
+    button.dataset.section="estimates";
+    button.innerHTML=
+      `<span>📋</span><span>Estimates / Quotations</span>`;
 
-function renderVehicles() {
+    button.addEventListener("click",()=>showSection("estimates"));
 
-  const body =
-    $("vehiclesTableBody");
-
-  if (!body) return;
-
-  const rows =
-    filteredVehicles();
-
-  if (!rows.length) {
-
-    body.innerHTML = `
-      <tr>
-        <td
-          colspan="11"
-          style="text-align:center;padding:25px"
-        >
-          No vehicles found
-        </td>
-      </tr>
-    `;
+    gate.parentElement.insertBefore(button,gate.nextSibling);
 
     return;
   }
 
-  body.innerHTML =
-    rows.map(v => {
+  const nav=
+    document.querySelector(".sidebar nav")||
+    document.querySelector(".sidebar-menu")||
+    document.querySelector("aside nav")||
+    document.querySelector("aside");
 
-      const expenseTotal =
-        vehicleExpenseTotal(v.id);
+  if(!nav) return;
 
-      const outstanding =
-        num(v.billed) -
-        num(v.paid);
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="nav-item";
+  button.dataset.section="estimates";
+  button.innerHTML=
+    `<span>📋</span><span>Estimates / Quotations</span>`;
 
-      return `
-        <tr>
+  button.onclick=()=>showSection("estimates");
 
-          <td>
-            <strong>
-              ${esc(v.registration)}
-            </strong>
-          </td>
-
-          <td>
-            ${esc(v.customer)}
-          </td>
-
-          <td>
-            ${esc(v.date_in || "")}
-          </td>
-
-          <td>
-            ${esc(v.job_type || "")}
-          </td>
-
-          <td>
-            ${esc(v.status || "")}
-          </td>
-
-          <td>
-            ${storageDays(v)}
-          </td>
-
-          <td>
-            ${money(v.billed)}
-          </td>
-
-          <td>
-            ${money(v.paid)}
-          </td>
-
-          <td>
-            ${money(outstanding)}
-          </td>
-
-          <td>
-            <strong>
-              ${money(expenseTotal)}
-            </strong>
-          </td>
-
-          <td>
-            ${vehicleActions(v.id)}
-          </td>
-
-        </tr>
-      `;
-
-    }).join("");
+  nav.appendChild(button);
 }
 
-function openVehicleModal(id = "") {
+function showSection(name){
 
-  $("vehicleForm")?.reset();
+  ensureEstimateSection();
 
-  if ($("vehicleId"))
-    $("vehicleId").value = "";
+  document
+    .querySelectorAll(".section,.app-section")
+    .forEach(x=>x.style.display="none");
 
-  if ($("vehicleModalTitle"))
-    $("vehicleModalTitle").textContent =
-      "Add Vehicle";
+  const target=$(name);
 
-  if ($("vehicleDateIn"))
-    $("vehicleDateIn").value =
-      today();
-
-  if ($("vehicleJobType"))
-    $("vehicleJobType").value =
-      "Repair";
-
-  if ($("vehicleStatus"))
-    $("vehicleStatus").value =
-      "Under Repair";
-
-  if ($("vehicleBilled"))
-    $("vehicleBilled").value = 0;
-
-  if ($("vehiclePaid"))
-    $("vehiclePaid").value = 0;
-
-  if ($("vehicleStorageDays"))
-    $("vehicleStorageDays").value = 0;
-
-  if (id)
-    editVehicle(id);
-  else
-    openModal("vehicleModal");
-}
-
-async function saveVehicle(event) {
-
-  event?.preventDefault();
-
-  const id =
-    $("vehicleId")?.value || "";
-
-  const registration =
-    $("vehicleRegistration")
-      ?.value.trim() || "";
-
-  const customer =
-    $("vehicleCustomer")
-      ?.value.trim() || "";
-
-  if (!registration || !customer) {
-
-    toast(
-      "Registration and customer are required.",
-      "error"
-    );
-
-    return;
+  if(target){
+    target.style.display=
+      name==="estimates" ? "block" : "";
   }
 
-  const duplicate =
-    vehicles.find(v =>
-      norm(v.registration) ===
-      norm(registration) &&
-      String(v.id) !== String(id)
-    );
+  document
+    .querySelectorAll("[data-section]")
+    .forEach(x=>x.classList.remove("active"));
 
-  if (duplicate) {
+  const nav=document.querySelector(`[data-section="${name}"]`);
 
-    toast(
-      "This vehicle registration already exists.",
-      "error"
-    );
+  if(nav) nav.classList.add("active");
 
-    return;
-  }
-
-  const record = {
-
-    registration,
-
-    customer,
-
-    date_in:
-      $("vehicleDateIn")?.value ||
-      today(),
-
-    date_out:
-      $("vehicleDateOut")?.value ||
-      null,
-
-    job_type:
-      $("vehicleJobType")?.value ||
-      "Repair",
-
-    status:
-      $("vehicleStatus")?.value ||
-      "Under Repair",
-
-    released_to:
-      $("vehicleReleasedTo")
-        ?.value.trim() ||
-      null,
-
-    released_contact:
-      $("vehicleReleasedContact")
-        ?.value.trim() ||
-      null,
-
-    billed:
-      num(
-        $("vehicleBilled")?.value
-      ),
-
-    paid:
-      num(
-        $("vehiclePaid")?.value
-      ),
-
-    description:
-      $("vehicleDescription")
-        ?.value.trim() ||
-      null,
-
-    model:
-      $("vehicleModel")
-        ?.value.trim() ||
-      "",
-
-    model_year:
-      $("vehicleModelYear")
-        ?.value.trim() ||
-      "",
-
-    color:
-      $("vehicleColor")
-        ?.value.trim() ||
-      ""
-
-  };
-
-  let result;
-
-  if (id) {
-
-    result =
-      await supabase
-        .from("vehicles")
-        .update(record)
-        .eq("id",id);
-
-  } else {
-
-    result =
-      await supabase
-        .from("vehicles")
-        .insert(record);
-  }
-
-  if (
-    result.error &&
-    /model|model_year|color/i.test(
-      result.error.message || ""
-    )
-  ) {
-
-    const fallback = {
-      ...record
-    };
-
-    delete fallback.model;
-    delete fallback.model_year;
-    delete fallback.color;
-
-    result =
-      id
-        ? await supabase
-            .from("vehicles")
-            .update(fallback)
-            .eq("id",id)
-        : await supabase
-            .from("vehicles")
-            .insert(fallback);
-  }
-
-  if (result.error) {
-
-    toast(
-      result.error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  closeModal("vehicleModal");
-
-  await loadAllData();
-
-  toast(
-    id
-      ? "Vehicle updated."
-      : "Vehicle added."
-  );
+  if(name==="estimates") renderEstimates();
+  if(name==="expenses") renderExpenses();
+  if(name==="vehicles") renderVehicles();
+  if(name==="invoices") renderInvoices();
+  if(name==="gate-passes") renderGatePasses();
 }
 
-function editVehicle(id) {
+window.showSection=showSection;
 
-  const v =
-    vehicleById(id);
-
-  if (!v) return;
-
-  $("vehicleId").value =
-    v.id;
-
-  $("vehicleRegistration").value =
-    v.registration || "";
-
-  $("vehicleCustomer").value =
-    v.customer || "";
-
-  if ($("vehicleModel"))
-    $("vehicleModel").value =
-      v.model || "";
-
-  if ($("vehicleModelYear"))
-    $("vehicleModelYear").value =
-      v.model_year || "";
-
-  if ($("vehicleColor"))
-    $("vehicleColor").value =
-      v.color || "";
-
-  $("vehicleDateIn").value =
-    v.date_in || "";
-
-  $("vehicleDateOut").value =
-    v.date_out || "";
-
-  $("vehicleStorageDays").value =
-    storageDays(v);
-
-  $("vehicleJobType").value =
-    v.job_type || "Repair";
-
-  $("vehicleStatus").value =
-    v.status || "Under Repair";
-
-  $("vehicleReleasedTo").value =
-    v.released_to || "";
-
-  $("vehicleReleasedContact").value =
-    v.released_contact || "";
-
-  $("vehicleBilled").value =
-    num(v.billed);
-
-  $("vehiclePaid").value =
-    num(v.paid);
-
-  $("vehicleDescription").value =
-    v.description || "";
-
-  $("vehicleModalTitle").textContent =
-    "Edit Vehicle";
-
-  openModal("vehicleModal");
-}
-
-async function deleteVehicle(id) {
-
-  const v =
-    vehicleById(id);
-
-  if (!v) return;
-
-  if (
-    !confirm(
-      `Delete ${v.registration}?`
-    )
-  ) return;
-
-  const { error } =
-    await supabase
-      .from("vehicles")
-      .delete()
-      .eq("id",id);
-
-  if (error) {
-
-    toast(
-      error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Vehicle deleted.");
-}
-
-/* =========================================================
-   VEHICLE VIEW
-   ========================================================= */
-
-function viewVehicle(id) {
-
-  const v =
-    vehicleById(id);
-
-  if (!v) return;
-
-  const expenseTotal =
-    vehicleExpenseTotal(id);
-
-  showPreview(
-    `Vehicle — ${v.registration}`,
-    `
-      <div class="print-document">
-
-        <h2>
-          GARAGE OPERATIONS PRO
-        </h2>
-
-        <h3>
-          Vehicle Report
-        </h3>
-
-        <table>
-
-          <tr>
-            <th>
-              Registration / Chassis No.
-            </th>
-            <td>
-              ${esc(v.registration)}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Customer</th>
-            <td>
-              ${esc(v.customer)}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Model</th>
-            <td>
-              ${esc(v.model || "-")}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Year</th>
-            <td>
-              ${esc(v.model_year || "-")}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Color</th>
-            <td>
-              ${esc(v.color || "-")}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Date In</th>
-            <td>
-              ${esc(v.date_in || "-")}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Date Out</th>
-            <td>
-              ${esc(v.date_out || "-")}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Storage Days</th>
-            <td>
-              ${storageDays(v)}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Job Type</th>
-            <td>
-              ${esc(v.job_type || "-")}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Status</th>
-            <td>
-              ${esc(v.status || "-")}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Billed</th>
-            <td>
-              ${money(v.billed)}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Paid</th>
-            <td>
-              ${money(v.paid)}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Outstanding</th>
-            <td>
-              ${money(
-                num(v.billed) -
-                num(v.paid)
-              )}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Total Expenses</th>
-            <td>
-              <strong>
-                ${money(expenseTotal)}
-              </strong>
-            </td>
-          </tr>
-
-          <tr>
-            <th>Description</th>
-            <td>
-              ${esc(
-                v.description || "-"
-              )}
-            </td>
-          </tr>
-
-        </table>
-
-      </div>
-    `
-  );
-}
-
-async function shareVehicle(id) {
-
-  const v =
-    vehicleById(id);
-
-  if (!v) return;
-
-  await shareText(
-    `Vehicle ${v.registration}`,
-    [
-      "GARAGE OPERATIONS PRO",
-      "VEHICLE REPORT",
-      "",
-      `Registration: ${v.registration}`,
-      `Customer: ${v.customer}`,
-      `Model: ${v.model || "-"}`,
-      `Status: ${v.status || "-"}`,
-      `Job Type: ${v.job_type || "-"}`,
-      `Date In: ${v.date_in || "-"}`,
-      `Storage Days: ${storageDays(v)}`,
-      `Billed: ${money(v.billed)}`,
-      `Paid: ${money(v.paid)}`,
-      `Outstanding: ${money(
-        num(v.billed) -
-        num(v.paid)
-      )}`,
-      `Total Expenses: ${money(
-        vehicleExpenseTotal(id)
-      )}`
-    ].join("\n")
-  );
-}
-
-/* =========================================================
-   VEHICLE EXPENSE REPORT
-   ========================================================= */
-
-function vehicleExpenseHTML(id) {
-
-  const v =
-    vehicleById(id);
-
-  if (!v)
-    return "<p>Vehicle not found.</p>";
-
-  const rows =
-    vehicleExpenses(id);
-
-  const total =
-    rows.reduce(
-      (sum,e) =>
-        sum + num(e.amount),
-      0
-    );
-
-  return `
-
-    <div class="print-document">
-
-      <h2>
-        CRYSTAL MOTORS (K) LTD
-      </h2>
-
-      <p>
-        P.O. Box 54385 – 00200, Nairobi<br>
-        Cell: 0722 707124 | 0723 914 222<br>
-        Off Mombasa Road, Along Quarry Road,
-        Near Mlolongo Weighbridge
-      </p>
-
-      <hr>
-
-      <h2>
-        VEHICLE EXPENSE REPORT
-      </h2>
-
-      <p>
-        <strong>
-          Registration:
-        </strong>
-        ${esc(v.registration)}
-      </p>
-
-      <p>
-        <strong>
-          Customer:
-        </strong>
-        ${esc(v.customer)}
-      </p>
-
-      <table>
-
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          ${
-            rows.length
-
-              ? rows.map(e => `
-                  <tr>
-
-                    <td>
-                      ${esc(
-                        e.expense_date || ""
-                      )}
-                    </td>
-
-                    <td>
-                      ${esc(
-                        v.registration
-                      )}
-                    </td>
-
-                    <td>
-                      ${esc(
-                        e.description || ""
-                      )}
-                    </td>
-
-                    <td>
-                      ${esc(
-                        e.category || ""
-                      )}
-                    </td>
-
-                    <td>
-                      ${money(e.amount)}
-                    </td>
-
-                  </tr>
-                `).join("")
-
-              : `
-                  <tr>
-                    <td colspan="5">
-                      No expenses found.
-                    </td>
-                  </tr>
-                `
-          }
-
-          <tr
-            class="garage-expense-total-row"
-          >
-
-            <td
-              colspan="4"
-              style="text-align:right"
-            >
-              TOTAL EXPENSES
-            </td>
-
-            <td>
-              ${money(total)}
-            </td>
-
-          </tr>
-
-        </tbody>
-
-      </table>
-
-    </div>
-  `;
-}
-
-function viewVehicleExpenses(id) {
-
-  const v =
-    vehicleById(id);
-
-  if (!v) return;
-
-  currentVehicleExpenseId =
-    id;
-
-  if (
-    $("vehicleExpensePreviewContent")
-  ) {
-
-    $("vehicleExpensePreviewContent")
-      .innerHTML =
-        vehicleExpenseHTML(id);
-  }
-
-  openModal(
-    "vehicleExpensePreviewModal"
-  );
-}
-
-function printVehicleExpensePreview() {
-
-  if (!currentVehicleExpenseId) {
-
-    toast(
-      "No vehicle selected.",
-      "error"
-    );
-
-    return;
-  }
-
-  const v =
-    vehicleById(
-      currentVehicleExpenseId
-    );
-
-  printHTML(
-    `Vehicle Expenses — ${
-      v?.registration || ""
-    }`,
-    vehicleExpenseHTML(
-      currentVehicleExpenseId
-    )
-  );
-}
-
-async function shareVehicleExpenses(id) {
-
-  const v =
-    vehicleById(id);
-
-  if (!v) return;
-
-  const rows =
-    vehicleExpenses(id);
-
-  const total =
-    rows.reduce(
-      (a,e) =>
-        a + num(e.amount),
-      0
-    );
-
-  const text = [
-
-    "CRYSTAL MOTORS (K) LTD",
-
-    "VEHICLE EXPENSE REPORT",
-
-    "",
-
-    `Vehicle: ${v.registration}`,
-
-    `Customer: ${v.customer}`,
-
-    "",
-
-    ...rows.map(e =>
-      `${e.expense_date || ""} | ` +
-      `${e.description || ""} | ` +
-      `${e.category || ""} | ` +
-      `${money(e.amount)}`
-    ),
-
-    "",
-
-    `TOTAL EXPENSES: ${money(total)}`
-
-  ].join("\n");
-
-  await shareText(
-    `Expenses ${v.registration}`,
-    text
-  );
-}
-
-/* =========================================================
-   EXPENSES
-   ========================================================= */
-
-function fillExpenseVehicleSelect(
-  selected = ""
-) {
-
-  const el =
-    $("expenseVehicle");
-
-  if (!el) return;
-
-  el.innerHTML = `
-
-    <option value="">
-      Select vehicle
-    </option>
-
-    ${
-      vehicles.map(v => `
-        <option
-          value="${esc(v.id)}"
-          ${
-            String(v.id) ===
-            String(selected)
-              ? "selected"
-              : ""
-          }
-        >
-          ${esc(
-            v.registration +
-            (
-              v.customer
-                ? " — " +
-                  v.customer
-                : ""
-            )
-          )}
-        </option>
-      `).join("")
-    }
-
-  `;
-}
-
-/*
-  ==========================================================
-  IMPORTANT EXPENSE FILTER
-  ==========================================================
-
-  If search exactly matches a vehicle registration,
-  filter by vehicle_id.
-
-  This prevents:
-
-  KBZ 272B
-  from displaying expenses belonging to
-  KBN 084E, KCA 123A, etc.
-*/
-
-function filteredExpenses() {
-
-  const search =
-    (
-      $("expenseSearch")?.value ||
-      ""
-    ).trim();
-
-  const category =
-    $("expenseCategoryFilter")
-      ?.value || "";
-
-  if (search) {
-
-    const exactVehicle =
-      vehicles.find(
-        v =>
-          norm(v.registration) ===
-          norm(search)
-      );
-
-    if (exactVehicle) {
-
-      return expenses.filter(e =>
-
-        String(e.vehicle_id) ===
-        String(exactVehicle.id)
-
-      ).filter(e =>
-
-        !category ||
-        e.category === category
-
-      );
-    }
-  }
-
-  const q =
-    norm(search);
-
-  return expenses.filter(e => {
-
-    const v =
-      vehicleById(e.vehicle_id);
-
-    const text =
-      norm([
-        e.description,
-        e.category,
-        e.expense_date,
-        v?.registration,
-        v?.customer
-      ].join(" "));
-
-    return (
-      (!q ||
-        text.includes(q)) &&
-      (
-        !category ||
-        e.category === category
-      )
-    );
-  });
-}
-
-/*
-  ----------------------------------------------------------
-  EXPENSE TOTAL DISPLAY
-  ----------------------------------------------------------
-*/
-
-function renderExpenseSummary(rows) {
-
-  const total =
-    rows.reduce(
-      (sum,e) =>
-        sum + num(e.amount),
-      0
-    );
-
-  const uniqueVehicles =
-    new Set(
-      rows
-        .map(e => e.vehicle_id)
-        .filter(Boolean)
-    ).size;
-
-  const search =
-    (
-      $("expenseSearch")?.value ||
-      ""
-    ).trim();
-
-  let title =
-    "TOTAL EXPENSES";
-
-  let subtitle =
-    `${rows.length} expense record${
-      rows.length === 1
-        ? ""
-        : "s"
-    }`;
-
-  /*
-    If exact vehicle is searched,
-    make the total vehicle-specific.
-  */
-
-  const vehicle =
-    vehicles.find(
-      v =>
-        norm(v.registration) ===
-        norm(search)
-    );
-
-  if (vehicle) {
-
-    title =
-      `TOTAL EXPENSES — ${
-        vehicle.registration
-      }`;
-
-    subtitle =
-      `${rows.length} expense record${
-        rows.length === 1
-          ? ""
-          : "s"
-      } for this vehicle`;
-  }
-
-  /*
-    Inject summary directly above
-    the expense table.
-
-    It is removed/rebuilt safely
-    on every render.
-  */
-
-  const tableBody =
-    $("expensesTableBody");
-
-  if (!tableBody)
-    return;
-
-  const table =
-    tableBody.closest(
-      "table"
-    );
-
-  if (!table)
-    return;
-
-  const container =
-    table.parentElement;
-
-  if (!container)
-    return;
-
-  let summary =
-    $("garageExpenseSummary");
-
-  if (!summary) {
-
-    summary =
-      document.createElement(
-        "div"
-      );
-
-    summary.id =
-      "garageExpenseSummary";
-
-    summary.className =
-      "garage-expense-summary";
-
-    container.parentElement
-      ?.insertBefore(
-        summary,
-        container
-      );
-  }
-
-  summary.innerHTML = `
-
-    <div
-      class="
-        garage-expense-summary-card
-        garage-expense-total
-      "
-    >
-
-      <div
-        class="
-          garage-expense-summary-label
-        "
-      >
-        ${esc(title)}
-      </div>
-
-      <div
-        class="
-          garage-expense-summary-value
-        "
-      >
-        ${money(total)}
-      </div>
-
-      <div
-        class="
-          garage-expense-summary-sub
-        "
-      >
-        ${esc(subtitle)}
-      </div>
-
-    </div>
-
-    <div
-      class="
-        garage-expense-summary-card
-      "
-    >
-
-      <div
-        class="
-          garage-expense-summary-label
-        "
-      >
-        RECORDS
-      </div>
-
-      <div
-        class="
-          garage-expense-summary-value
-        "
-      >
-        ${rows.length}
-      </div>
-
-      <div
-        class="
-          garage-expense-summary-sub
-        "
-      >
-        Expense entries
-      </div>
-
-    </div>
-
-    <div
-      class="
-        garage-expense-summary-card
-      "
-    >
-
-      <div
-        class="
-          garage-expense-summary-label
-        "
-      >
-        VEHICLES
-      </div>
-
-      <div
-        class="
-          garage-expense-summary-value
-        "
-      >
-        ${uniqueVehicles}
-      </div>
-
-      <div
-        class="
-          garage-expense-summary-sub
-        "
-      >
-        Vehicles represented
-      </div>
-
-    </div>
-  `;
-}
-
-function renderExpenses() {
-
-  const body =
-    $("expensesTableBody");
-
-  if (!body) return;
-
-  const rows =
-    filteredExpenses();
-
-  /*
-    Update TOTAL EXPENSES
-    every time the table renders.
-  */
-
-  renderExpenseSummary(rows);
-
-  const total =
-    rows.reduce(
-      (sum,e) =>
-        sum + num(e.amount),
-      0
-    );
-
-  if (!rows.length) {
-
-    body.innerHTML = `
-
-      <tr>
-
-        <td
-          colspan="6"
-          style="
-            text-align:center;
-            padding:28px;
-          "
-        >
-          No expenses found
-        </td>
-
-      </tr>
-
-    `;
-
-    return;
-  }
-
-  body.innerHTML =
-    rows.map(e => {
-
-      const v =
-        vehicleById(e.vehicle_id);
-
-      /*
-        Display Labour consistently.
-      */
-
-      let category =
-        e.category || "";
-
-      if (
-        category.toLowerCase() ===
-        "labor"
-      ) {
-        category = "Labour";
-      }
-
-      return `
-
-        <tr>
-
-          <td>
-            ${esc(
-              e.expense_date || ""
-            )}
-          </td>
-
-          <td>
-            <strong>
-              ${esc(
-                v?.registration || "—"
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${esc(
-              e.description || ""
-            )}
-          </td>
-
-          <td>
-            ${esc(category)}
-          </td>
-
-          <td>
-            <strong>
-              ${money(e.amount)}
-            </strong>
-          </td>
-
-          <td>
-            ${normalActions(
-              e.id,
-              "editExpense",
-              "viewExpense",
-              "shareExpense",
-              "deleteExpense"
-            )}
-          </td>
-
-        </tr>
-      `;
-
-    }).join("") +
-
-    `
-
-      <tr
-        class="garage-expense-total-row"
-      >
-
-        <td
-          colspan="4"
-          style="text-align:right"
-        >
-          TOTAL EXPENSES
-        </td>
-
-        <td>
-          ${money(total)}
-        </td>
-
-        <td></td>
-
-      </tr>
-
-    `;
-}
-
-function openExpenseModal(id = "") {
-
-  $("expenseForm")?.reset();
-
-  if ($("expenseId"))
-    $("expenseId").value = "";
-
-  if ($("expenseModalTitle"))
-    $("expenseModalTitle").textContent =
-      "Add Expense";
-
-  if ($("expenseDate"))
-    $("expenseDate").value =
-      today();
-
-  fillExpenseVehicleSelect();
-
-  if (id)
-    editExpense(id);
-  else
-    openModal("expenseModal");
-}
-
-async function saveExpense(event) {
-
-  event?.preventDefault();
-
-  const id =
-    $("expenseId")?.value || "";
-
-  const vehicleId =
-    $("expenseVehicle")?.value || "";
-
-  if (!vehicleId) {
-
-    toast(
-      "Please select a vehicle.",
-      "error"
-    );
-
-    return;
-  }
-
-  const record = {
-
-    vehicle_id:
-      vehicleId,
-
-    expense_date:
-      $("expenseDate")?.value ||
-      today(),
-
-    category:
-      $("expenseCategory")?.value ||
-      "Parts",
-
-    amount:
-      num(
-        $("expenseAmount")?.value
-      ),
-
-    description:
-      $("expenseDescription")
-        ?.value.trim() ||
-      ""
-
-  };
-
-  if (!record.description) {
-
-    toast(
-      "Expense description is required.",
-      "error"
-    );
-
-    return;
-  }
-
-  const result =
-    id
-
-      ? await supabase
-          .from("expenses")
-          .update(record)
-          .eq("id",id)
-
-      : await supabase
-          .from("expenses")
-          .insert(record);
-
-  if (result.error) {
-
-    toast(
-      result.error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  closeModal("expenseModal");
-
-  await loadAllData();
-
-  toast(
-    id
-      ? "Expense updated."
-      : "Expense added."
-  );
-}
-
-function editExpense(id) {
-
-  const e =
-    expenses.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!e) return;
-
-  $("expenseId").value =
-    e.id;
-
-  fillExpenseVehicleSelect(
-    e.vehicle_id
-  );
-
-  $("expenseDate").value =
-    e.expense_date || "";
-
-  $("expenseCategory").value =
-    e.category || "Parts";
-
-  $("expenseAmount").value =
-    num(e.amount);
-
-  $("expenseDescription").value =
-    e.description || "";
-
-  $("expenseModalTitle").textContent =
-    "Edit Expense";
-
-  openModal("expenseModal");
-}
-
-async function deleteExpense(id) {
-
-  if (
-    !confirm(
-      "Delete this expense?"
-    )
-  ) return;
-
-  const { error } =
-    await supabase
-      .from("expenses")
-      .delete()
-      .eq("id",id);
-
-  if (error) {
-
-    toast(
-      error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Expense deleted.");
-}
-
-function viewExpense(id) {
-
-  const e =
-    expenses.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!e) return;
-
-  const v =
-    vehicleById(e.vehicle_id);
-
-  showPreview(
-    "Vehicle Expense",
-    `
-      <h2>
-        Vehicle Expense
-      </h2>
-
-      <p>
-        <strong>Vehicle:</strong>
-        ${esc(
-          v?.registration || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Date:</strong>
-        ${esc(
-          e.expense_date || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Description:</strong>
-        ${esc(
-          e.description || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Category:</strong>
-        ${esc(
-          e.category || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Amount:</strong>
-        ${money(e.amount)}
-      </p>
-    `
-  );
-}
-
-async function shareExpense(id) {
-
-  const e =
-    expenses.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!e) return;
-
-  const v =
-    vehicleById(e.vehicle_id);
-
-  await shareText(
-    "Vehicle Expense",
-    [
-      "GARAGE OPERATIONS PRO",
-      "VEHICLE EXPENSE",
-      "",
-      `Vehicle: ${v?.registration || ""}`,
-      `Date: ${e.expense_date || ""}`,
-      `Description: ${e.description || ""}`,
-      `Category: ${e.category || ""}`,
-      `Amount: ${money(e.amount)}`
-    ].join("\n")
-  );
-}
-
-/* =========================================================
-   PETTY CASH
-   ========================================================= */
-
-function renderPettyCash() {
-
-  const body =
-    $("pettyTableBody");
-
-  if (!body) return;
-
-  const q =
-    norm(
-      $("pettySearch")?.value ||
-      ""
-    );
-
-  const category =
-    $("pettyCategoryFilter")?.value ||
-    "";
-
-  const rows =
-    pettyCash.filter(p => {
-
-      const text =
-        norm([
-          p.description,
-          p.paid_to,
-          p.category,
-          p.notes,
-          p.cash_date
-        ].join(" "));
-
-      return (
-        (!q ||
-          text.includes(q)) &&
-        (
-          !category ||
-          p.category === category
-        )
-      );
-    });
-
-  body.innerHTML =
-    rows.map(p => `
-
-      <tr>
-
-        <td>
-          ${esc(p.cash_date || "")}
-        </td>
-
-        <td>
-          ${esc(p.paid_to || "")}
-        </td>
-
-        <td>
-          ${esc(p.category || "")}
-        </td>
-
-        <td>
-          ${esc(p.description || "")}
-        </td>
-
-        <td>
-          ${money(p.amount)}
-        </td>
-
-        <td>
-          ${esc(p.notes || "")}
-        </td>
-
-        <td>
-          ${normalActions(
-            p.id,
-            "editPetty",
-            "viewPetty",
-            "sharePetty",
-            "deletePetty"
-          )}
-        </td>
-
-      </tr>
-
-    `).join("") ||
-
-    `
-      <tr>
-        <td
-          colspan="7"
-          style="text-align:center;padding:25px"
-        >
-          No petty cash records found
-        </td>
-      </tr>
-    `;
-}
-
-function openPettyModal(id = "") {
-
-  $("pettyForm")?.reset();
-
-  if ($("pettyId"))
-    $("pettyId").value = "";
-
-  if ($("pettyModalTitle"))
-    $("pettyModalTitle").textContent =
-      "Add Petty Cash";
-
-  if ($("pettyDate"))
-    $("pettyDate").value =
-      today();
-
-  if (id)
-    editPetty(id);
-  else
-    openModal("pettyModal");
-}
-
-async function savePetty(event) {
-
-  event?.preventDefault();
-
-  const id =
-    $("pettyId")?.value || "";
-
-  const record = {
-
-    cash_date:
-      $("pettyDate")?.value ||
-      today(),
-
-    paid_to:
-      $("pettyPaidTo")
-        ?.value.trim() ||
-      null,
-
-    category:
-      $("pettyCategory")
-        ?.value ||
-      null,
-
-    amount:
-      num(
-        $("pettyAmount")?.value
-      ),
-
-    description:
-      $("pettyDescription")
-        ?.value.trim() ||
-      "",
-
-    notes:
-      $("pettyNotes")
-        ?.value.trim() ||
-      null
-
-  };
-
-  const result =
-    id
-
-      ? await supabase
-          .from("petty_cash")
-          .update(record)
-          .eq("id",id)
-
-      : await supabase
-          .from("petty_cash")
-          .insert(record);
-
-  if (result.error) {
-
-    toast(
-      result.error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  closeModal("pettyModal");
-
-  await loadAllData();
-
-  toast(
-    id
-      ? "Petty cash updated."
-      : "Petty cash added."
-  );
-}
-
-function editPetty(id) {
-
-  const p =
-    pettyCash.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!p) return;
-
-  $("pettyId").value =
-    p.id;
-
-  $("pettyDate").value =
-    p.cash_date || "";
-
-  $("pettyPaidTo").value =
-    p.paid_to || "";
-
-  $("pettyCategory").value =
-    p.category || "";
-
-  $("pettyAmount").value =
-    num(p.amount);
-
-  $("pettyDescription").value =
-    p.description || "";
-
-  $("pettyNotes").value =
-    p.notes || "";
-
-  $("pettyModalTitle").textContent =
-    "Edit Petty Cash";
-
-  openModal("pettyModal");
-}
-
-async function deletePetty(id) {
-
-  if (
-    !confirm(
-      "Delete this petty cash record?"
-    )
-  ) return;
-
-  const { error } =
-    await supabase
-      .from("petty_cash")
-      .delete()
-      .eq("id",id);
-
-  if (error) {
-
-    toast(
-      error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Petty cash deleted.");
-}
-
-function viewPetty(id) {
-
-  const p =
-    pettyCash.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!p) return;
-
-  showPreview(
-    "Petty Cash",
-    `
-      <h2>Petty Cash</h2>
-
-      <p>
-        <strong>Date:</strong>
-        ${esc(p.cash_date || "")}
-      </p>
-
-      <p>
-        <strong>Paid To:</strong>
-        ${esc(p.paid_to || "")}
-      </p>
-
-      <p>
-        <strong>Category:</strong>
-        ${esc(p.category || "")}
-      </p>
-
-      <p>
-        <strong>Description:</strong>
-        ${esc(p.description || "")}
-      </p>
-
-      <p>
-        <strong>Amount:</strong>
-        ${money(p.amount)}
-      </p>
-
-      <p>
-        <strong>Notes:</strong>
-        ${esc(p.notes || "")}
-      </p>
-    `
-  );
-}
-
-async function sharePetty(id) {
-
-  const p =
-    pettyCash.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!p) return;
-
-  await shareText(
-    "Petty Cash",
-    [
-      "GARAGE OPERATIONS PRO",
-      "PETTY CASH",
-      "",
-      `Date: ${p.cash_date || ""}`,
-      `Paid To: ${p.paid_to || ""}`,
-      `Category: ${p.category || ""}`,
-      `Description: ${p.description || ""}`,
-      `Amount: ${money(p.amount)}`,
-      `Notes: ${p.notes || ""}`
-    ].join("\n")
-  );
-}
-
-/* =========================================================
-   VEHICLE SELECT
-   ========================================================= */
-
-function fillVehicleSelect(
-  id,
-  selected = ""
-) {
-
-  const el = $(id);
-
-  if (!el) return;
-
-  el.innerHTML = `
-
-    <option value="">
-      Select vehicle
-    </option>
-
-    ${
-      vehicles.map(v => `
-        <option
-          value="${esc(v.id)}"
-          ${
-            String(v.id) ===
-            String(selected)
-              ? "selected"
-              : ""
-          }
-        >
-          ${esc(
-            v.registration +
-            (
-              v.customer
-                ? " — " +
-                  v.customer
-                : ""
-            )
-          )}
-        </option>
-      `).join("")
-    }
-
-  `;
-}
-
-/* =========================================================
-   REQUISITIONS
-   ========================================================= */
-
-function calculateReqTotal() {
-
-  const quantity =
-    num(
-      $("reqQuantity")?.value
-    );
-
-  const unit =
-    num(
-      $("reqUnitCost")?.value
-    );
-
-  const total =
-    quantity * unit;
-
-  if ($("reqTotal"))
-    $("reqTotal").value =
-      total.toFixed(2);
-
-  return total;
-}
-
-function renderRequisitions() {
-
-  const body =
-    $("requisitionsTableBody");
-
-  if (!body) return;
-
-  const q =
-    norm(
-      $("reqSearch")?.value ||
-      ""
-    );
-
-  const status =
-    $("reqStatusFilter")?.value ||
-    "";
-
-  const rows =
-    requisitions.filter(r => {
-
-      const v =
-        vehicleById(r.vehicle_id);
-
-      const text =
-        norm([
-          r.req_no,
-          r.requested_by,
-          r.item_description,
-          r.expense_type,
-          r.notes,
-          v?.registration
-        ].join(" "));
-
-      return (
-        (!q ||
-          text.includes(q)) &&
-        (
-          !status ||
-          r.status === status
-        )
-      );
-    });
-
-  const total =
-    rows.reduce(
-      (a,r) =>
-        a + num(r.total_amount),
-      0
-    );
-
-  if ($("reqOverallTotal"))
-    $("reqOverallTotal").textContent =
-      money(total);
-
-  body.innerHTML =
-    rows.map(r => {
-
-      const v =
-        vehicleById(r.vehicle_id);
-
-      return `
-
-        <tr>
-
-          <td>
-            ${esc(r.req_no)}
-          </td>
-
-          <td>
-            ${esc(r.req_date || "")}
-          </td>
-
-          <td>
-            ${esc(r.requested_by || "")}
-          </td>
-
-          <td>
-            ${esc(v?.registration || "")}
-          </td>
-
-          <td>
-            ${esc(
-              r.item_description || ""
-            )}
-          </td>
-
-          <td>
-            ${num(r.quantity)}
-          </td>
-
-          <td>
-            ${money(r.unit_cost)}
-          </td>
-
-          <td>
-            ${money(r.total_amount)}
-          </td>
-
-          <td>
-            ${esc(r.status || "")}
-          </td>
-
-          <td>
-            ${normalActions(
-              r.id,
-              "editReq",
-              "viewReq",
-              "shareReq",
-              "deleteReq"
-            )}
-          </td>
-
-        </tr>
-
-      `;
-    }).join("") ||
-
-    `
-      <tr>
-        <td
-          colspan="10"
-          style="text-align:center;padding:25px"
-        >
-          No requisitions found
-        </td>
-      </tr>
-    `;
-}
-
-function openReqModal(id = "") {
-
-  $("reqForm")?.reset();
-
-  if ($("reqId"))
-    $("reqId").value = "";
-
-  if ($("reqModalTitle"))
-    $("reqModalTitle").textContent =
-      "Add Requisition";
-
-  if ($("reqDate"))
-    $("reqDate").value =
-      today();
-
-  fillVehicleSelect(
-    "reqVehicle"
-  );
-
-  calculateReqTotal();
-
-  if (id)
-    editReq(id);
-  else
-    openModal("reqModal");
-}
-
-async function saveReq(event) {
-
-  event?.preventDefault();
-
-  const id =
-    $("reqId")?.value || "";
-
-  const quantity =
-    num(
-      $("reqQuantity")?.value
-    );
-
-  const unitCost =
-    num(
-      $("reqUnitCost")?.value
-    );
-
-  const record = {
-
-    req_no:
-      $("reqNo")
-        ?.value.trim() ||
-      "",
-
-    req_date:
-      $("reqDate")?.value ||
-      today(),
-
-    requested_by:
-      $("reqRequestedBy")
-        ?.value.trim() ||
-      "",
-
-    vehicle_id:
-      $("reqVehicle")?.value ||
-      null,
-
-    item_description:
-      $("reqItemDescription")
-        ?.value.trim() ||
-      "",
-
-    quantity,
-
-    unit_cost:
-      unitCost,
-
-    total_amount:
-      quantity * unitCost,
-
-    status:
-      $("reqStatus")?.value ||
-      "Pending",
-
-    expense_type:
-      $("reqExpenseType")?.value ||
-      $("reqCategory")?.value ||
-      "Materials",
-
-    notes:
-      $("reqNotes")
-        ?.value.trim() ||
-      null
-
-  };
-
-  if (!record.req_no) {
-
-    toast(
-      "Requisition number is required.",
-      "error"
-    );
-
-    return;
-  }
-
-  const result =
-    id
-
-      ? await supabase
-          .from("requisitions")
-          .update(record)
-          .eq("id",id)
-
-      : await supabase
-          .from("requisitions")
-          .insert(record);
-
-  if (result.error) {
-
-    toast(
-      result.error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  closeModal("reqModal");
-
-  await loadAllData();
-
-  toast(
-    id
-      ? "Requisition updated."
-      : "Requisition added."
-  );
-}
-
-function editReq(id) {
-
-  const r =
-    requisitions.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!r) return;
-
-  $("reqId").value =
-    r.id;
-
-  $("reqNo").value =
-    r.req_no || "";
-
-  $("reqDate").value =
-    r.req_date || "";
-
-  $("reqRequestedBy").value =
-    r.requested_by || "";
-
-  fillVehicleSelect(
-    "reqVehicle",
-    r.vehicle_id
-  );
-
-  $("reqItemDescription").value =
-    r.item_description || "";
-
-  $("reqQuantity").value =
-    num(r.quantity);
-
-  $("reqUnitCost").value =
-    num(r.unit_cost);
-
-  $("reqTotal").value =
-    num(r.total_amount)
-      .toFixed(2);
-
-  $("reqStatus").value =
-    r.status || "Pending";
-
-  if ($("reqExpenseType"))
-    $("reqExpenseType").value =
-      r.expense_type ||
-      "Materials";
-
-  if ($("reqCategory"))
-    $("reqCategory").value =
-      r.expense_type ||
-      "Materials";
-
-  $("reqNotes").value =
-    r.notes || "";
-
-  $("reqModalTitle").textContent =
-    "Edit Requisition";
-
-  openModal("reqModal");
-}
-
-async function deleteReq(id) {
-
-  if (
-    !confirm(
-      "Delete this requisition?"
-    )
-  ) return;
-
-  const { error } =
-    await supabase
-      .from("requisitions")
-      .delete()
-      .eq("id",id);
-
-  if (error) {
-
-    toast(
-      error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Requisition deleted.");
-}
-
-function viewReq(id) {
-
-  const r =
-    requisitions.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!r) return;
-
-  const v =
-    vehicleById(r.vehicle_id);
-
-  showPreview(
-    `Requisition ${r.req_no}`,
-    `
-      <h2>REQUISITION</h2>
-
-      <p>
-        <strong>No:</strong>
-        ${esc(r.req_no)}
-      </p>
-
-      <p>
-        <strong>Date:</strong>
-        ${esc(r.req_date || "")}
-      </p>
-
-      <p>
-        <strong>Requested By:</strong>
-        ${esc(
-          r.requested_by || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Vehicle:</strong>
-        ${esc(
-          v?.registration || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Item:</strong>
-        ${esc(
-          r.item_description || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Total:</strong>
-        ${money(r.total_amount)}
-      </p>
-
-      <p>
-        <strong>Status:</strong>
-        ${esc(r.status || "")}
-      </p>
-
-      <p>
-        <strong>Notes:</strong>
-        ${esc(r.notes || "")}
-      </p>
-    `
-  );
-}
-
-async function shareReq(id) {
-
-  const r =
-    requisitions.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!r) return;
-
-  const v =
-    vehicleById(r.vehicle_id);
-
-  await shareText(
-    `Requisition ${r.req_no}`,
-    [
-      "GARAGE OPERATIONS PRO",
-      "REQUISITION",
-      "",
-      `No: ${r.req_no}`,
-      `Date: ${r.req_date || ""}`,
-      `Requested By: ${r.requested_by || ""}`,
-      `Vehicle: ${v?.registration || ""}`,
-      `Item: ${r.item_description || ""}`,
-      `Quantity: ${r.quantity || 0}`,
-      `Total: ${money(r.total_amount)}`,
-      `Status: ${r.status || ""}`
-    ].join("\n")
-  );
-}
-
-/* =========================================================
-   INVOICES
-   ========================================================= */
-
-function calculateInvoice() {
-
-  const labour =
-    num(
-      $("invoiceLabour")?.value
-    );
-
-  const parts =
-    num(
-      $("invoiceParts")?.value
-    );
-
-  const other =
-    num(
-      $("invoiceOther")?.value
-    );
-
-  const subtotal =
-    labour +
-    parts +
-    other;
-
-  const paid =
-    num(
-      $("invoicePaid")?.value
-    );
-
-  const balance =
-    subtotal -
-    paid;
-
-  if ($("invoiceSubtotal"))
-    $("invoiceSubtotal").value =
-      subtotal.toFixed(2);
-
-  if ($("invoiceBalance"))
-    $("invoiceBalance").value =
-      balance.toFixed(2);
-
-  return {
-    subtotal,
-    balance
-  };
-}
-
-function renderInvoices() {
-
-  const body =
-    $("invoicesTableBody");
-
-  if (!body) return;
-
-  const q =
-    norm(
-      $("invoiceSearch")?.value ||
-      ""
-    );
-
-  const status =
-    $("invoiceStatusFilter")?.value ||
-    "";
-
-  const rows =
-    invoices.filter(i => {
-
-      const v =
-        vehicleById(i.vehicle_id);
-
-      const text =
-        norm([
-          i.invoice_no,
-          i.customer,
-          i.job_description,
-          i.status,
-          v?.registration
-        ].join(" "));
-
-      return (
-        (!q ||
-          text.includes(q)) &&
-        (
-          !status ||
-          i.status === status
-        )
-      );
-    });
-
-  body.innerHTML =
-    rows.map(i => {
-
-      const v =
-        vehicleById(i.vehicle_id);
-
-      return `
-
-        <tr>
-
-          <td>
-            ${esc(i.invoice_no)}
-          </td>
-
-          <td>
-            ${esc(
-              i.invoice_date || ""
-            )}
-          </td>
-
-          <td>
-            ${esc(
-              v?.registration || ""
-            )}
-          </td>
-
-          <td>
-            ${esc(i.customer || "")}
-          </td>
-
-          <td>
-            ${money(i.subtotal)}
-          </td>
-
-          <td>
-            ${money(i.paid)}
-          </td>
-
-          <td>
-            ${money(i.balance)}
-          </td>
-
-          <td>
-            ${esc(i.status || "")}
-          </td>
-
-          <td>
-            ${normalActions(
-              i.id,
-              "editInvoice",
-              "viewInvoice",
-              "shareInvoice",
-              "deleteInvoice"
-            )}
-          </td>
-
-        </tr>
-
-      `;
-
-    }).join("") ||
-
-    `
-      <tr>
-        <td
-          colspan="9"
-          style="text-align:center;padding:25px"
-        >
-          No invoices found
-        </td>
-      </tr>
-    `;
-}
-
-function openInvoiceModal(id = "") {
-
-  $("invoiceForm")?.reset();
-
-  if ($("invoiceId"))
-    $("invoiceId").value = "";
-
-  if ($("invoiceModalTitle"))
-    $("invoiceModalTitle").textContent =
-      "Add Invoice";
-
-  if ($("invoiceDate"))
-    $("invoiceDate").value =
-      today();
-
-  fillVehicleSelect(
-    "invoiceVehicle"
-  );
-
-  calculateInvoice();
-
-  if (id)
-    editInvoice(id);
-  else
-    openModal("invoiceModal");
-}
-
-async function saveInvoice(event) {
-
-  event?.preventDefault();
-
-  const id =
-    $("invoiceId")?.value || "";
-
-  const calc =
-    calculateInvoice();
-
-  const record = {
-
-    invoice_no:
-      $("invoiceNo")
-        ?.value.trim() ||
-      "",
-
-    invoice_date:
-      $("invoiceDate")?.value ||
-      today(),
-
-    vehicle_id:
-      $("invoiceVehicle")?.value ||
-      null,
-
-    customer:
-      $("invoiceCustomer")
-        ?.value.trim() ||
-      null,
-
-    job_description:
-      $("invoiceJobDescription")
-        ?.value.trim() ||
-      null,
-
-    labour:
-      num(
-        $("invoiceLabour")?.value
-      ),
-
-    parts:
-      num(
-        $("invoiceParts")?.value
-      ),
-
-    other:
-      num(
-        $("invoiceOther")?.value
-      ),
-
-    subtotal:
-      calc.subtotal,
-
-    paid:
-      num(
-        $("invoicePaid")?.value
-      ),
-
-    balance:
-      calc.balance,
-
-    status:
-      $("invoiceStatus")?.value ||
-      "Pending",
-
-    notes:
-      $("invoiceNotes")
-        ?.value.trim() ||
-      null
-
-  };
-
-  if (!record.invoice_no) {
-
-    toast(
-      "Invoice number is required.",
-      "error"
-    );
-
-    return;
-  }
-
-  const result =
-    id
-
-      ? await supabase
-          .from("invoices")
-          .update(record)
-          .eq("id",id)
-
-      : await supabase
-          .from("invoices")
-          .insert(record);
-
-  if (result.error) {
-
-    toast(
-      result.error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  closeModal("invoiceModal");
-
-  await loadAllData();
-
-  toast(
-    id
-      ? "Invoice updated."
-      : "Invoice added."
-  );
-}
-
-function editInvoice(id) {
-
-  const i =
-    invoices.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!i) return;
-
-  $("invoiceId").value =
-    i.id;
-
-  $("invoiceNo").value =
-    i.invoice_no || "";
-
-  $("invoiceDate").value =
-    i.invoice_date || "";
-
-  fillVehicleSelect(
-    "invoiceVehicle",
-    i.vehicle_id
-  );
-
-  $("invoiceCustomer").value =
-    i.customer || "";
-
-  $("invoiceJobDescription").value =
-    i.job_description || "";
-
-  $("invoiceLabour").value =
-    num(i.labour);
-
-  $("invoiceParts").value =
-    num(i.parts);
-
-  $("invoiceOther").value =
-    num(i.other);
-
-  $("invoicePaid").value =
-    num(i.paid);
-
-  $("invoiceStatus").value =
-    i.status || "Pending";
-
-  $("invoiceNotes").value =
-    i.notes || "";
-
-  calculateInvoice();
-
-  $("invoiceModalTitle").textContent =
-    "Edit Invoice";
-
-  openModal("invoiceModal");
-}
-
-async function deleteInvoice(id) {
-
-  if (
-    !confirm(
-      "Delete this invoice?"
-    )
-  ) return;
-
-  const { error } =
-    await supabase
-      .from("invoices")
-      .delete()
-      .eq("id",id);
-
-  if (error) {
-
-    toast(
-      error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Invoice deleted.");
-}
-
-function viewInvoice(id) {
-
-  const i =
-    invoices.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!i) return;
-
-  const v =
-    vehicleById(i.vehicle_id);
-
-  showPreview(
-    `Invoice ${i.invoice_no}`,
-    `
-      <h2>
-        CRYSTAL MOTORS (K) LTD
-      </h2>
-
-      <h2>INVOICE</h2>
-
-      <p>
-        <strong>Invoice No:</strong>
-        ${esc(i.invoice_no)}
-      </p>
-
-      <p>
-        <strong>Date:</strong>
-        ${esc(i.invoice_date || "")}
-      </p>
-
-      <p>
-        <strong>Vehicle:</strong>
-        ${esc(
-          v?.registration || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Customer:</strong>
-        ${esc(i.customer || "")}
-      </p>
-
-      <p>
-        <strong>Subtotal:</strong>
-        ${money(i.subtotal)}
-      </p>
-
-      <p>
-        <strong>Paid:</strong>
-        ${money(i.paid)}
-      </p>
-
-      <p>
-        <strong>Balance:</strong>
-        ${money(i.balance)}
-      </p>
-
-      <p>
-        <strong>Status:</strong>
-        ${esc(i.status || "")}
-      </p>
-    `
-  );
-}
-
-async function shareInvoice(id) {
-
-  const i =
-    invoices.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!i) return;
-
-  const v =
-    vehicleById(i.vehicle_id);
-
-  await shareText(
-    `Invoice ${i.invoice_no}`,
-    [
-      "CRYSTAL MOTORS (K) LTD",
-      "INVOICE",
-      "",
-      `Invoice: ${i.invoice_no}`,
-      `Date: ${i.invoice_date || ""}`,
-      `Vehicle: ${v?.registration || ""}`,
-      `Customer: ${i.customer || ""}`,
-      `Subtotal: ${money(i.subtotal)}`,
-      `Paid: ${money(i.paid)}`,
-      `Balance: ${money(i.balance)}`,
-      `Status: ${i.status || ""}`
-    ].join("\n")
-  );
-}
-
-/* =========================================================
-   GATE PASSES
-   ========================================================= */
-
-function renderGatePasses() {
-
-  const body =
-    $("gatePassesTableBody");
-
-  if (!body) return;
-
-  const q =
-    norm(
-      $("gateSearch")?.value ||
-      ""
-    );
-
-  const status =
-    $("gateStatusFilter")?.value ||
-    "";
-
-  const rows =
-    gatePasses.filter(g => {
-
-      const v =
-        vehicleById(g.vehicle_id);
-
-      const text =
-        norm([
-          g.gate_pass_no,
-          g.registration,
-          g.customer,
-          g.released_to,
-          g.released_contact,
-          g.status,
-          v?.registration
-        ].join(" "));
-
-      return (
-        (!q ||
-          text.includes(q)) &&
-        (
-          !status ||
-          g.status === status
-        )
-      );
-    });
-
-  body.innerHTML =
-    rows.map(g => {
-
-      const v =
-        vehicleById(g.vehicle_id);
-
-      return `
-
-        <tr>
-
-          <td>
-            ${esc(g.gate_pass_no)}
-          </td>
-
-          <td>
-            ${esc(
-              g.gate_pass_date || ""
-            )}
-          </td>
-
-          <td>
-            ${esc(
-              v?.registration ||
-              g.registration ||
-              ""
-            )}
-          </td>
-
-          <td>
-            ${esc(g.customer || "")}
-          </td>
-
-          <td>
-            ${esc(
-              g.released_to || ""
-            )}
-          </td>
-
-          <td>
-            ${money(g.paid)}
-          </td>
-
-          <td>
-            ${money(g.balance)}
-          </td>
-
-          <td>
-            ${esc(g.status || "")}
-          </td>
-
-          <td>
-            ${normalActions(
-              g.id,
-              "editGatePass",
-              "viewGatePass",
-              "shareGatePass",
-              "deleteGatePass"
-            )}
-          </td>
-
-        </tr>
-
-      `;
-
-    }).join("") ||
-
-    `
-      <tr>
-        <td
-          colspan="9"
-          style="text-align:center;padding:25px"
-        >
-          No gate passes found
-        </td>
-      </tr>
-    `;
-}
-
-function openGatePassModal(id = "") {
-
-  $("gatePassForm")?.reset();
-
-  if ($("gatePassId"))
-    $("gatePassId").value = "";
-
-  if ($("gatePassModalTitle"))
-    $("gatePassModalTitle").textContent =
-      "Add Gate Pass";
-
-  if ($("gatePassDate"))
-    $("gatePassDate").value =
-      today();
-
-  fillVehicleSelect(
-    "gateVehicle"
-  );
-
-  if (id)
-    editGatePass(id);
-  else
-    openModal("gatePassModal");
-}
-
-async function saveGatePass(event) {
-
-  event?.preventDefault();
-
-  const id =
-    $("gatePassId")?.value || "";
-
-  const vehicleId =
-    $("gateVehicle")?.value ||
-    null;
-
-  const v =
-    vehicleById(vehicleId);
-
-  const invoiceId =
-    $("gateInvoice")?.value ||
-    null;
-
-  let balance =
-    num(
-      $("gateBalance")?.value
-    );
-
-  if (invoiceId) {
-
-    const invoice =
-      invoices.find(
-        x =>
-          String(x.id) ===
-          String(invoiceId)
-      );
-
-    if (invoice) {
-
-      balance =
-        num(invoice.subtotal) -
-        num(
-          $("gatePaid")?.value
-        );
-    }
-  }
-
-  const record = {
-
-    gate_pass_no:
-      $("gatePassNo")
-        ?.value.trim() ||
-      "",
-
-    gate_pass_date:
-      $("gatePassDate")?.value ||
-      today(),
-
-    vehicle_id:
-      vehicleId,
-
-    registration:
-      $("gateVehicleRegistration")
-        ?.value.trim() ||
-      v?.registration ||
-      null,
-
-    customer:
-      $("gateCustomer")
-        ?.value.trim() ||
-      v?.customer ||
-      null,
-
-    released_to:
-      $("gateReleasedTo")
-        ?.value.trim() ||
-      null,
-
-    released_contact:
-      $("gateReleasedContact")
-        ?.value.trim() ||
-      null,
-
-    invoice_id:
-      invoiceId,
-
-    paid:
-      num(
-        $("gatePaid")?.value
-      ),
-
-    balance,
-
-    authorized_by:
-      $("gateAuthorizedBy")
-        ?.value.trim() ||
-      null,
-
-    status:
-      $("gateStatus")?.value ||
-      "Pending",
-
-    notes:
-      $("gateNotes")
-        ?.value.trim() ||
-      null
-
-  };
-
-  if (!record.gate_pass_no) {
-
-    toast(
-      "Gate pass number is required.",
-      "error"
-    );
-
-    return;
-  }
-
-  const result =
-    id
-
-      ? await supabase
-          .from("gate_passes")
-          .update(record)
-          .eq("id",id)
-
-      : await supabase
-          .from("gate_passes")
-          .insert(record);
-
-  if (result.error) {
-
-    toast(
-      result.error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  closeModal("gatePassModal");
-
-  await loadAllData();
-
-  toast(
-    id
-      ? "Gate pass updated."
-      : "Gate pass added."
-  );
-}
-
-function editGatePass(id) {
-
-  const g =
-    gatePasses.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!g) return;
-
-  $("gatePassId").value =
-    g.id;
-
-  $("gatePassNo").value =
-    g.gate_pass_no || "";
-
-  $("gatePassDate").value =
-    g.gate_pass_date || "";
-
-  fillVehicleSelect(
-    "gateVehicle",
-    g.vehicle_id
-  );
-
-  $("gateVehicleRegistration").value =
-    g.registration || "";
-
-  $("gateCustomer").value =
-    g.customer || "";
-
-  $("gateReleasedTo").value =
-    g.released_to || "";
-
-  $("gateReleasedContact").value =
-    g.released_contact || "";
-
-  if ($("gateInvoice"))
-    $("gateInvoice").value =
-      g.invoice_id || "";
-
-  $("gatePaid").value =
-    num(g.paid);
-
-  $("gateBalance").value =
-    num(g.balance);
-
-  $("gateAuthorizedBy").value =
-    g.authorized_by || "";
-
-  $("gateStatus").value =
-    g.status || "Pending";
-
-  $("gateNotes").value =
-    g.notes || "";
-
-  $("gatePassModalTitle")
-    .textContent =
-      "Edit Gate Pass";
-
-  openModal("gatePassModal");
-}
-
-async function deleteGatePass(id) {
-
-  if (
-    !confirm(
-      "Delete this gate pass?"
-    )
-  ) return;
-
-  const { error } =
-    await supabase
-      .from("gate_passes")
-      .delete()
-      .eq("id",id);
-
-  if (error) {
-
-    toast(
-      error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Gate pass deleted.");
-}
-
-function viewGatePass(id) {
-
-  const g =
-    gatePasses.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!g) return;
-
-  const v =
-    vehicleById(g.vehicle_id);
-
-  showPreview(
-    `Gate Pass ${g.gate_pass_no}`,
-    `
-      <h2>
-        CRYSTAL MOTORS (K) LTD
-      </h2>
-
-      <h2>GATE PASS</h2>
-
-      <p>
-        <strong>Gate Pass No:</strong>
-        ${esc(g.gate_pass_no)}
-      </p>
-
-      <p>
-        <strong>Date:</strong>
-        ${esc(
-          g.gate_pass_date || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Vehicle:</strong>
-        ${esc(
-          v?.registration ||
-          g.registration ||
-          ""
-        )}
-      </p>
-
-      <p>
-        <strong>Customer:</strong>
-        ${esc(g.customer || "")}
-      </p>
-
-      <p>
-        <strong>Released To:</strong>
-        ${esc(
-          g.released_to || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Contact:</strong>
-        ${esc(
-          g.released_contact || ""
-        )}
-      </p>
-
-      <p>
-        <strong>Paid:</strong>
-        ${money(g.paid)}
-      </p>
-
-      <p>
-        <strong>Balance:</strong>
-        ${money(g.balance)}
-      </p>
-
-      <p>
-        <strong>Status:</strong>
-        ${esc(g.status || "")}
-      </p>
-    `
-  );
-}
-
-async function shareGatePass(id) {
-
-  const g =
-    gatePasses.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!g) return;
-
-  const v =
-    vehicleById(g.vehicle_id);
-
-  await shareText(
-    `Gate Pass ${g.gate_pass_no}`,
-    [
-      "CRYSTAL MOTORS (K) LTD",
-      "GATE PASS",
-      "",
-      `No: ${g.gate_pass_no}`,
-      `Date: ${g.gate_pass_date || ""}`,
-      `Vehicle: ${
-        v?.registration ||
-        g.registration ||
-        ""
-      }`,
-      `Customer: ${g.customer || ""}`,
-      `Released To: ${g.released_to || ""}`,
-      `Contact: ${g.released_contact || ""}`,
-      `Paid: ${money(g.paid)}`,
-      `Balance: ${money(g.balance)}`,
-      `Status: ${g.status || ""}`
-    ].join("\n")
-  );
-}
-
-/* =========================================================
-   ESTIMATES / QUOTATIONS
-   ========================================================= */
-
-function ensureEstimateNavigation() {
-
-  if (
-    document.querySelector(
-      '[data-section="estimates"]'
-    )
-  ) {
-    return;
-  }
-
-  const sidebar =
-    document.querySelector(
-      ".sidebar"
-    );
-
-  if (!sidebar) return;
-
-  const existing =
-    sidebar.querySelector(
-      '[data-section="gate-passes"]'
-    );
-
-  const button =
-    document.createElement(
-      "button"
-    );
-
-  button.type = "button";
-
-  /*
-    Copy the existing navigation
-    class so it looks like the
-    other sidebar buttons.
-  */
-
-  if (existing) {
-
-    button.className =
-      existing.className;
-
-  } else {
-
-    button.className =
-      "nav-item";
-  }
-
-  button.classList.add(
-    "garage-estimate-nav"
-  );
-
-  button.dataset.section =
-    "estimates";
-
-  button.innerHTML = `
-    <span>📋</span>
-    <span>
-      Estimates / Quotations
-    </span>
-  `;
-
-  button.addEventListener(
-    "click",
-    () =>
-      showSection("estimates")
-  );
-
-  if (
-    existing?.parentElement
-  ) {
-
-    existing.parentElement
-      .insertBefore(
-        button,
-        existing.nextSibling
-      );
-
-  } else {
-
-    sidebar.appendChild(
-      button
-    );
-  }
-}
-
-function ensureEstimateSection() {
-
-  let section =
-    $("estimates");
-
-  if (section)
-    return section;
-
-  section =
-    document.createElement(
-      "section"
-    );
-
-  section.id =
-    "estimates";
-
-  section.className =
-    "section";
-
-  section.style.display =
-    "none";
-
-  section.innerHTML = `
-
-    <div class="section-header">
-
-      <div>
-
-        <h2>
-          Estimates / Quotations
-        </h2>
-
-        <p>
-          Professional vehicle repair
-          estimates and quotations.
-        </p>
-
-      </div>
-
-      <button
-        class="primary-btn"
-        type="button"
-        onclick="openEstimateModal()"
-      >
-        + Add Estimate
-      </button>
-
-    </div>
-
-    <div
-      class="table-container"
-    >
-
-      <table>
-
-        <thead>
-
-          <tr>
-
-            <th>Estimate No.</th>
-            <th>Date</th>
-            <th>Company</th>
-            <th>Vehicle</th>
-            <th>Customer</th>
-            <th>Total</th>
-            <th>Actions</th>
-
-          </tr>
-
-        </thead>
-
-        <tbody
-          id="estimatesTableBody"
-        ></tbody>
-
-      </table>
-
-    </div>
-
-  `;
-
-  const app =
-    $("app");
-
-  if (app)
-    app.appendChild(section);
-  else
-    document.body.appendChild(section);
-
-  return section;
-}
-
-function renderEstimates() {
-
-  const section =
-    $("estimates");
-
-  if (!section)
-    return;
-
-  const body =
-    $("estimatesTableBody");
-
-  if (!body)
-    return;
-
-  body.innerHTML =
-    estimates.map(e => {
-
-      const v =
-        vehicleById(e.vehicle_id);
-
-      return `
-
-        <tr>
-
-          <td>
-            ${esc(e.estimate_no)}
-          </td>
-
-          <td>
-            ${esc(
-              e.estimate_date || ""
-            )}
-          </td>
-
-          <td>
-            ${esc(
-              e.company_name || ""
-            )}
-          </td>
-
-          <td>
-            ${esc(
-              v?.registration ||
-              e.registration ||
-              ""
-            )}
-          </td>
-
-          <td>
-            ${esc(e.customer || "")}
-          </td>
-
-          <td>
-            <strong>
-              ${money(e.total_amount)}
-            </strong>
-          </td>
-
-          <td>
-            ${normalActions(
-              e.id,
-              "editEstimate",
-              "viewEstimate",
-              "shareEstimate",
-              "deleteEstimate"
-            )}
-          </td>
-
-        </tr>
-
-      `;
-
-    }).join("") ||
-
-    `
-      <tr>
-        <td
-          colspan="7"
-          style="text-align:center;padding:25px"
-        >
-          No estimates found.
-        </td>
-      </tr>
-    `;
-}
-
-function estimateCompanyDetails(
-  company
-) {
-
-  if (
-    company ===
-    "QUARRY ROUTE MOTORS LTD"
-  ) {
-
-    return `
-      <strong>
-        QUARRY ROUTE MOTORS LTD
-      </strong><br>
-
-      P.O. Box 54385 – 00200, Nairobi<br>
-
-      Cell: 0722 707124 /
-      0723 914 222<br>
-
-      Off Mombasa Road,
-      Along Quarry Road,
-      Near Mlolongo Weigh Bridge<br>
-
-      info@quarryroutemotors.com<br>
-
-      quarryroutemotorsltd@gmail.com
-    `;
-  }
-
-  return `
-    <strong>
-      CRYSTAL MOTORS (K) LTD
-    </strong><br>
-
-    P.O. Box 54385 – 00200, Nairobi<br>
-
-    Cell: 0722 707124 |
-    0723 914 222<br>
-
-    Off Mombasa Road,
-    Along Quarry Road,
-    Near Mlolongo Weighbridge
-  `;
-}
-
-function openEstimateModal() {
-
-  let modal =
-    $("estimateModal");
-
-  if (!modal) {
-
-    modal =
-      document.createElement(
-        "div"
-      );
-
-    modal.id =
-      "estimateModal";
-
-    modal.className =
-      "modal";
-
-    modal.innerHTML = `
-
-      <div class="modal-content">
-
-        <button
-          class="modal-close"
-          type="button"
-          onclick="
-            closeModal(
-              'estimateModal'
-            )
-          "
-        >
-          ×
-        </button>
-
-        <h2
-          id="estimateModalTitle"
-        >
-          Add Estimate
-        </h2>
-
-        <form
-          id="estimateForm"
-        >
-
-          <input
-            type="hidden"
-            id="estimateId"
-          >
-
-          <label>
-            Company
-          </label>
-
-          <select
-            id="estimateCompany"
-          >
-
-            <option
-              value="CRYSTAL MOTORS (K) LTD"
-            >
-              CRYSTAL MOTORS (K) LTD
-            </option>
-
-            <option
-              value="QUARRY ROUTE MOTORS LTD"
-            >
-              QUARRY ROUTE MOTORS LTD
-            </option>
-
-          </select>
-
-          <label>
-            Estimate No.
-          </label>
-
-          <input
-            id="estimateNo"
-            required
-          >
-
-          <label>
-            Date
-          </label>
-
-          <input
-            type="date"
-            id="estimateDate"
-            required
-          >
-
-          <label>
-            Vehicle
-          </label>
-
-          <select
-            id="estimateVehicle"
-          ></select>
-
-          <label>
-            Customer
-          </label>
-
-          <input
-            id="estimateCustomer"
-          >
-
-          <label>
-            Customer Phone
-          </label>
-
-          <input
-            id="estimateCustomerPhone"
-          >
-
-          <label>
-            Vehicle Model
-          </label>
-
-          <input
-            id="estimateVehicleModel"
-          >
-
-          <label>
-            Chassis No.
-          </label>
-
-          <input
-            id="estimateChassis"
-          >
-
-          <label>
-            Subtotal
-          </label>
-
-          <input
-            type="number"
-            step="0.01"
-            id="estimateSubtotal"
-          >
-
-          <label>
-            VAT %
-          </label>
-
-          <input
-            type="number"
-            step="0.01"
-            id="estimateVatRate"
-            value="16"
-          >
-
-          <label>
-            VAT Amount
-          </label>
-
-          <input
-            type="number"
-            step="0.01"
-            id="estimateVatAmount"
-            readonly
-          >
-
-          <label>
-            Total
-          </label>
-
-          <input
-            type="number"
-            step="0.01"
-            id="estimateTotal"
-            readonly
-          >
-
-          <label>
-            Notes
-          </label>
-
-          <textarea
-            id="estimateNotes"
-          ></textarea>
-
-          <button
-            class="primary-btn"
-            type="submit"
-          >
-            Save Estimate
-          </button>
-
-        </form>
-
-      </div>
-    `;
-
-    document.body.appendChild(
-      modal
-    );
-
-    $("estimateForm")
-      ?.addEventListener(
-        "submit",
-        saveEstimate
-      );
-
-    $("estimateSubtotal")
-      ?.addEventListener(
-        "input",
-        calculateEstimate
-      );
-
-    $("estimateVatRate")
-      ?.addEventListener(
-        "input",
-        calculateEstimate
-      );
-  }
-
-  $("estimateForm")?.reset();
-
-  $("estimateId").value =
-    "";
-
-  $("estimateDate").value =
-    today();
-
-  $("estimateVatRate").value =
-    16;
-
-  fillVehicleSelect(
-    "estimateVehicle"
-  );
-
-  $("estimateModalTitle")
-    .textContent =
-      "Add Estimate";
-
-  calculateEstimate();
-
-  openModal(
-    "estimateModal"
-  );
-}
-
-function calculateEstimate() {
-
-  const subtotal =
-    num(
-      $("estimateSubtotal")?.value
-    );
-
-  const rate =
-    num(
-      $("estimateVatRate")?.value
-    );
-
-  const vat =
-    subtotal *
-    rate /
-    100;
-
-  const total =
-    subtotal +
-    vat;
-
-  if ($("estimateVatAmount"))
-    $("estimateVatAmount").value =
-      vat.toFixed(2);
-
-  if ($("estimateTotal"))
-    $("estimateTotal").value =
-      total.toFixed(2);
-
-  return {
-    subtotal,
-    vat,
-    total
-  };
-}
-
-function editEstimate(id) {
-
-  openEstimateModal();
-
-  const e =
-    estimates.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!e) return;
-
-  $("estimateId").value =
-    e.id;
-
-  $("estimateCompany").value =
-    e.company_name ||
-    "CRYSTAL MOTORS (K) LTD";
-
-  $("estimateNo").value =
-    e.estimate_no || "";
-
-  $("estimateDate").value =
-    e.estimate_date || "";
-
-  $("estimateVehicle").value =
-    e.vehicle_id || "";
-
-  $("estimateCustomer").value =
-    e.customer || "";
-
-  $("estimateCustomerPhone").value =
-    e.customer_phone || "";
-
-  $("estimateVehicleModel").value =
-    e.vehicle_model || "";
-
-  $("estimateChassis").value =
-    e.chassis_no || "";
-
-  $("estimateSubtotal").value =
-    num(e.subtotal);
-
-  $("estimateVatRate").value =
-    num(e.vat_rate) || 16;
-
-  $("estimateVatAmount").value =
-    num(e.vat_amount);
-
-  $("estimateTotal").value =
-    num(e.total_amount);
-
-  $("estimateNotes").value =
-    e.notes || "";
-
-  $("estimateModalTitle")
-    .textContent =
-      "Edit Estimate";
-}
-
-async function saveEstimate(event) {
-
-  event?.preventDefault();
-
-  const id =
-    $("estimateId")?.value || "";
-
-  const calc =
-    calculateEstimate();
-
-  const vehicleId =
-    $("estimateVehicle")?.value ||
-    null;
-
-  const v =
-    vehicleById(vehicleId);
-
-  const record = {
-
-    estimate_no:
-      $("estimateNo")
-        ?.value.trim() ||
-      "",
-
-    estimate_date:
-      $("estimateDate")?.value ||
-      today(),
-
-    company_name:
-      $("estimateCompany")?.value ||
-      "CRYSTAL MOTORS (K) LTD",
-
-    customer:
-      $("estimateCustomer")
-        ?.value.trim() ||
-      null,
-
-    customer_phone:
-      $("estimateCustomerPhone")
-        ?.value.trim() ||
-      null,
-
-    vehicle_id:
-      vehicleId,
-
-    registration:
-      v?.registration ||
-      null,
-
-    chassis_no:
-      $("estimateChassis")
-        ?.value.trim() ||
-      null,
-
-    vehicle_model:
-      $("estimateVehicleModel")
-        ?.value.trim() ||
-      v?.model ||
-      null,
-
-    subtotal:
-      calc.subtotal,
-
-    vat_rate:
-      num(
-        $("estimateVatRate")?.value
-      ),
-
-    vat_amount:
-      calc.vat,
-
-    total_amount:
-      calc.total,
-
-    notes:
-      $("estimateNotes")
-        ?.value.trim() ||
-      null
-
-  };
-
-  if (!record.estimate_no) {
-
-    toast(
-      "Estimate number is required.",
-      "error"
-    );
-
-    return;
-  }
-
-  const result =
-    id
-
-      ? await supabase
-          .from("estimates")
-          .update(record)
-          .eq("id",id)
-
-      : await supabase
-          .from("estimates")
-          .insert(record);
-
-  if (result.error) {
-
-    toast(
-      result.error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  closeModal(
-    "estimateModal"
-  );
-
-  await loadAllData();
-
-  toast(
-    id
-      ? "Estimate updated."
-      : "Estimate saved."
-  );
-}
-
-function viewEstimate(id) {
-
-  const e =
-    estimates.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!e) return;
-
-  const v =
-    vehicleById(e.vehicle_id);
-
-  showPreview(
-    `Estimate ${e.estimate_no}`,
-    `
-      <div class="print-document">
-
-        <h2>
-          ${estimateCompanyDetails(
-            e.company_name
-          )}
-        </h2>
-
-        <hr>
-
-        <h2>
-          REPAIR ESTIMATE / QUOTATION
-        </h2>
-
-        <p>
-          <strong>
-            Estimate No:
-          </strong>
-          ${esc(e.estimate_no)}
-        </p>
-
-        <p>
-          <strong>
-            Date:
-          </strong>
-          ${esc(
-            e.estimate_date || ""
-          )}
-        </p>
-
-        <p>
-          <strong>
-            Vehicle:
-          </strong>
-          ${esc(
-            v?.registration ||
-            e.registration ||
-            ""
-          )}
-        </p>
-
-        <p>
-          <strong>
-            Customer:
-          </strong>
-          ${esc(
-            e.customer || ""
-          )}
-        </p>
-
-        <p>
-          <strong>
-            Customer Phone:
-          </strong>
-          ${esc(
-            e.customer_phone || ""
-          )}
-        </p>
-
-        <p>
-          <strong>
-            Vehicle Model:
-          </strong>
-          ${esc(
-            e.vehicle_model || ""
-          )}
-        </p>
-
-        <p>
-          <strong>
-            Chassis No:
-          </strong>
-          ${esc(
-            e.chassis_no || ""
-          )}
-        </p>
-
-        <table>
-
-          <tr>
-            <th>Subtotal</th>
-            <td>
-              ${money(e.subtotal)}
-            </td>
-          </tr>
-
-          <tr>
-            <th>
-              VAT ${num(e.vat_rate)}%
-            </th>
-            <td>
-              ${money(e.vat_amount)}
-            </td>
-          </tr>
-
-          <tr>
-            <th>TOTAL</th>
-            <td>
-              <strong>
-                ${money(e.total_amount)}
-              </strong>
-            </td>
-          </tr>
-
-        </table>
-
-        <p>
-          <strong>Notes:</strong><br>
-          ${esc(e.notes || "")}
-        </p>
-
-      </div>
-    `
-  );
-}
-
-async function shareEstimate(id) {
-
-  const e =
-    estimates.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if (!e) return;
-
-  const v =
-    vehicleById(e.vehicle_id);
-
-  await shareText(
-    `Estimate ${e.estimate_no}`,
-    [
-      e.company_name,
-      "REPAIR ESTIMATE / QUOTATION",
-      "",
-      `Estimate No: ${e.estimate_no}`,
-      `Date: ${e.estimate_date || ""}`,
-      `Vehicle: ${
-        v?.registration ||
-        e.registration ||
-        ""
-      }`,
-      `Customer: ${e.customer || ""}`,
-      `Subtotal: ${money(e.subtotal)}`,
-      `VAT: ${money(e.vat_amount)}`,
-      `TOTAL: ${money(e.total_amount)}`,
-      "",
-      `Notes: ${e.notes || ""}`
-    ].join("\n")
-  );
-}
-
-async function deleteEstimate(id) {
-
-  if (
-    !confirm(
-      "Delete this estimate?"
-    )
-  ) return;
-
-  const { error } =
-    await supabase
-      .from("estimates")
-      .delete()
-      .eq("id",id);
-
-  if (error) {
-
-    toast(
-      error.message,
-      "error"
-    );
-
-    return;
-  }
-
-  await loadAllData();
-
-  toast("Estimate deleted.");
-}
 
 /* =========================================================
    DASHBOARD
    ========================================================= */
 
-function renderDashboard() {
+function renderDashboard(){
 
-  const totalVehicles =
-    vehicles.length;
+  const billed=vehicles.reduce((a,v)=>a+num(v.billed),0);
+  const paid=vehicles.reduce((a,v)=>a+num(v.paid),0);
+  const outstanding=vehicles.reduce(
+    (a,v)=>a+Math.max(num(v.billed)-num(v.paid),0),0
+  );
 
-  const repairs =
-    vehicles.filter(
-      v =>
-        v.status ===
-        "Under Repair"
-    ).length;
+  const expTotal=expenses.reduce((a,e)=>a+num(e.amount),0);
+  const pettyTotal=pettyCash.reduce((a,e)=>a+num(e.amount),0);
 
-  const outstanding =
-    vehicles.reduce(
-      (a,v) =>
-        a +
-        Math.max(
-          0,
-          num(v.billed) -
-          num(v.paid)
-        ),
-      0
+  const repair=vehicles.filter(v=>
+    String(v.status||"").toLowerCase()==="under repair"
+  ).length;
+
+  if($("dashVehicles")) $("dashVehicles").textContent=vehicles.length;
+  if($("dashRepair")) $("dashRepair").textContent=repair;
+  if($("dashOutstanding")) $("dashOutstanding").textContent=money(outstanding);
+
+  if($("dashBilled")) $("dashBilled").textContent=money(billed);
+  if($("dashPaid")) $("dashPaid").textContent=money(paid);
+  if($("dashExpenses")) $("dashExpenses").textContent=money(expTotal);
+  if($("dashPetty")) $("dashPetty").textContent=money(pettyTotal);
+
+  if($("dashReq")){
+    $("dashReq").textContent=[
+      ...new Set(requisitions.map(r=>r.req_no))
+    ].length;
+  }
+
+  if($("dashInvoices"))
+    $("dashInvoices").textContent=invoices.length;
+
+  if($("dashGatePasses"))
+    $("dashGatePasses").textContent=gatePasses.length;
+
+  if($("dashReqCount"))
+    $("dashReqCount").textContent=[
+      ...new Set(requisitions.map(r=>r.req_no))
+    ].length;
+
+  if($("dashReqTotal"))
+    $("dashReqTotal").textContent=money(
+      requisitions.reduce((a,r)=>a+num(r.total_amount),0)
     );
 
-  const billed =
-    vehicles.reduce(
-      (a,v) =>
-        a + num(v.billed),
-      0
-    );
+  renderDashboardActivity();
+}
 
-  const paid =
-    vehicles.reduce(
-      (a,v) =>
-        a + num(v.paid),
-      0
-    );
+function renderDashboardActivity(){
 
-  const totalExpenses =
-    expenses.reduce(
-      (a,e) =>
-        a + num(e.amount),
-      0
-    );
+  const box=$("dashboardActivity");
+  if(!box) return;
 
-  const totalPetty =
-    pettyCash.reduce(
-      (a,p) =>
-        a + num(p.amount),
-      0
-    );
-
-  const pendingReq =
-    requisitions.filter(
-      r =>
-        r.status ===
-        "Pending"
-    ).length;
-
-  setText(
-    "dashVehicles",
-    totalVehicles
-  );
-
-  setText(
-    "dashRepair",
-    repairs
-  );
-
-  setText(
-    "dashOutstanding",
-    money(outstanding)
-  );
-
-  setText(
-    "dashReq",
-    pendingReq
-  );
-
-  setText(
-    "dashInvoices",
-    invoices.length
-  );
-
-  setText(
-    "dashGatePasses",
-    gatePasses.length
-  );
-
-  setText(
-    "dashBilled",
-    money(billed)
-  );
-
-  setText(
-    "dashPaid",
-    money(paid)
-  );
-
-  setText(
-    "dashExpenses",
-    money(totalExpenses)
-  );
-
-  setText(
-    "dashPetty",
-    money(totalPetty)
-  );
-
-  setText(
-    "dashReqCount",
-    pendingReq
-  );
-
-  setText(
-    "dashReqTotal",
-    money(
-      requisitions.reduce(
-        (a,r) =>
-          a +
-          num(r.total_amount),
-        0
-      )
+  const rows=[...vehicles]
+    .sort((a,b)=>
+      new Date(b.created_at||b.date_in||0)-
+      new Date(a.created_at||a.date_in||0)
     )
-  );
-}
+    .slice(0,7);
 
-function setText(id,value) {
-
-  const el = $(id);
-
-  if (el)
-    el.textContent =
-      value;
-}
-
-/* =========================================================
-   PREVIEW
-   ========================================================= */
-
-function showPreview(
-  title,
-  html
-) {
-
-  if ($("previewTitle"))
-    $("previewTitle").textContent =
-      title;
-
-  if ($("previewContent"))
-    $("previewContent").innerHTML =
-      html;
-
-  openModal(
-    "previewModal"
-  );
-}
-
-function printCurrentPreview() {
-
-  const title =
-    $("previewTitle")
-      ?.textContent ||
-    "Garage Report";
-
-  const html =
-    $("previewContent")
-      ?.innerHTML ||
-    "";
-
-  if (!html) {
-
-    toast(
-      "Nothing to print.",
-      "error"
-    );
-
+  if(!rows.length){
+    box.innerHTML=
+      `<div style="padding:20px;color:#64748b">No recent activity.</div>`;
     return;
   }
 
-  printHTML(
-    title,
-    html
+  box.innerHTML=rows.map(v=>`
+    <div class="activity-item">
+      <div class="activity-icon">🚘</div>
+      <div class="activity-main">
+        <strong>${esc(v.registration)}</strong>
+        <span>${esc(v.customer||"")}</span>
+      </div>
+      ${statusBadge(v.status)}
+    </div>
+  `).join("");
+}
+
+function setupDashboardCards(){
+
+  const map={
+    dashVehicles:"vehicles",
+    dashRepair:"vehicles",
+    dashOutstanding:"vehicles",
+    dashReq:"requisitions",
+    dashInvoices:"invoices",
+    dashGatePasses:"gate-passes",
+    dashBilled:"vehicles",
+    dashPaid:"vehicles",
+    dashExpenses:"expenses",
+    dashPetty:"petty-cash"
+  };
+
+  Object.entries(map).forEach(([id,section])=>{
+    const el=$(id);
+    if(!el) return;
+
+    const card=
+      el.closest(".stat-card")||
+      el.closest(".dashboard-card")||
+      el.closest(".kpi-card")||
+      el.closest(".card");
+
+    if(card){
+      card.style.cursor="pointer";
+      card.onclick=()=>showSection(section);
+    }
+  });
+}
+
+
+/* =========================================================
+   VEHICLES
+   ========================================================= */
+
+function populateVehicleSelects(){
+
+  const selects=[
+    $("expenseVehicle"),
+    $("reqVehicle"),
+    $("invoiceVehicle"),
+    $("gateVehicle")
+  ].filter(Boolean);
+
+  selects.forEach(select=>{
+
+    const old=select.value;
+
+    select.innerHTML=
+      `<option value="">Select Vehicle</option>`+
+      vehicles.map(v=>`
+        <option value="${esc(v.id)}">
+          ${esc(v.registration)}
+          ${v.customer?" — "+esc(v.customer):""}
+        </option>
+      `).join("");
+
+    if([...select.options].some(o=>o.value===old))
+      select.value=old;
+  });
+}
+
+function renderVehicles(){
+
+  const body=$("vehiclesTableBody");
+  if(!body) return;
+
+  const q=($("vehicleSearch")?.value||"").toLowerCase();
+  const filter=($("vehicleStatusFilter")?.value||"").toLowerCase();
+
+  const rows=vehicles.filter(v=>{
+
+    const text=[
+      v.registration,v.customer,v.model,v.model_year,
+      v.color,v.job_type,v.status,v.description
+    ].join(" ").toLowerCase();
+
+    return (!q||text.includes(q)) &&
+      (!filter||String(v.status||"").toLowerCase()===filter);
+  });
+
+  if(!rows.length){
+    body.innerHTML=
+      `<tr><td colspan="11" style="text-align:center;padding:30px">No vehicles found.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML=rows.map(v=>{
+
+    const expenseTotal=expenses
+      .filter(e=>String(e.vehicle_id)===String(v.id))
+      .reduce((a,e)=>a+num(e.amount),0);
+
+    const outstanding=
+      Math.max(num(v.billed)-num(v.paid),0);
+
+    const days=
+      String(v.job_type||"") === "Storage" ||
+      String(v.status||"") === "Storage"
+      ? storageDays(v)
+      : "—";
+
+    return `
+      <tr>
+        <td><strong>${esc(v.registration)}</strong></td>
+        <td>${esc(v.customer)}</td>
+        <td>${dateText(v.date_in)}</td>
+        <td>${esc(v.job_type||"Repair")}</td>
+        <td>${statusBadge(v.status)}</td>
+        <td>${days}</td>
+        <td><strong>${money(expenseTotal)}</strong></td>
+        <td>${money(v.billed)}</td>
+        <td>${money(v.paid)}</td>
+        <td>${money(outstanding)}</td>
+
+        <td>
+          <div class="table-actions">
+
+            <button class="action-btn"
+              title="Edit"
+              aria-label="Edit"
+              onclick="openVehicleModal('${v.id}')">✏️</button>
+
+            <button class="action-btn"
+              title="Vehicle Expenses"
+              aria-label="Vehicle Expenses"
+              onclick="openVehicleExpensePreview('${v.id}')">🚘</button>
+
+            <button class="action-btn"
+              title="View"
+              aria-label="View"
+              onclick="viewVehicle('${v.id}')">👁️</button>
+
+            <button class="action-btn"
+              title="Share"
+              aria-label="Share"
+              onclick="shareVehicle('${v.id}')">📤</button>
+
+            <button class="action-btn"
+              title="Delete"
+              aria-label="Delete"
+              onclick="deleteVehicle('${v.id}')">🗑️</button>
+
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+
+/* =========================================================
+   VEHICLE ADD / EDIT / UPDATE
+   ========================================================= */
+
+function resetVehicleForm(){
+
+  editingVehicleId=null;
+
+  if($("vehicleForm")) $("vehicleForm").reset();
+  if($("vehicleId")) $("vehicleId").value="";
+  if($("vehicleDateIn")) $("vehicleDateIn").value=today();
+  if($("vehicleJobType")) $("vehicleJobType").value="Repair";
+  if($("vehicleStatus")) $("vehicleStatus").value="Under Repair";
+  if($("vehicleStorageDays")) $("vehicleStorageDays").value="0";
+
+  if($("vehicleModalTitle"))
+    $("vehicleModalTitle").textContent="Add Vehicle";
+}
+
+function openVehicleModal(id=null){
+
+  resetVehicleForm();
+
+  if(id){
+
+    const v=vehicles.find(x=>String(x.id)===String(id));
+    if(!v) return;
+
+    editingVehicleId=v.id;
+
+    $("vehicleId").value=v.id;
+    $("vehicleRegistration").value=v.registration||"";
+    $("vehicleCustomer").value=v.customer||"";
+
+    if($("vehicleModel"))
+      $("vehicleModel").value=v.model||"";
+
+    if($("vehicleModelYear"))
+      $("vehicleModelYear").value=v.model_year||"";
+
+    if($("vehicleColor"))
+      $("vehicleColor").value=v.color||"";
+
+    $("vehicleDateIn").value=v.date_in||"";
+    $("vehicleDateOut").value=v.date_out||"";
+
+    if($("vehicleStorageDays"))
+      $("vehicleStorageDays").value=storageDays(v);
+
+    $("vehicleJobType").value=v.job_type||"Repair";
+    $("vehicleStatus").value=v.status||"Under Repair";
+    $("vehicleReleasedTo").value=v.released_to||"";
+    $("vehicleReleasedContact").value=v.released_contact||"";
+    $("vehicleBilled").value=num(v.billed);
+    $("vehiclePaid").value=num(v.paid);
+    $("vehicleDescription").value=v.description||"";
+
+    if($("vehicleModalTitle"))
+      $("vehicleModalTitle").textContent="Edit Vehicle";
+  }
+
+  openModal("vehicleModal");
+}
+
+async function saveVehicle(event){
+
+  event.preventDefault();
+
+  const id=
+    $("vehicleId")?.value.trim()||
+    editingVehicleId||
+    null;
+
+  const registration=
+    $("vehicleRegistration")?.value.trim();
+
+  const customer=
+    $("vehicleCustomer")?.value.trim();
+
+  if(!registration||!customer){
+    toast("Registration / Chassis No. and customer are required.","error");
+    return;
+  }
+
+  const duplicate=vehicles.some(v=>
+    normReg(v.registration)===normReg(registration) &&
+    String(v.id)!==String(id||"")
+  );
+
+  if(duplicate){
+    toast("This Registration / Chassis No. already exists.","error");
+    return;
+  }
+
+  const payload={
+    registration:registration.toUpperCase(),
+    customer,
+
+    model:$("vehicleModel")?.value.trim()||null,
+    model_year:$("vehicleModelYear")?.value.trim()||null,
+    color:$("vehicleColor")?.value.trim()||null,
+
+    date_in:$("vehicleDateIn")?.value||today(),
+    date_out:$("vehicleDateOut")?.value||null,
+
+    job_type:$("vehicleJobType")?.value||"Repair",
+    status:$("vehicleStatus")?.value||"Under Repair",
+
+    released_to:$("vehicleReleasedTo")?.value.trim()||null,
+    released_contact:$("vehicleReleasedContact")?.value.trim()||null,
+
+    billed:num($("vehicleBilled")?.value),
+    paid:num($("vehiclePaid")?.value),
+
+    description:$("vehicleDescription")?.value.trim()||null
+  };
+
+  try{
+
+    let result;
+
+    if(id){
+
+      /*
+       * IMPORTANT VEHICLE UPDATE FIX:
+       * Update by exact UUID and request the updated
+       * row back from Supabase.
+       */
+      result=await supabase
+        .from("vehicles")
+        .update(payload)
+        .eq("id",id)
+        .select("*")
+        .single();
+
+      if(result.error) throw result.error;
+
+      if(!result.data)
+        throw new Error("Vehicle update returned no record.");
+
+    }else{
+
+      result=await supabase
+        .from("vehicles")
+        .insert(payload)
+        .select("*")
+        .single();
+
+      if(result.error) throw result.error;
+    }
+
+    closeModal("vehicleModal");
+
+    toast(
+      id
+        ? "Vehicle updated successfully."
+        : "Vehicle added successfully."
+    );
+
+    await loadAllData();
+
+  }catch(error){
+
+    console.error("Vehicle save:",error);
+
+    toast(
+      error.message||"Vehicle could not be saved.",
+      "error"
+    );
+  }
+}
+
+async function deleteVehicle(id){
+
+  const v=vehicles.find(x=>String(x.id)===String(id));
+  if(!v) return;
+
+  if(!confirm(
+    `Delete ${v.registration}? This will delete its linked expenses and records.`
+  )) return;
+
+  try{
+
+    const childTables=[
+      "expenses",
+      "requisitions",
+      "invoices",
+      "gate_passes"
+    ];
+
+    for(const table of childTables){
+
+      const r=await supabase
+        .from(table)
+        .delete()
+        .eq("vehicle_id",id);
+
+      if(r.error){
+
+        const msg=String(r.error.message||"").toLowerCase();
+
+        if(
+          table==="invoices"||
+          table==="gate_passes"
+        ){
+
+          if(
+            msg.includes("does not exist")||
+            msg.includes("relation")
+          ) continue;
+        }
+
+        throw r.error;
+      }
+    }
+
+    const r=await supabase
+      .from("vehicles")
+      .delete()
+      .eq("id",id);
+
+    if(r.error) throw r.error;
+
+    toast("Vehicle deleted successfully.");
+    await loadAllData();
+
+  }catch(error){
+
+    console.error(error);
+    toast(
+      error.message||"Could not delete vehicle.",
+      "error"
+    );
+  }
+}
+
+
+/* =========================================================
+   VEHICLE VIEW / EXPENSES
+   ========================================================= */
+
+function vehicleExpenseRows(id){
+
+  return expenses.filter(e=>
+    String(e.vehicle_id)===String(id)
   );
 }
 
-/* =========================================================
-   SHARE
-   ========================================================= */
+function vehicleExpenseTotal(id){
 
-async function shareText(
-  title,
-  text
-) {
+  return vehicleExpenseRows(id)
+    .reduce((a,e)=>a+num(e.amount),0);
+}
 
-  try {
+function vehicleReportHtml(id){
 
-    if (
-      navigator.share
-    ) {
+  const v=vehicles.find(x=>String(x.id)===String(id));
+  if(!v) return "";
+
+  const rows=vehicleExpenseRows(id);
+  const total=vehicleExpenseTotal(id);
+
+  return `
+    <div class="garage-company-box">
+      <h3>CRYSTAL MOTORS (K) LTD</h3>
+      <div>P.O. Box 54385 – 00200, Nairobi</div>
+      <div>Cell: 0722 707124 | 0723 914 222</div>
+      <div>Off Mombasa Road, Along Quarry Road, Near Mlolongo Weighbridge</div>
+    </div>
+
+    <h2>VEHICLE EXPENSE REPORT</h2>
+
+    <p>
+      <strong>Registration:</strong> ${esc(v.registration)}<br>
+      <strong>Customer:</strong> ${esc(v.customer)}<br>
+      <strong>Job Type:</strong> ${esc(v.job_type||"Repair")}<br>
+      <strong>Status:</strong> ${esc(v.status||"")}
+    </p>
+
+    <table class="estimate-items">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        ${
+          rows.length
+          ? rows.map(e=>`
+            <tr>
+              <td>${dateText(e.expense_date)}</td>
+              <td>${esc(e.description)}</td>
+              <td>${esc(e.category||"")}</td>
+              <td>${money(e.amount)}</td>
+            </tr>
+          `).join("")
+          : `<tr><td colspan="4">No expenses recorded.</td></tr>`
+        }
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <th colspan="3" style="text-align:right">TOTAL EXPENSES</th>
+          <th>${money(total)}</th>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+}
+
+function openVehicleExpensePreview(id){
+
+  const v=vehicles.find(x=>String(x.id)===String(id));
+  if(!v) return;
+
+  currentVehicleExpenseId=v.id;
+
+  const content=$("vehicleExpensePreviewContent");
+
+  if(content)
+    content.innerHTML=vehicleReportHtml(v.id);
+
+  openModal("vehicleExpensePreviewModal");
+}
+
+window.openVehicleExpensePreview=openVehicleExpensePreview;
+
+function viewVehicle(id){
+
+  const v=vehicles.find(x=>String(x.id)===String(id));
+  if(!v) return;
+
+  const content=$("previewContent");
+
+  if(content){
+
+    content.innerHTML=`
+      <div class="garage-company-box">
+        <h3>CRYSTAL MOTORS (K) LTD</h3>
+        <div>P.O. Box 54385 – 00200, Nairobi</div>
+        <div>Cell: 0722 707124 | 0723 914 222</div>
+        <div>Off Mombasa Road, Along Quarry Road, Near Mlolongo Weighbridge</div>
+      </div>
+
+      <h2>${esc(v.registration)}</h2>
+
+      <p>
+        <strong>Customer:</strong> ${esc(v.customer)}<br>
+        <strong>Model:</strong> ${esc(v.model||"")}<br>
+        <strong>Year:</strong> ${esc(v.model_year||"")}<br>
+        <strong>Color:</strong> ${esc(v.color||"")}<br>
+        <strong>Date In:</strong> ${dateText(v.date_in)}<br>
+        <strong>Date Out:</strong> ${dateText(v.date_out)}<br>
+        <strong>Job:</strong> ${esc(v.job_type||"Repair")}<br>
+        <strong>Status:</strong> ${esc(v.status||"")}<br>
+        <strong>Storage Days:</strong> ${storageDays(v)}<br>
+        <strong>Billed:</strong> ${money(v.billed)}<br>
+        <strong>Paid:</strong> ${money(v.paid)}<br>
+        <strong>Outstanding:</strong> ${money(
+          Math.max(num(v.billed)-num(v.paid),0)
+        )}
+      </p>
+
+      <p>${esc(v.description||"")}</p>
+    `;
+  }
+
+  if($("previewTitle"))
+    $("previewTitle").textContent="Vehicle Details";
+
+  openModal("previewModal");
+}
+
+async function shareVehicle(id){
+
+  const v=vehicles.find(x=>String(x.id)===String(id));
+  if(!v) return;
+
+  const rows=vehicleExpenseRows(id);
+  const total=vehicleExpenseTotal(id);
+
+  const text=[
+    "CRYSTAL MOTORS (K) LTD",
+    "P.O. Box 54385 – 00200, Nairobi",
+    "Cell: 0722 707124 | 0723 914 222",
+    "Off Mombasa Road, Along Quarry Road, Near Mlolongo Weighbridge",
+    "",
+    "VEHICLE EXPENSE REPORT",
+    `Registration: ${v.registration}`,
+    `Customer: ${v.customer}`,
+    "",
+    ...rows.map(e=>
+      `${dateText(e.expense_date)} - ${e.description} - ${money(e.amount)}`
+    ),
+    "",
+    `TOTAL EXPENSES: ${money(total)}`
+  ].join("\n");
+
+  await shareText(
+    `Vehicle Expense Report - ${v.registration}`,
+    text
+  );
+}
+
+async function shareText(title,text){
+
+  try{
+
+    if(navigator.share){
 
       await navigator.share({
         title,
@@ -5298,113 +1095,2523 @@ async function shareText(
       return;
     }
 
-  } catch(error) {
+    if(navigator.clipboard){
 
-    if (
-      error?.name ===
-      "AbortError"
-    ) {
+      await navigator.clipboard.writeText(text);
+      toast("Report copied. You can now paste it into WhatsApp.");
       return;
+    }
+
+    const w=window.open("");
+    if(w){
+      w.document.write(`<pre>${esc(text)}</pre>`);
+      w.document.close();
+    }
+
+  }catch(error){
+
+    if(error?.name!=="AbortError")
+      toast("Could not share the report.","error");
+  }
+}
+
+function printVehicleExpensePreview(){
+
+  const content=$("vehicleExpensePreviewContent")?.innerHTML||"";
+
+  printHtml(
+    "Vehicle Expense Report",
+    content
+  );
+}
+
+function printVehicle(id){
+
+  const v=vehicles.find(x=>String(x.id)===String(id));
+  if(!v) return;
+
+  printHtml(
+    `Vehicle ${v.registration}`,
+    vehicleReportHtml(id)
+  );
+}
+
+
+/* =========================================================
+   EXPENSES
+   ========================================================= */
+
+function ensureExpenseTotal(){
+
+  const body=$("expensesTableBody");
+  if(!body) return null;
+
+  const table=body.closest("table");
+  if(!table) return null;
+
+  let box=$("expenseOverallTotal");
+
+  if(!box){
+
+    box=document.createElement("div");
+    box.id="expenseOverallTotal";
+    box.className="expense-total-card";
+
+    table.parentElement.insertBefore(box,table);
+  }
+
+  return box;
+}
+
+function renderExpenses(){
+
+  const body=$("expensesTableBody");
+  if(!body) return;
+
+  const q=($("expenseSearch")?.value||"").trim();
+  const category=($("expenseCategoryFilter")?.value||"").trim().toLowerCase();
+
+  let rows=[...expenses];
+
+  /*
+   * EXACT VEHICLE SEARCH
+   *
+   * KBN 084E -> only expenses linked to KBN 084E
+   * KCA 123A -> only expenses linked to KCA 123A
+   * Any vehicle -> only that vehicle's expenses
+   */
+
+  if(q){
+
+    const vehicle=vehicles.find(v=>
+      normReg(v.registration)===normReg(q)
+    );
+
+    if(vehicle){
+
+      rows=expenses.filter(e=>
+        String(e.vehicle_id)===String(vehicle.id)
+      );
+
+    }else{
+
+      const lower=q.toLowerCase();
+
+      rows=expenses.filter(e=>{
+
+        const v=vehicles.find(x=>
+          String(x.id)===String(e.vehicle_id)
+        );
+
+        return [
+          e.description,
+          e.category,
+          v?.registration,
+          v?.customer
+        ].join(" ").toLowerCase().includes(lower);
+      });
     }
   }
 
-  try {
-
-    await navigator.clipboard
-      .writeText(text);
-
-    toast(
-      "Report copied. Paste it into WhatsApp."
+  if(category){
+    rows=rows.filter(e=>
+      String(e.category||"").toLowerCase()===category
     );
-
-    return;
-
-  } catch(error) {
-
-    console.warn(error);
   }
 
-  alert(text);
+  const total=rows.reduce(
+    (a,e)=>a+num(e.amount),0
+  );
+
+  const totalBox=ensureExpenseTotal();
+
+  if(totalBox){
+
+    totalBox.innerHTML=`
+      <div class="label">
+        Filtered Expenses (${rows.length})
+      </div>
+
+      <div class="value">
+        ${money(total)}
+      </div>
+    `;
+  }
+
+  if(!rows.length){
+
+    body.innerHTML=
+      `<tr><td colspan="6" style="text-align:center;padding:30px">
+        No expenses found.
+      </td></tr>`;
+
+    return;
+  }
+
+  body.innerHTML=rows.map(e=>{
+
+    const v=vehicles.find(x=>
+      String(x.id)===String(e.vehicle_id)
+    );
+
+    return `
+      <tr>
+
+        <td>${dateText(e.expense_date)}</td>
+
+        <td>
+          <strong>${esc(v?.registration||"General")}</strong>
+        </td>
+
+        <td>${esc(e.description)}</td>
+
+        <td>${esc(e.category||"")}</td>
+
+        <td><strong>${money(e.amount)}</strong></td>
+
+        <td>
+          <div class="table-actions">
+
+            <button class="action-btn"
+              title="Edit"
+              onclick="openExpenseModal('${e.id}')">✏️</button>
+
+            <button class="action-btn"
+              title="View"
+              onclick="viewExpense('${e.id}')">👁️</button>
+
+            <button class="action-btn"
+              title="Share"
+              onclick="shareExpense('${e.id}')">📤</button>
+
+            <button class="action-btn"
+              title="Delete"
+              onclick="deleteExpense('${e.id}')">🗑️</button>
+
+          </div>
+        </td>
+
+      </tr>
+    `;
+  }).join("");
+
+  let foot=body.closest("table")?.querySelector("tfoot");
+
+  if(!foot){
+
+    const table=body.closest("table");
+
+    if(table)
+      foot=table.createTFoot();
+  }
+
+  if(foot){
+
+    foot.innerHTML=`
+      <tr>
+        <th colspan="4" style="text-align:right">
+          TOTAL FILTERED EXPENSES
+        </th>
+        <th>${money(total)}</th>
+        <th></th>
+      </tr>
+    `;
+  }
 }
+
+function resetExpenseForm(){
+
+  editingExpenseId=null;
+
+  if($("expenseForm")) $("expenseForm").reset();
+  if($("expenseId")) $("expenseId").value="";
+  if($("expenseDate")) $("expenseDate").value=today();
+  if($("expenseCategory")) $("expenseCategory").value="Parts";
+
+  if($("expenseModalTitle"))
+    $("expenseModalTitle").textContent="Add Expense";
+}
+
+function openExpenseModal(id=null){
+
+  resetExpenseForm();
+  populateVehicleSelects();
+
+  if(id){
+
+    const e=expenses.find(x=>String(x.id)===String(id));
+    if(!e) return;
+
+    editingExpenseId=e.id;
+
+    $("expenseId").value=e.id;
+    $("expenseVehicle").value=e.vehicle_id||"";
+    $("expenseDate").value=e.expense_date||"";
+    $("expenseCategory").value=e.category||"Parts";
+    $("expenseAmount").value=num(e.amount);
+    $("expenseDescription").value=e.description||"";
+
+    if($("expenseModalTitle"))
+      $("expenseModalTitle").textContent="Edit Expense";
+  }
+
+  openModal("expenseModal");
+}
+
+async function saveExpense(event){
+
+  event.preventDefault();
+
+  const payload={
+    vehicle_id:$("expenseVehicle")?.value||null,
+    expense_date:$("expenseDate")?.value||today(),
+    category:$("expenseCategory")?.value||"Parts",
+    amount:num($("expenseAmount")?.value),
+    description:$("expenseDescription")?.value.trim()
+  };
+
+  if(!payload.description){
+    toast("Expense description is required.","error");
+    return;
+  }
+
+  try{
+
+    let r;
+
+    if(editingExpenseId){
+
+      r=await supabase
+        .from("expenses")
+        .update(payload)
+        .eq("id",editingExpenseId)
+        .select("*")
+        .single();
+
+    }else{
+
+      r=await supabase
+        .from("expenses")
+        .insert(payload)
+        .select("*")
+        .single();
+    }
+
+    if(r.error) throw r.error;
+
+    closeModal("expenseModal");
+    toast(editingExpenseId?"Expense updated.":"Expense added.");
+
+    await loadAllData();
+
+  }catch(error){
+
+    console.error(error);
+    toast(error.message||"Could not save expense.","error");
+  }
+}
+
+function viewExpense(id){
+
+  const e=expenses.find(x=>String(x.id)===String(id));
+  if(!e) return;
+
+  const v=vehicles.find(x=>
+    String(x.id)===String(e.vehicle_id)
+  );
+
+  $("previewTitle").textContent="Expense Details";
+
+  $("previewContent").innerHTML=`
+    <div class="garage-company-box">
+      <h3>CRYSTAL MOTORS (K) LTD</h3>
+      <div>P.O. Box 54385 – 00200, Nairobi</div>
+      <div>Cell: 0722 707124 | 0723 914 222</div>
+    </div>
+
+    <h3>${esc(e.description)}</h3>
+
+    <p>
+      <strong>Vehicle:</strong> ${esc(v?.registration||"General")}<br>
+      <strong>Date:</strong> ${dateText(e.expense_date)}<br>
+      <strong>Category:</strong> ${esc(e.category||"")}<br>
+      <strong>Amount:</strong> ${money(e.amount)}
+    </p>
+  `;
+
+  openModal("previewModal");
+}
+
+async function shareExpense(id){
+
+  const e=expenses.find(x=>String(x.id)===String(id));
+  if(!e) return;
+
+  const v=vehicles.find(x=>
+    String(x.id)===String(e.vehicle_id)
+  );
+
+  await shareText(
+    "Garage Expense",
+    [
+      "CRYSTAL MOTORS (K) LTD",
+      "P.O. Box 54385 – 00200, Nairobi",
+      "Cell: 0722 707124 | 0723 914 222",
+      "",
+      `Vehicle: ${v?.registration||"General"}`,
+      `Date: ${dateText(e.expense_date)}`,
+      `Description: ${e.description}`,
+      `Category: ${e.category||""}`,
+      `Amount: ${money(e.amount)}`
+    ].join("\n")
+  );
+}
+
+async function deleteExpense(id){
+
+  if(!confirm("Delete this expense?")) return;
+
+  const r=await supabase
+    .from("expenses")
+    .delete()
+    .eq("id",id);
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  toast("Expense deleted.");
+  await loadAllData();
+}
+
+function printExpenses(){
+
+  const body=$("expensesTableBody");
+  const totalBox=$("expenseOverallTotal");
+
+  printHtml(
+    "Vehicle Expense Report",
+    `
+      <h2>EXPENSE REPORT</h2>
+      ${totalBox?.outerHTML||""}
+      <table>${body?.closest("table")?.innerHTML||""}</table>
+    `
+  );
+}
+
+
+/* =========================================================
+   PETTY CASH
+   ========================================================= */
+
+function renderPettyCash(){
+
+  const body=$("pettyTableBody");
+  if(!body) return;
+
+  const q=($("pettySearch")?.value||"").toLowerCase();
+  const c=($("pettyCategoryFilter")?.value||"").toLowerCase();
+
+  const rows=pettyCash.filter(p=>{
+
+    const text=[
+      p.description,p.paid_to,p.category,p.notes
+    ].join(" ").toLowerCase();
+
+    return (!q||text.includes(q)) &&
+      (!c||String(p.category||"").toLowerCase()===c);
+  });
+
+  if(!rows.length){
+    body.innerHTML=
+      `<tr><td colspan="7" style="text-align:center;padding:30px">No petty cash records.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML=rows.map(p=>`
+    <tr>
+      <td>${dateText(p.cash_date)}</td>
+      <td>${esc(p.paid_to||"")}</td>
+      <td>${esc(p.category||"")}</td>
+      <td>${esc(p.description)}</td>
+      <td>${esc(p.notes||"")}</td>
+      <td><strong>${money(p.amount)}</strong></td>
+      <td>
+        <div class="table-actions">
+          <button class="action-btn" title="Edit"
+            onclick="openPettyModal('${p.id}')">✏️</button>
+          <button class="action-btn" title="View"
+            onclick="viewPetty('${p.id}')">👁️</button>
+          <button class="action-btn" title="Share"
+            onclick="sharePetty('${p.id}')">📤</button>
+          <button class="action-btn" title="Delete"
+            onclick="deletePetty('${p.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function openPettyModal(id=null){
+
+  editingPettyId=id;
+
+  if($("pettyForm")) $("pettyForm").reset();
+  if($("pettyDate")) $("pettyDate").value=today();
+
+  if($("pettyModalTitle"))
+    $("pettyModalTitle").textContent=id?"Edit Petty Cash":"Add Petty Cash";
+
+  if(id){
+
+    const p=pettyCash.find(x=>String(x.id)===String(id));
+    if(!p) return;
+
+    $("pettyId").value=p.id;
+    $("pettyDate").value=p.cash_date||"";
+    $("pettyPaidTo").value=p.paid_to||"";
+    $("pettyCategory").value=p.category||"";
+    $("pettyAmount").value=num(p.amount);
+    $("pettyDescription").value=p.description||"";
+    $("pettyNotes").value=p.notes||"";
+  }
+
+  openModal("pettyModal");
+}
+
+async function savePetty(event){
+
+  event.preventDefault();
+
+  const payload={
+    cash_date:$("pettyDate")?.value||today(),
+    paid_to:$("pettyPaidTo")?.value.trim()||null,
+    category:$("pettyCategory")?.value||null,
+    amount:num($("pettyAmount")?.value),
+    description:$("pettyDescription")?.value.trim(),
+    notes:$("pettyNotes")?.value.trim()||null
+  };
+
+  if(!payload.description){
+    toast("Description is required.","error");
+    return;
+  }
+
+  const r=editingPettyId
+    ? await supabase.from("petty_cash")
+        .update(payload).eq("id",editingPettyId).select("*").single()
+    : await supabase.from("petty_cash")
+        .insert(payload).select("*").single();
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  closeModal("pettyModal");
+  toast(editingPettyId?"Petty cash updated.":"Petty cash added.");
+  await loadAllData();
+}
+
+function viewPetty(id){
+
+  const p=pettyCash.find(x=>String(x.id)===String(id));
+  if(!p) return;
+
+  $("previewTitle").textContent="Petty Cash";
+  $("previewContent").innerHTML=`
+    <h2>CRYSTAL MOTORS (K) LTD</h2>
+    <p>
+      <strong>Date:</strong> ${dateText(p.cash_date)}<br>
+      <strong>Paid To:</strong> ${esc(p.paid_to||"")}<br>
+      <strong>Category:</strong> ${esc(p.category||"")}<br>
+      <strong>Description:</strong> ${esc(p.description)}<br>
+      <strong>Amount:</strong> ${money(p.amount)}<br>
+      <strong>Notes:</strong> ${esc(p.notes||"")}
+    </p>
+  `;
+
+  openModal("previewModal");
+}
+
+async function sharePetty(id){
+
+  const p=pettyCash.find(x=>String(x.id)===String(id));
+  if(!p) return;
+
+  await shareText(
+    "Petty Cash",
+    `CRYSTAL MOTORS (K) LTD\nDate: ${dateText(p.cash_date)}\nPaid To: ${p.paid_to||""}\nDescription: ${p.description}\nAmount: ${money(p.amount)}`
+  );
+}
+
+async function deletePetty(id){
+
+  if(!confirm("Delete this petty cash record?")) return;
+
+  const r=await supabase.from("petty_cash").delete().eq("id",id);
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  toast("Petty cash deleted.");
+  await loadAllData();
+}
+
+
+/* =========================================================
+   REQUISITIONS
+   ========================================================= */
+
+function reqNumbers(){
+  return [...new Set(requisitions.map(r=>r.req_no).filter(Boolean))];
+}
+
+function reqTotal(no){
+  return requisitions
+    .filter(r=>String(r.req_no)===String(no))
+    .reduce((a,r)=>a+num(r.total_amount),0);
+}
+
+function renderRequisitions(){
+
+  const body=$("requisitionsTableBody");
+  if(!body) return;
+
+  const q=($("reqSearch")?.value||"").toLowerCase();
+  const s=($("reqStatusFilter")?.value||"").toLowerCase();
+
+  const rows=requisitions.filter(r=>{
+
+    const text=[
+      r.req_no,r.requested_by,r.item_description,
+      r.status,r.notes
+    ].join(" ").toLowerCase();
+
+    return (!q||text.includes(q)) &&
+      (!s||String(r.status||"").toLowerCase()===s);
+  });
+
+  if($("reqOverallTotal"))
+    $("reqOverallTotal").textContent=
+      money(rows.reduce((a,r)=>a+num(r.total_amount),0));
+
+  if(!rows.length){
+    body.innerHTML=
+      `<tr><td colspan="8" style="text-align:center;padding:30px">No requisitions.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML=rows.map(r=>`
+    <tr>
+      <td>${esc(r.req_no)}</td>
+      <td>${dateText(r.req_date)}</td>
+      <td>${esc(r.requested_by)}</td>
+      <td>${esc(r.item_description)}</td>
+      <td>${num(r.quantity)}</td>
+      <td>${money(r.unit_cost)}</td>
+      <td><strong>${money(r.total_amount)}</strong></td>
+      <td>
+        <div class="table-actions">
+          <button class="action-btn" title="Edit"
+            onclick="openReqModal('${r.id}')">✏️</button>
+          <button class="action-btn" title="View"
+            onclick="viewReq('${r.id}')">👁️</button>
+          <button class="action-btn" title="Share"
+            onclick="shareReq('${r.id}')">📤</button>
+          <button class="action-btn" title="Delete"
+            onclick="deleteReq('${r.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function openReqModal(id=null){
+
+  editingReqId=id;
+
+  populateVehicleSelects();
+
+  if($("reqForm")) $("reqForm").reset();
+  if($("reqDate")) $("reqDate").value=today();
+
+  if($("reqModalTitle"))
+    $("reqModalTitle").textContent=id?"Edit Requisition":"Add Requisition";
+
+  if(id){
+
+    const r=requisitions.find(x=>String(x.id)===String(id));
+    if(!r) return;
+
+    $("reqId").value=r.id;
+    $("reqNo").value=r.req_no||"";
+    $("reqDate").value=r.req_date||"";
+    $("reqRequestedBy").value=r.requested_by||"";
+    $("reqVehicle").value=r.vehicle_id||"";
+    $("reqItemDescription").value=r.item_description||"";
+    $("reqQuantity").value=num(r.quantity);
+    $("reqUnitCost").value=num(r.unit_cost);
+    $("reqTotal").value=num(r.total_amount);
+    $("reqStatus").value=r.status||"Pending";
+
+    if($("reqExpenseType"))
+      $("reqExpenseType").value=r.expense_type||"Materials";
+
+    if($("reqCategory"))
+      $("reqCategory").value=r.expense_type||"Materials";
+
+    $("reqNotes").value=r.notes||"";
+  }
+
+  openModal("reqModal");
+}
+
+async function saveReq(event){
+
+  event.preventDefault();
+
+  const qty=num($("reqQuantity")?.value);
+  const unit=num($("reqUnitCost")?.value);
+
+  const payload={
+    req_no:$("reqNo")?.value.trim(),
+    req_date:$("reqDate")?.value||today(),
+    requested_by:$("reqRequestedBy")?.value.trim(),
+    vehicle_id:$("reqVehicle")?.value||null,
+    item_description:$("reqItemDescription")?.value.trim(),
+    quantity:qty,
+    unit_cost:unit,
+    total_amount:qty*unit,
+    status:$("reqStatus")?.value||"Pending",
+    expense_type:$("reqExpenseType")?.value||
+                 $("reqCategory")?.value||
+                 "Materials",
+    notes:$("reqNotes")?.value.trim()||null
+  };
+
+  if(!payload.req_no||!payload.requested_by||!payload.item_description){
+    toast("Request No., requested by and item description are required.","error");
+    return;
+  }
+
+  const r=editingReqId
+    ? await supabase.from("requisitions")
+        .update(payload).eq("id",editingReqId).select("*").single()
+    : await supabase.from("requisitions")
+        .insert(payload).select("*").single();
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  closeModal("reqModal");
+  toast(editingReqId?"Requisition updated.":"Requisition added.");
+  await loadAllData();
+}
+
+function viewReq(id){
+
+  const r=requisitions.find(x=>String(x.id)===String(id));
+  if(!r) return;
+
+  $("previewTitle").textContent="Requisition";
+  $("previewContent").innerHTML=`
+    <h2>CRYSTAL MOTORS (K) LTD</h2>
+    <p>
+      <strong>Request No:</strong> ${esc(r.req_no)}<br>
+      <strong>Date:</strong> ${dateText(r.req_date)}<br>
+      <strong>Requested By:</strong> ${esc(r.requested_by)}<br>
+      <strong>Item:</strong> ${esc(r.item_description)}<br>
+      <strong>Quantity:</strong> ${num(r.quantity)}<br>
+      <strong>Unit Cost:</strong> ${money(r.unit_cost)}<br>
+      <strong>Total:</strong> ${money(r.total_amount)}<br>
+      <strong>Status:</strong> ${esc(r.status||"")}
+    </p>
+  `;
+
+  openModal("previewModal");
+}
+
+async function shareReq(id){
+
+  const r=requisitions.find(x=>String(x.id)===String(id));
+  if(!r) return;
+
+  await shareText(
+    `Requisition ${r.req_no}`,
+    `CRYSTAL MOTORS (K) LTD\nRequest: ${r.req_no}\nItem: ${r.item_description}\nQuantity: ${r.quantity}\nTotal: ${money(r.total_amount)}`
+  );
+}
+
+async function deleteReq(id){
+
+  if(!confirm("Delete this requisition?")) return;
+
+  const r=await supabase.from("requisitions").delete().eq("id",id);
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  toast("Requisition deleted.");
+  await loadAllData();
+}
+
+
+/* =========================================================
+   INVOICES
+   ========================================================= */
+
+function invoiceTotals(i){
+  const subtotal=
+    num(i.labour)+num(i.parts)+num(i.other);
+
+  const balance=
+    Math.max(subtotal-num(i.paid),0);
+
+  return {subtotal,balance};
+}
+
+function renderInvoices(){
+
+  const body=$("invoicesTableBody");
+  if(!body) return;
+
+  const q=($("invoiceSearch")?.value||"").toLowerCase();
+  const s=($("invoiceStatusFilter")?.value||"").toLowerCase();
+
+  const rows=invoices.filter(i=>{
+
+    const v=vehicles.find(x=>
+      String(x.id)===String(i.vehicle_id)
+    );
+
+    const text=[
+      i.invoice_no,i.customer,i.job_description,
+      i.status,v?.registration
+    ].join(" ").toLowerCase();
+
+    return (!q||text.includes(q)) &&
+      (!s||String(i.status||"").toLowerCase()===s);
+  });
+
+  if(!rows.length){
+    body.innerHTML=
+      `<tr><td colspan="8" style="text-align:center;padding:30px">No invoices found.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML=rows.map(i=>{
+    const t=invoiceTotals(i);
+
+    return `
+      <tr>
+        <td>${esc(i.invoice_no)}</td>
+        <td>${dateText(i.invoice_date)}</td>
+        <td>${esc(i.customer||"")}</td>
+        <td>${esc(i.job_description||"")}</td>
+        <td>${money(t.subtotal)}</td>
+        <td>${money(i.paid)}</td>
+        <td>${money(t.balance)}</td>
+        <td>
+          <div class="table-actions">
+            <button class="action-btn" title="Edit"
+              onclick="openInvoiceModal('${i.id}')">✏️</button>
+            <button class="action-btn" title="View"
+              onclick="viewInvoice('${i.id}')">👁️</button>
+            <button class="action-btn" title="Share"
+              onclick="shareInvoice('${i.id}')">📤</button>
+            <button class="action-btn" title="Delete"
+              onclick="deleteInvoice('${i.id}')">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function openInvoiceModal(id=null,vehicleId=null){
+
+  editingInvoiceId=id;
+  populateVehicleSelects();
+
+  if($("invoiceForm")) $("invoiceForm").reset();
+
+  if($("invoiceDate"))
+    $("invoiceDate").value=today();
+
+  if($("invoiceModalTitle"))
+    $("invoiceModalTitle").textContent=id?"Edit Invoice":"Add Invoice";
+
+  if(!id&&vehicleId){
+
+    $("invoiceVehicle").value=vehicleId;
+
+    const v=vehicles.find(x=>
+      String(x.id)===String(vehicleId)
+    );
+
+    if(v){
+      $("invoiceCustomer").value=v.customer||"";
+      $("invoiceJobDescription").value=
+        `${v.registration} - ${v.job_type||"Repair"}`;
+    }
+  }
+
+  if(id){
+
+    const i=invoices.find(x=>String(x.id)===String(id));
+    if(!i) return;
+
+    $("invoiceId").value=i.id;
+    $("invoiceNo").value=i.invoice_no||"";
+    $("invoiceDate").value=i.invoice_date||"";
+    $("invoiceVehicle").value=i.vehicle_id||"";
+    $("invoiceCustomer").value=i.customer||"";
+    $("invoiceJobDescription").value=i.job_description||"";
+    $("invoiceLabour").value=num(i.labour);
+    $("invoiceParts").value=num(i.parts);
+    $("invoiceOther").value=num(i.other);
+    $("invoiceSubtotal").value=invoiceTotals(i).subtotal;
+    $("invoicePaid").value=num(i.paid);
+    $("invoiceBalance").value=invoiceTotals(i).balance;
+    $("invoiceStatus").value=i.status||"Pending";
+    $("invoiceNotes").value=i.notes||"";
+  }
+
+  openModal("invoiceModal");
+}
+
+async function saveInvoice(event){
+
+  event.preventDefault();
+
+  const labour=num($("invoiceLabour")?.value);
+  const parts=num($("invoiceParts")?.value);
+  const other=num($("invoiceOther")?.value);
+  const subtotal=labour+parts+other;
+  const paid=num($("invoicePaid")?.value);
+
+  const payload={
+    invoice_no:$("invoiceNo")?.value.trim(),
+    invoice_date:$("invoiceDate")?.value||today(),
+    vehicle_id:$("invoiceVehicle")?.value||null,
+    customer:$("invoiceCustomer")?.value.trim()||null,
+    job_description:$("invoiceJobDescription")?.value.trim()||null,
+    labour,
+    parts,
+    other,
+    subtotal,
+    paid,
+    balance:Math.max(subtotal-paid,0),
+    status:$("invoiceStatus")?.value||"Pending",
+    notes:$("invoiceNotes")?.value.trim()||null
+  };
+
+  if(!payload.invoice_no){
+    toast("Invoice number is required.","error");
+    return;
+  }
+
+  const r=editingInvoiceId
+    ? await supabase.from("invoices")
+        .update(payload).eq("id",editingInvoiceId).select("*").single()
+    : await supabase.from("invoices")
+        .insert(payload).select("*").single();
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  closeModal("invoiceModal");
+  toast(editingInvoiceId?"Invoice updated.":"Invoice added.");
+  await loadAllData();
+}
+
+function invoiceHtml(i){
+
+  const v=vehicles.find(x=>
+    String(x.id)===String(i.vehicle_id)
+  );
+
+  const t=invoiceTotals(i);
+
+  return `
+    <div class="garage-company-box">
+      <h3>CRYSTAL MOTORS (K) LTD</h3>
+      <div>P.O. Box 54385 – 00200, Nairobi</div>
+      <div>Cell: 0722 707124 | 0723 914 222</div>
+      <div>Off Mombasa Road, Along Quarry Road, Near Mlolongo Weighbridge</div>
+    </div>
+
+    <h2>INVOICE</h2>
+
+    <p>
+      <strong>Invoice No:</strong> ${esc(i.invoice_no)}<br>
+      <strong>Date:</strong> ${dateText(i.invoice_date)}<br>
+      <strong>Customer:</strong> ${esc(i.customer||"")}<br>
+      <strong>Vehicle:</strong> ${esc(v?.registration||"")}
+    </p>
+
+    <table class="estimate-items">
+      <tr><th>Description</th><th>Amount</th></tr>
+      <tr><td>Labour</td><td>${money(i.labour)}</td></tr>
+      <tr><td>Parts</td><td>${money(i.parts)}</td></tr>
+      <tr><td>Other</td><td>${money(i.other)}</td></tr>
+      <tr><th>Subtotal</th><th>${money(t.subtotal)}</th></tr>
+      <tr><th>Paid</th><th>${money(i.paid)}</th></tr>
+      <tr><th>Balance</th><th>${money(t.balance)}</th></tr>
+    </table>
+
+    <p>${esc(i.notes||"")}</p>
+  `;
+}
+
+function viewInvoice(id){
+
+  const i=invoices.find(x=>String(x.id)===String(id));
+  if(!i) return;
+
+  $("previewTitle").textContent="Invoice";
+  $("previewContent").innerHTML=invoiceHtml(i);
+
+  openModal("previewModal");
+}
+
+async function shareInvoice(id){
+
+  const i=invoices.find(x=>String(x.id)===String(id));
+  if(!i) return;
+
+  const t=invoiceTotals(i);
+
+  await shareText(
+    `Invoice ${i.invoice_no}`,
+    [
+      "CRYSTAL MOTORS (K) LTD",
+      "P.O. Box 54385 – 00200, Nairobi",
+      "Cell: 0722 707124 | 0723 914 222",
+      "",
+      `Invoice: ${i.invoice_no}`,
+      `Customer: ${i.customer||""}`,
+      `Subtotal: ${money(t.subtotal)}`,
+      `Paid: ${money(i.paid)}`,
+      `Balance: ${money(t.balance)}`
+    ].join("\n")
+  );
+}
+
+async function deleteInvoice(id){
+
+  if(!confirm("Delete this invoice?")) return;
+
+  const r=await supabase.from("invoices").delete().eq("id",id);
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  toast("Invoice deleted.");
+  await loadAllData();
+}
+
+
+/* =========================================================
+   GATE PASSES
+   ========================================================= */
+
+function renderGatePasses(){
+
+  const body=$("gatePassesTableBody");
+  if(!body) return;
+
+  const q=($("gateSearch")?.value||"").toLowerCase();
+  const s=($("gateStatusFilter")?.value||"").toLowerCase();
+
+  const rows=gatePasses.filter(g=>{
+
+    const v=vehicles.find(x=>
+      String(x.id)===String(g.vehicle_id)
+    );
+
+    const text=[
+      g.gate_pass_no,
+      g.registration,
+      g.customer,
+      g.released_to,
+      g.status,
+      v?.registration
+    ].join(" ").toLowerCase();
+
+    return (!q||text.includes(q)) &&
+      (!s||String(g.status||"").toLowerCase()===s);
+  });
+
+  if(!rows.length){
+
+    body.innerHTML=
+      `<tr><td colspan="8" style="text-align:center;padding:30px">
+        No gate passes found.
+      </td></tr>`;
+
+    return;
+  }
+
+  body.innerHTML=rows.map(g=>`
+
+    <tr>
+
+      <td>${esc(g.gate_pass_no)}</td>
+
+      <td>${dateText(g.gate_pass_date)}</td>
+
+      <td>
+        <strong>${esc(
+          g.registration||
+          vehicles.find(v=>String(v.id)===String(g.vehicle_id))?.registration||
+          ""
+        )}</strong>
+      </td>
+
+      <td>${esc(g.customer||"")}</td>
+
+      <td>${esc(g.released_to||"")}</td>
+
+      <td>${money(g.paid)}</td>
+
+      <td>${statusBadge(g.status||"Pending")}</td>
+
+      <td>
+        <div class="table-actions">
+
+          <button class="action-btn"
+            title="Edit"
+            onclick="openGatePassModal('${g.id}')">✏️</button>
+
+          <button class="action-btn"
+            title="View"
+            onclick="viewGatePass('${g.id}')">👁️</button>
+
+          <button class="action-btn"
+            title="Share"
+            onclick="shareGatePass('${g.id}')">📤</button>
+
+          <button class="action-btn"
+            title="Delete"
+            onclick="deleteGatePass('${g.id}')">🗑️</button>
+
+        </div>
+      </td>
+
+    </tr>
+
+  `).join("");
+}
+
+function openGatePassModal(id=null,vehicleId=null){
+
+  editingGatePassId=id;
+
+  populateVehicleSelects();
+
+  if($("gatePassForm"))
+    $("gatePassForm").reset();
+
+  if($("gatePassDate"))
+    $("gatePassDate").value=today();
+
+  if($("gatePassModalTitle"))
+    $("gatePassModalTitle").textContent=
+      id?"Edit Gate Pass":"Add Gate Pass";
+
+  if(!id&&vehicleId){
+
+    $("gateVehicle").value=vehicleId;
+
+    const v=vehicles.find(x=>
+      String(x.id)===String(vehicleId)
+    );
+
+    if(v){
+
+      $("gateVehicleRegistration").value=
+        v.registration||"";
+
+      $("gateCustomer").value=
+        v.customer||"";
+
+      $("gateReleasedTo").value=
+        v.released_to||"";
+
+      $("gateReleasedContact").value=
+        v.released_contact||"";
+    }
+  }
+
+  if(id){
+
+    const g=gatePasses.find(x=>String(x.id)===String(id));
+    if(!g) return;
+
+    $("gatePassId").value=g.id;
+    $("gatePassNo").value=g.gate_pass_no||"";
+    $("gatePassDate").value=g.gate_pass_date||"";
+    $("gateVehicle").value=g.vehicle_id||"";
+    $("gateVehicleRegistration").value=g.registration||"";
+    $("gateCustomer").value=g.customer||"";
+    $("gateReleasedTo").value=g.released_to||"";
+    $("gateReleasedContact").value=g.released_contact||"";
+    $("gateInvoice").value=g.invoice_id||"";
+    $("gatePaid").value=num(g.paid);
+    $("gateBalance").value=num(g.balance);
+    $("gateAuthorizedBy").value=g.authorized_by||"";
+    $("gateStatus").value=g.status||"Pending";
+    $("gateNotes").value=g.notes||"";
+
+    setGateCompanyFields(g);
+  }
+
+  ensureGateCompanyFields();
+
+  openModal("gatePassModal");
+}
+
+function ensureGateCompanyFields(){
+
+  const form=$("gatePassForm");
+  if(!form) return;
+
+  if($("gateCompanyName")) return;
+
+  const wrapper=document.createElement("div");
+
+  wrapper.style.marginBottom="12px";
+
+  wrapper.innerHTML=`
+
+    <label>
+      Company
+      <select id="gateCompanySelect">
+        <option value="crystal">CRYSTAL MOTORS (K) LTD</option>
+        <option value="quarry">QUARRY ROUTE MOTORS LTD</option>
+        <option value="other">OTHER</option>
+      </select>
+    </label>
+
+    <div id="gateOtherCompany" style="display:none">
+
+      <input id="gateCompanyName"
+        placeholder="Other company name">
+
+      <input id="gateCompanyAddress"
+        placeholder="Company address">
+
+      <input id="gateCompanyPhone"
+        placeholder="Company phone">
+
+      <input id="gateCompanyEmail"
+        placeholder="Company email">
+
+    </div>
+  `;
+
+  form.insertBefore(wrapper,form.firstChild);
+
+  $("gateCompanySelect").addEventListener("change",()=>{
+
+    const other=
+      $("gateCompanySelect").value==="other";
+
+    $("gateOtherCompany").style.display=
+      other?"block":"none";
+  });
+}
+
+function setGateCompanyFields(g){
+
+  ensureGateCompanyFields();
+
+  const key=companyKey(g.company_name);
+
+  if($("gateCompanySelect"))
+    $("gateCompanySelect").value=key;
+
+  if($("gateOtherCompany"))
+    $("gateOtherCompany").style.display=
+      key==="other"?"block":"none";
+
+  if(key==="other"){
+
+    if($("gateCompanyName"))
+      $("gateCompanyName").value=g.company_name||"";
+
+    if($("gateCompanyAddress"))
+      $("gateCompanyAddress").value=g.company_address||"";
+
+    if($("gateCompanyPhone"))
+      $("gateCompanyPhone").value=g.company_phone||"";
+
+    if($("gateCompanyEmail"))
+      $("gateCompanyEmail").value=g.company_email||"";
+  }
+}
+
+function getGateCompany(){
+
+  ensureGateCompanyFields();
+
+  const key=$("gateCompanySelect")?.value||"crystal";
+
+  if(key!=="other")
+    return COMPANIES[key];
+
+  return {
+    name:$("gateCompanyName")?.value.trim()||"OTHER",
+    address:$("gateCompanyAddress")?.value.trim()||"",
+    phone:$("gateCompanyPhone")?.value.trim()||"",
+    location:"",
+    email:$("gateCompanyEmail")?.value.trim()||""
+  };
+}
+
+async function saveGatePass(event){
+
+  event.preventDefault();
+
+  const company=getGateCompany();
+
+  const vehicleId=$("gateVehicle")?.value||null;
+
+  const v=vehicles.find(x=>
+    String(x.id)===String(vehicleId)
+  );
+
+  const payload={
+    gate_pass_no:$("gatePassNo")?.value.trim(),
+    gate_pass_date:$("gatePassDate")?.value||today(),
+
+    vehicle_id:vehicleId,
+
+    registration:
+      $("gateVehicleRegistration")?.value.trim()||
+      v?.registration||
+      null,
+
+    customer:
+      $("gateCustomer")?.value.trim()||
+      v?.customer||
+      null,
+
+    released_to:
+      $("gateReleasedTo")?.value.trim()||null,
+
+    released_contact:
+      $("gateReleasedContact")?.value.trim()||null,
+
+    invoice_id:$("gateInvoice")?.value||null,
+
+    paid:num($("gatePaid")?.value),
+    balance:num($("gateBalance")?.value),
+
+    authorized_by:
+      $("gateAuthorizedBy")?.value.trim()||null,
+
+    status:
+      $("gateStatus")?.value||"Pending",
+
+    notes:
+      $("gateNotes")?.value.trim()||null,
+
+    company_name:company.name,
+    company_address:company.address,
+    company_phone:company.phone,
+    company_email:company.email
+  };
+
+  if(!payload.gate_pass_no){
+    toast("Gate Pass number is required.","error");
+    return;
+  }
+
+  try{
+
+    let r;
+
+    if(editingGatePassId){
+
+      r=await supabase
+        .from("gate_passes")
+        .update(payload)
+        .eq("id",editingGatePassId)
+        .select("*")
+        .single();
+
+    }else{
+
+      r=await supabase
+        .from("gate_passes")
+        .insert(payload)
+        .select("*")
+        .single();
+    }
+
+    if(r.error){
+
+      /*
+       * If company columns have not yet been added,
+       * retry with the original Gate Pass columns.
+       */
+      const message=String(r.error.message||"").toLowerCase();
+
+      if(
+        message.includes("company_name")||
+        message.includes("company_address")||
+        message.includes("company_phone")||
+        message.includes("company_email")
+      ){
+
+        delete payload.company_name;
+        delete payload.company_address;
+        delete payload.company_phone;
+        delete payload.company_email;
+
+        r=editingGatePassId
+          ? await supabase.from("gate_passes")
+              .update(payload)
+              .eq("id",editingGatePassId)
+              .select("*").single()
+          : await supabase.from("gate_passes")
+              .insert(payload)
+              .select("*").single();
+      }
+    }
+
+    if(r.error) throw r.error;
+
+    closeModal("gatePassModal");
+
+    toast(
+      editingGatePassId
+        ? "Gate Pass updated."
+        : "Gate Pass added."
+    );
+
+    await loadAllData();
+
+  }catch(error){
+
+    console.error(error);
+
+    toast(
+      error.message||
+      "Could not save Gate Pass.",
+      "error"
+    );
+  }
+}
+
+function gatePassHtml(g){
+
+  const c=companyFromRow(g);
+
+  const v=vehicles.find(x=>
+    String(x.id)===String(g.vehicle_id)
+  );
+
+  return `
+
+    <div class="garage-company-box">
+
+      <h3>${esc(c.name)}</h3>
+
+      <div>${esc(c.address)}</div>
+
+      <div>${esc(c.phone)}</div>
+
+      <div>${esc(c.location)}</div>
+
+      ${
+        c.email
+        ? `<div>${esc(c.email)}</div>`
+        : ""
+      }
+
+    </div>
+
+    <h2>GATE PASS</h2>
+
+    <p>
+
+      <strong>Gate Pass No:</strong>
+      ${esc(g.gate_pass_no)}<br>
+
+      <strong>Date:</strong>
+      ${dateText(g.gate_pass_date)}<br>
+
+      <strong>Registration:</strong>
+      ${esc(g.registration||v?.registration||"")}<br>
+
+      <strong>Customer:</strong>
+      ${esc(g.customer||v?.customer||"")}<br>
+
+      <strong>Released To:</strong>
+      ${esc(g.released_to||"")}<br>
+
+      <strong>Contact:</strong>
+      ${esc(g.released_contact||"")}<br>
+
+      <strong>Paid:</strong>
+      ${money(g.paid)}<br>
+
+      <strong>Balance:</strong>
+      ${money(g.balance)}<br>
+
+      <strong>Authorized By:</strong>
+      ${esc(g.authorized_by||"")}<br>
+
+      <strong>Status:</strong>
+      ${esc(g.status||"Pending")}
+
+    </p>
+
+    <p>${esc(g.notes||"")}</p>
+  `;
+}
+
+function viewGatePass(id){
+
+  const g=gatePasses.find(x=>String(x.id)===String(id));
+  if(!g) return;
+
+  $("previewTitle").textContent="Gate Pass";
+  $("previewContent").innerHTML=gatePassHtml(g);
+
+  openModal("previewModal");
+}
+
+async function shareGatePass(id){
+
+  const g=gatePasses.find(x=>String(x.id)===String(id));
+  if(!g) return;
+
+  const c=companyFromRow(g);
+
+  await shareText(
+    `Gate Pass ${g.gate_pass_no}`,
+    [
+      c.name,
+      c.address,
+      c.phone,
+      c.location,
+      c.email,
+      "",
+      "GATE PASS",
+      `Gate Pass No: ${g.gate_pass_no}`,
+      `Date: ${dateText(g.gate_pass_date)}`,
+      `Registration: ${g.registration||""}`,
+      `Customer: ${g.customer||""}`,
+      `Released To: ${g.released_to||""}`,
+      `Contact: ${g.released_contact||""}`,
+      `Paid: ${money(g.paid)}`,
+      `Balance: ${money(g.balance)}`,
+      `Authorized By: ${g.authorized_by||""}`
+    ].filter(Boolean).join("\n")
+  );
+}
+
+async function deleteGatePass(id){
+
+  if(!confirm("Delete this Gate Pass?")) return;
+
+  const r=await supabase
+    .from("gate_passes")
+    .delete()
+    .eq("id",id);
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  toast("Gate Pass deleted.");
+  await loadAllData();
+}
+
+
+/* =========================================================
+   ESTIMATES / QUOTATIONS
+   ========================================================= */
+
+function ensureEstimateSection(){
+
+  if($("estimates")) return;
+
+  const app=$("app");
+  if(!app) return;
+
+  const section=document.createElement("section");
+
+  section.id="estimates";
+  section.className="section";
+  section.style.display="none";
+
+  section.innerHTML=`
+
+    <div class="section-header">
+
+      <div>
+        <h2>Estimates / Quotations</h2>
+        <p>Create, edit, print and share repair estimates.</p>
+      </div>
+
+      <button class="primary-btn"
+        onclick="openEstimateModal()">＋ New Estimate</button>
+
+    </div>
+
+    <div class="card">
+
+      <div style="
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-bottom:15px
+      ">
+
+        <input
+          id="estimateSearch"
+          placeholder="Search estimate, vehicle or customer"
+          style="flex:1;min-width:220px"
+        >
+
+      </div>
+
+      <div style="overflow:auto">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Estimate No.</th>
+              <th>Date</th>
+              <th>Vehicle</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="estimatesTableBody"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+    <div id="estimateModal"
+      class="modal"
+      style="display:none">
+
+      <div class="modal-content"
+        style="max-width:950px">
+
+        <div class="modal-header">
+
+          <h2 id="estimateModalTitle">
+            New Estimate
+          </h2>
+
+          <button type="button"
+            onclick="closeModal('estimateModal')">✕</button>
+
+        </div>
+
+        <form id="estimateForm">
+
+          <input type="hidden" id="estimateId">
+
+          <div class="form-grid">
+
+            <label>
+              Estimate No.
+              <input id="estimateNo" required>
+            </label>
+
+            <label>
+              Date
+              <input id="estimateDate" type="date" required>
+            </label>
+
+            <label>
+              Company
+              <select id="estimateCompany">
+
+                <option value="crystal">
+                  CRYSTAL MOTORS (K) LTD
+                </option>
+
+                <option value="quarry">
+                  QUARRY ROUTE MOTORS LTD
+                </option>
+
+                <option value="other">
+                  OTHER
+                </option>
+
+              </select>
+            </label>
+
+            <label>
+              Vehicle
+              <select id="estimateVehicle">
+                <option value="">Select Vehicle</option>
+              </select>
+            </label>
+
+            <label>
+              Customer
+              <input id="estimateCustomer">
+            </label>
+
+            <label>
+              Customer Phone
+              <input id="estimateCustomerPhone">
+            </label>
+
+            <label>
+              Registration
+              <input id="estimateRegistration">
+            </label>
+
+            <label>
+              Chassis No.
+              <input id="estimateChassis">
+            </label>
+
+            <label>
+              Vehicle Model
+              <input id="estimateModel">
+            </label>
+
+            <label>
+              Vehicle Year
+              <input id="estimateYear">
+            </label>
+
+            <label>
+              VAT %
+              <input id="estimateVat" type="number" value="16">
+            </label>
+
+          </div>
+
+          <h3 style="margin-top:20px">
+            Estimate Items
+          </h3>
+
+          <div style="overflow:auto">
+
+            <table class="estimate-items">
+
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Qty</th>
+                  <th>Unit Cost</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody id="estimateItemsBody"></tbody>
+
+            </table>
+
+          </div>
+
+          <button
+            type="button"
+            class="action-btn"
+            style="width:auto!important;padding:0 12px!important;margin-top:10px"
+            onclick="addEstimateItem()">
+            ＋ Add Item
+          </button>
+
+          <div style="
+            margin-top:20px;
+            text-align:right
+          ">
+
+            <p>
+              Subtotal:
+              <strong id="estimateSubtotal">KSh 0.00</strong>
+            </p>
+
+            <p>
+              VAT:
+              <strong id="estimateVatAmount">KSh 0.00</strong>
+            </p>
+
+            <h2>
+              Total:
+              <strong id="estimateTotal">KSh 0.00</strong>
+            </h2>
+
+          </div>
+
+          <label>
+            Notes
+            <textarea id="estimateNotes"></textarea>
+          </label>
+
+          <div style="
+            display:flex;
+            gap:8px;
+            justify-content:flex-end;
+            margin-top:15px
+          ">
+
+            <button type="button"
+              onclick="closeModal('estimateModal')">
+              Cancel
+            </button>
+
+            <button type="submit"
+              class="primary-btn">
+              Save Estimate
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+  `;
+
+  app.appendChild(section);
+
+  $("estimateForm").addEventListener(
+    "submit",
+    saveEstimate
+  );
+
+  $("estimateVehicle").addEventListener(
+    "change",
+    fillEstimateVehicle
+  );
+
+  $("estimateCompany").addEventListener(
+    "change",
+    updateEstimateCompany
+  );
+
+  $("estimateVat").addEventListener(
+    "input",
+    calculateEstimate
+  );
+
+  $("estimateSearch").addEventListener(
+    "input",
+    renderEstimates
+  );
+}
+
+function resetEstimateForm(){
+
+  editingEstimateId=null;
+
+  $("estimateForm")?.reset();
+
+  $("estimateDate").value=today();
+  $("estimateVat").value=16;
+
+  $("estimateNo").value=
+    `EST-${new Date().getFullYear()}-${String(estimates.length+1).padStart(4,"0")}`;
+
+  $("estimateItemsBody").innerHTML="";
+
+  addEstimateItem();
+  calculateEstimate();
+
+  $("estimateModalTitle").textContent=
+    "New Estimate";
+}
+
+function openEstimateModal(id=null){
+
+  ensureEstimateSection();
+  populateEstimateVehicleSelect();
+
+  resetEstimateForm();
+
+  if(id){
+
+    const e=estimates.find(x=>String(x.id)===String(id));
+    if(!e) return;
+
+    editingEstimateId=e.id;
+
+    $("estimateId").value=e.id;
+    $("estimateNo").value=e.estimate_no||"";
+    $("estimateDate").value=e.estimate_date||"";
+    $("estimateCustomer").value=e.customer||"";
+    $("estimateCustomerPhone").value=e.customer_phone||"";
+    $("estimateVehicle").value=e.vehicle_id||"";
+    $("estimateRegistration").value=e.registration||"";
+    $("estimateChassis").value=e.chassis_no||"";
+    $("estimateModel").value=e.vehicle_model||e.model||"";
+    $("estimateYear").value=e.vehicle_year||e.model_year||"";
+    $("estimateVat").value=num(e.vat_rate)||16;
+    $("estimateNotes").value=e.notes||"";
+
+    $("estimateCompany").value=companyKey(e.company_name);
+
+    const items=Array.isArray(e.items)?e.items:[];
+
+    $("estimateItemsBody").innerHTML="";
+
+    if(items.length)
+      items.forEach(addEstimateItem);
+    else
+      addEstimateItem();
+
+    $("estimateModalTitle").textContent=
+      "Edit Estimate";
+
+    calculateEstimate();
+  }
+
+  openModal("estimateModal");
+}
+
+function populateEstimateVehicleSelect(){
+
+  const select=$("estimateVehicle");
+  if(!select) return;
+
+  const old=select.value;
+
+  select.innerHTML=
+    `<option value="">Select Vehicle</option>`+
+    vehicles.map(v=>`
+      <option value="${esc(v.id)}">
+        ${esc(v.registration)}
+        ${v.customer?" — "+esc(v.customer):""}
+      </option>
+    `).join("");
+
+  if([...select.options].some(o=>o.value===old))
+    select.value=old;
+}
+
+function fillEstimateVehicle(){
+
+  const v=vehicles.find(x=>
+    String(x.id)===
+    String($("estimateVehicle").value)
+  );
+
+  if(!v) return;
+
+  $("estimateCustomer").value=v.customer||"";
+  $("estimateRegistration").value=v.registration||"";
+  $("estimateModel").value=v.model||"";
+  $("estimateYear").value=v.model_year||"";
+}
+
+function updateEstimateCompany(){
+
+  const key=$("estimateCompany").value;
+
+  if(key!=="other"){
+
+    const c=COMPANIES[key];
+
+    if(c)
+      $("estimateCompany").title=
+        `${c.name} | ${c.address} | ${c.phone}`;
+  }
+}
+
+function addEstimateItem(item={}){
+
+  const body=$("estimateItemsBody");
+  if(!body) return;
+
+  const tr=document.createElement("tr");
+
+  tr.innerHTML=`
+
+    <td>
+      <input
+        class="estimate-desc"
+        value="${esc(item.description||"")}"
+        placeholder="Repair / part description">
+    </td>
+
+    <td>
+      <input
+        class="estimate-qty"
+        type="number"
+        min="0"
+        step="0.01"
+        value="${num(item.quantity)||1}">
+    </td>
+
+    <td>
+      <input
+        class="estimate-price"
+        type="number"
+        min="0"
+        step="0.01"
+        value="${num(item.unit_cost)}">
+    </td>
+
+    <td class="estimate-line-total">
+      ${money(num(item.quantity)*num(item.unit_cost))}
+    </td>
+
+    <td>
+      <button
+        type="button"
+        class="action-btn"
+        title="Remove"
+        onclick="this.closest('tr').remove();calculateEstimate()">
+        🗑️
+      </button>
+    </td>
+  `;
+
+  body.appendChild(tr);
+
+  tr.querySelectorAll("input").forEach(input=>
+    input.addEventListener("input",calculateEstimate)
+  );
+
+  calculateEstimate();
+}
+
+function getEstimateItems(){
+
+  return [...document.querySelectorAll("#estimateItemsBody tr")]
+    .map(tr=>{
+
+      const description=
+        tr.querySelector(".estimate-desc")?.value.trim();
+
+      const quantity=
+        num(tr.querySelector(".estimate-qty")?.value);
+
+      const unit_cost=
+        num(tr.querySelector(".estimate-price")?.value);
+
+      return {
+        description,
+        quantity,
+        unit_cost,
+        total:quantity*unit_cost
+      };
+    })
+    .filter(x=>x.description||x.unit_cost);
+}
+
+function calculateEstimate(){
+
+  const items=getEstimateItems();
+
+  const subtotal=items.reduce(
+    (a,i)=>a+i.total,0
+  );
+
+  const vatRate=num($("estimateVat")?.value);
+  const vatAmount=subtotal*vatRate/100;
+  const total=subtotal+vatAmount;
+
+  document.querySelectorAll(
+    "#estimateItemsBody tr"
+  ).forEach(tr=>{
+
+    const qty=num(tr.querySelector(".estimate-qty")?.value);
+    const price=num(tr.querySelector(".estimate-price")?.value);
+
+    const cell=tr.querySelector(".estimate-line-total");
+
+    if(cell)
+      cell.textContent=money(qty*price);
+  });
+
+  if($("estimateSubtotal"))
+    $("estimateSubtotal").textContent=money(subtotal);
+
+  if($("estimateVatAmount"))
+    $("estimateVatAmount").textContent=money(vatAmount);
+
+  if($("estimateTotal"))
+    $("estimateTotal").textContent=money(total);
+
+  return {items,subtotal,vatRate,vatAmount,total};
+}
+
+async function saveEstimate(event){
+
+  event.preventDefault();
+
+  const calc=calculateEstimate();
+
+  const companyKeyValue=
+    $("estimateCompany").value;
+
+  let company;
+
+  if(companyKeyValue==="other"){
+
+    const name=prompt(
+      "Enter the OTHER company name:"
+    );
+
+    if(!name){
+      toast("Company name is required.","error");
+      return;
+    }
+
+    company={
+      name,
+      address:"",
+      phone:"",
+      email:""
+    };
+
+  }else{
+
+    company=COMPANIES[companyKeyValue];
+  }
+
+  const payload={
+    estimate_no:$("estimateNo").value.trim(),
+    estimate_date:$("estimateDate").value||today(),
+
+    company_name:company.name,
+    company_address:company.address,
+    company_phone:company.phone,
+    company_email:company.email,
+
+    customer:$("estimateCustomer").value.trim()||null,
+    customer_phone:$("estimateCustomerPhone").value.trim()||null,
+
+    vehicle_id:$("estimateVehicle").value||null,
+
+    registration:$("estimateRegistration").value.trim()||null,
+    chassis_no:$("estimateChassis").value.trim()||null,
+    vehicle_year:$("estimateYear").value.trim()||null,
+    vehicle_model:$("estimateModel").value.trim()||null,
+
+    subtotal:calc.subtotal,
+    vat_rate:calc.vatRate,
+    vat_amount:calc.vatAmount,
+    total_amount:calc.total,
+
+    notes:$("estimateNotes").value.trim()||null,
+
+    items:calc.items
+  };
+
+  if(!payload.estimate_no){
+    toast("Estimate number is required.","error");
+    return;
+  }
+
+  const duplicate=estimates.some(e=>
+    String(e.estimate_no).toLowerCase()===
+    payload.estimate_no.toLowerCase() &&
+    String(e.id)!==String(editingEstimateId||"")
+  );
+
+  if(duplicate){
+    toast("That estimate number already exists.","error");
+    return;
+  }
+
+  try{
+
+    let r;
+
+    if(editingEstimateId){
+
+      r=await supabase
+        .from("estimates")
+        .update(payload)
+        .eq("id",editingEstimateId)
+        .select("*")
+        .single();
+
+    }else{
+
+      r=await supabase
+        .from("estimates")
+        .insert(payload)
+        .select("*")
+        .single();
+    }
+
+    if(r.error) throw r.error;
+
+    closeModal("estimateModal");
+
+    toast(
+      editingEstimateId
+        ?"Estimate updated."
+        :"Estimate created."
+    );
+
+    await loadAllData();
+
+  }catch(error){
+
+    console.error(error);
+
+    toast(
+      error.message||
+      "Could not save estimate. Make sure the estimates table exists.",
+      "error"
+    );
+  }
+}
+
+function renderEstimates(){
+
+  ensureEstimateSection();
+
+  const body=$("estimatesTableBody");
+  if(!body) return;
+
+  const q=($("estimateSearch")?.value||"").toLowerCase();
+
+  const rows=estimates.filter(e=>{
+
+    const v=vehicles.find(x=>
+      String(x.id)===String(e.vehicle_id)
+    );
+
+    return !q||[
+      e.estimate_no,
+      e.customer,
+      e.registration,
+      e.company_name,
+      v?.registration
+    ].join(" ").toLowerCase().includes(q);
+  });
+
+  if(!rows.length){
+
+    body.innerHTML=`
+      <tr>
+        <td colspan="6"
+          style="text-align:center;padding:30px">
+          No estimates found.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  body.innerHTML=rows.map(e=>`
+
+    <tr>
+
+      <td><strong>${esc(e.estimate_no)}</strong></td>
+
+      <td>${dateText(e.estimate_date)}</td>
+
+      <td>${esc(e.registration||"")}</td>
+
+      <td>${esc(e.customer||"")}</td>
+
+      <td><strong>${money(e.total_amount)}</strong></td>
+
+      <td>
+
+        <div class="table-actions">
+
+          <button class="action-btn"
+            title="Edit"
+            onclick="openEstimateModal('${e.id}')">
+            ✏️
+          </button>
+
+          <button class="action-btn"
+            title="View"
+            onclick="viewEstimate('${e.id}')">
+            👁️
+          </button>
+
+          <button class="action-btn"
+            title="Share"
+            onclick="shareEstimate('${e.id}')">
+            📤
+          </button>
+
+          <button class="action-btn"
+            title="Delete"
+            onclick="deleteEstimate('${e.id}')">
+            🗑️
+          </button>
+
+        </div>
+
+      </td>
+
+    </tr>
+
+  `).join("");
+}
+
+function estimateHtml(e){
+
+  const c=companyFromRow(e);
+
+  const items=Array.isArray(e.items)?e.items:[];
+
+  return `
+
+    <div class="garage-company-box">
+
+      <h3>${esc(c.name)}</h3>
+
+      <div>${esc(c.address)}</div>
+
+      <div>${esc(c.phone)}</div>
+
+      <div>${esc(c.location)}</div>
+
+      ${
+        c.email
+        ? `<div>${esc(c.email)}</div>`
+        :""
+      }
+
+    </div>
+
+    <h2>REPAIR ESTIMATE / QUOTATION</h2>
+
+    <p>
+
+      <strong>Estimate No:</strong>
+      ${esc(e.estimate_no)}<br>
+
+      <strong>Date:</strong>
+      ${dateText(e.estimate_date)}<br>
+
+      <strong>Customer:</strong>
+      ${esc(e.customer||"")}<br>
+
+      <strong>Vehicle:</strong>
+      ${esc(e.registration||"")}<br>
+
+      <strong>Model:</strong>
+      ${esc(e.vehicle_model||"")}<br>
+
+      <strong>Year:</strong>
+      ${esc(e.vehicle_year||"")}
+
+    </p>
+
+    <table class="estimate-items">
+
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Qty</th>
+          <th>Unit Cost</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        ${
+          items.length
+          ? items.map(i=>`
+            <tr>
+              <td>${esc(i.description)}</td>
+              <td>${num(i.quantity)}</td>
+              <td>${money(i.unit_cost)}</td>
+              <td>${money(i.total)}</td>
+            </tr>
+          `).join("")
+          : `
+            <tr>
+              <td colspan="4">No items.</td>
+            </tr>
+          `
+        }
+
+      </tbody>
+
+      <tfoot>
+
+        <tr>
+          <th colspan="3" style="text-align:right">
+            SUBTOTAL
+          </th>
+          <th>${money(e.subtotal)}</th>
+        </tr>
+
+        <tr>
+          <th colspan="3" style="text-align:right">
+            VAT (${num(e.vat_rate)}%)
+          </th>
+          <th>${money(e.vat_amount)}</th>
+        </tr>
+
+        <tr>
+          <th colspan="3" style="text-align:right">
+            TOTAL
+          </th>
+          <th>${money(e.total_amount)}</th>
+        </tr>
+
+      </tfoot>
+
+    </table>
+
+    <p>${esc(e.notes||"")}</p>
+  `;
+}
+
+function viewEstimate(id){
+
+  const e=estimates.find(x=>String(x.id)===String(id));
+  if(!e) return;
+
+  $("previewTitle").textContent=
+    "Estimate / Quotation";
+
+  $("previewContent").innerHTML=
+    estimateHtml(e);
+
+  openModal("previewModal");
+}
+
+async function shareEstimate(id){
+
+  const e=estimates.find(x=>String(x.id)===String(id));
+  if(!e) return;
+
+  const c=companyFromRow(e);
+
+  await shareText(
+    `Estimate ${e.estimate_no}`,
+    [
+      c.name,
+      c.address,
+      c.phone,
+      c.location,
+      c.email,
+      "",
+      "REPAIR ESTIMATE / QUOTATION",
+      `Estimate No: ${e.estimate_no}`,
+      `Customer: ${e.customer||""}`,
+      `Vehicle: ${e.registration||""}`,
+      "",
+      `Subtotal: ${money(e.subtotal)}`,
+      `VAT: ${money(e.vat_amount)}`,
+      `TOTAL: ${money(e.total_amount)}`
+    ].filter(Boolean).join("\n")
+  );
+}
+
+async function deleteEstimate(id){
+
+  if(!confirm("Delete this estimate?")) return;
+
+  const r=await supabase
+    .from("estimates")
+    .delete()
+    .eq("id",id);
+
+  if(r.error){
+    toast(r.error.message,"error");
+    return;
+  }
+
+  toast("Estimate deleted.");
+  await loadAllData();
+}
+
 
 /* =========================================================
    PRINT
    ========================================================= */
 
-function printHTML(
-  title,
-  html
-) {
+function printHtml(title,html){
 
-  const w =
-    window.open(
-      "",
-      "_blank"
-    );
+  const w=window.open("","_blank");
 
-  if (!w) {
+  if(!w){
 
     toast(
-      "Please allow pop-ups to print.",
-      "error"
+      "Pop-up blocked. Allow pop-ups to print.",
+      "warning"
     );
 
     return;
   }
 
   w.document.write(`
-
-    <!DOCTYPE html>
-
+    <!doctype html>
     <html>
-
     <head>
 
-      <title>
-        ${esc(title)}
-      </title>
+      <title>${esc(title)}</title>
 
       <style>
 
-        body {
-          font-family:
-            Arial,
-            sans-serif;
-
-          padding:30px;
-
-          color:#111;
+        body{
+          font-family:Arial,sans-serif;
+          padding:25px;
+          color:#111827;
         }
 
-        h1,
-        h2,
-        h3 {
-          margin-top:0;
+        h1,h2,h3{
+          color:#0f172a;
         }
 
-        table {
+        table{
           width:100%;
-          border-collapse:
-            collapse;
-          margin-top:20px;
+          border-collapse:collapse;
+          margin-top:15px;
         }
 
-        th,
-        td {
-          border:
-            1px solid #ccc;
+        th,td{
+          border:1px solid #cbd5e1;
           padding:8px;
           text-align:left;
         }
 
-        th {
-          background:
-            #f1f5f9;
+        th{
+          background:#f1f5f9;
         }
 
-        button,
-        .table-actions {
-          display:none !important;
+        .garage-company-box{
+          border-bottom:2px solid #0f172a;
+          padding-bottom:12px;
+          margin-bottom:20px;
+        }
+
+        @media print{
+          body{padding:10px}
         }
 
       </style>
@@ -5415,845 +3622,286 @@ function printHTML(
 
       ${html}
 
+      <script>
+        window.onload=function(){
+          setTimeout(function(){
+            window.print();
+          },300);
+        };
+      <\/script>
+
     </body>
-
     </html>
-
   `);
 
   w.document.close();
-
-  setTimeout(
-    () => {
-      w.focus();
-      w.print();
-    },
-    300
-  );
 }
 
-function printTableBody(
-  bodyId,
-  title
-) {
-
-  const body =
-    $(bodyId);
-
-  if (!body) {
-
-    toast(
-      "Nothing to print.",
-      "error"
-    );
-
-    return;
-  }
-
-  const table =
-    body.closest(
-      "table"
-    );
-
-  if (!table) {
-
-    toast(
-      "Nothing to print.",
-      "error"
-    );
-
-    return;
-  }
-
-  printHTML(
-    title,
-    table.outerHTML
-  );
-}
-
-function printVehicles() {
-
-  renderVehicles();
-
-  printTableBody(
-    "vehiclesTableBody",
-    "Vehicles"
-  );
-}
-
-function printExpenses() {
-
-  renderExpenses();
-
-  printTableBody(
-    "expensesTableBody",
-    "Vehicle Expenses"
-  );
-}
-
-function printPettyCash() {
-
-  renderPettyCash();
-
-  printTableBody(
-    "pettyTableBody",
-    "Petty Cash"
-  );
-}
-
-function printRequisitions() {
-
-  renderRequisitions();
-
-  printTableBody(
-    "requisitionsTableBody",
-    "Requisitions"
-  );
-}
-
-function printInvoices() {
-
-  renderInvoices();
-
-  printTableBody(
-    "invoicesTableBody",
-    "Invoices"
-  );
-}
-
-function printGatePasses() {
-
-  renderGatePasses();
-
-  printTableBody(
-    "gatePassesTableBody",
-    "Gate Passes"
-  );
-}
 
 /* =========================================================
-   NAVIGATION
+   PRINT WRAPPERS
    ========================================================= */
 
-function showSection(
-  sectionId
-) {
+function printPettyCash(){
+
+  printHtml(
+    "Petty Cash Report",
+    `<h2>PETTY CASH REPORT</h2>
+     <table>${$("pettyTableBody")?.closest("table")?.innerHTML||""}</table>`
+  );
+}
+
+function printRequisitions(){
+
+  printHtml(
+    "Requisitions",
+    `<h2>REQUISITIONS</h2>
+     <table>${$("requisitionsTableBody")?.closest("table")?.innerHTML||""}</table>`
+  );
+}
+
+function printInvoices(){
+
+  printHtml(
+    "Invoices",
+    `<h2>INVOICES</h2>
+     <table>${$("invoicesTableBody")?.closest("table")?.innerHTML||""}</table>`
+  );
+}
+
+function printGatePasses(){
+
+  printHtml(
+    "Gate Passes",
+    `<h2>GATE PASSES</h2>
+     <table>${$("gatePassesTableBody")?.closest("table")?.innerHTML||""}</table>`
+  );
+}
+
+function printVehicles(){
+
+  printHtml(
+    "Vehicles",
+    `<h2>VEHICLES</h2>
+     <table>${$("vehiclesTableBody")?.closest("table")?.innerHTML||""}</table>`
+  );
+}
+
+
+/* =========================================================
+   SEARCH EVENTS
+   ========================================================= */
+
+function bind(id,event,fn){
+
+  const x=$(id);
+
+  if(x)
+    x.addEventListener(event,fn);
+}
+
+function bindEvents(){
+
+  bind("vehicleSearch","input",renderVehicles);
+  bind("vehicleStatusFilter","change",renderVehicles);
+
+  bind("expenseSearch","input",renderExpenses);
+  bind("expenseCategoryFilter","change",renderExpenses);
+
+  bind("pettySearch","input",renderPettyCash);
+  bind("pettyCategoryFilter","change",renderPettyCash);
+
+  bind("reqSearch","input",renderRequisitions);
+  bind("reqStatusFilter","change",renderRequisitions);
+
+  bind("invoiceSearch","input",renderInvoices);
+  bind("invoiceStatusFilter","change",renderInvoices);
+
+  bind("gateSearch","input",renderGatePasses);
+  bind("gateStatusFilter","change",renderGatePasses);
+
+  $("vehicleForm")?.addEventListener(
+    "submit",saveVehicle
+  );
+
+  $("expenseForm")?.addEventListener(
+    "submit",saveExpense
+  );
+
+  $("pettyForm")?.addEventListener(
+    "submit",savePetty
+  );
+
+  $("reqForm")?.addEventListener(
+    "submit",saveReq
+  );
+
+  $("invoiceForm")?.addEventListener(
+    "submit",saveInvoice
+  );
+
+  $("gatePassForm")?.addEventListener(
+    "submit",saveGatePass
+  );
 
   /*
-    Hide every section first.
-    This is what prevents
-    Dashboard + Estimates from
-    occupying the same workspace.
-  */
+   * Storage Days updates immediately when
+   * Date In / Date Out changes.
+   */
+  ["vehicleDateIn","vehicleDateOut"].forEach(id=>{
 
-  document
-    .querySelectorAll(
-      ".section,.app-section"
-    )
-    .forEach(section => {
+    bind(id,"change",()=>{
 
-      section.classList.remove(
-        "active"
-      );
+      if($("vehicleStorageDays")){
 
-      section.style.display =
-        "none";
+        $("vehicleStorageDays").value=
+          storageDays({
+            date_in:$("vehicleDateIn").value,
+            date_out:$("vehicleDateOut").value
+          });
+      }
     });
-
-  if (
-    sectionId ===
-    "estimates"
-  ) {
-
-    const section =
-      ensureEstimateSection();
-
-    section.style.display =
-      "block";
-
-    section.classList.add(
-      "active"
-    );
-
-    renderEstimates();
-
-  } else {
-
-    const target =
-      $(sectionId);
-
-    if (target) {
-
-      target.style.display =
-        "";
-
-      target.classList.add(
-        "active"
-      );
-    }
-  }
-
-  /*
-    Sidebar active state.
-  */
-
-  document
-    .querySelectorAll(
-      "[data-section]"
-    )
-    .forEach(el => {
-
-      el.classList.toggle(
-        "active",
-        el.dataset.section ===
-        sectionId
-      );
-
-    });
-
-  switch(sectionId) {
-
-    case "dashboard":
-      renderDashboard();
-      break;
-
-    case "vehicles":
-      renderVehicles();
-      break;
-
-    case "expenses":
-      renderExpenses();
-      break;
-
-    case "petty-cash":
-    case "pettyCash":
-      renderPettyCash();
-      break;
-
-    case "requisitions":
-      renderRequisitions();
-      break;
-
-    case "invoices":
-      renderInvoices();
-      break;
-
-    case "gate-passes":
-    case "gatePasses":
-      renderGatePasses();
-      break;
-
-    case "estimates":
-      renderEstimates();
-      break;
-  }
-
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
   });
 }
 
-/* =========================================================
-   DASHBOARD CLICKABLE CARDS
-   ========================================================= */
-
-function setupDashboardCards() {
-
-  const map = {
-
-    dashVehicles:
-      "vehicles",
-
-    dashRepair:
-      "vehicles",
-
-    dashOutstanding:
-      "vehicles",
-
-    dashReq:
-      "requisitions",
-
-    dashInvoices:
-      "invoices",
-
-    dashGatePasses:
-      "gate-passes",
-
-    dashBilled:
-      "vehicles",
-
-    dashPaid:
-      "vehicles",
-
-    dashExpenses:
-      "expenses",
-
-    dashPetty:
-      "petty-cash"
-
-  };
-
-  Object.entries(map)
-    .forEach(
-      ([id,section]) => {
-
-        const el =
-          $(id);
-
-        if (!el)
-          return;
-
-        const card =
-          el.closest(
-            ".kpi-card"
-          ) ||
-          el.closest(
-            ".stat-card"
-          ) ||
-          el.closest(
-            ".dashboard-card"
-          ) ||
-          el.parentElement;
-
-        if (!card)
-          return;
-
-        if (
-          card.dataset
-            .garageClickBound ===
-          "1"
-        ) {
-          return;
-        }
-
-        card.dataset
-          .garageClickBound =
-          "1";
-
-        card.style.cursor =
-          "pointer";
-
-        card.addEventListener(
-          "click",
-          () =>
-            showSection(section)
-        );
-      }
-    );
-}
 
 /* =========================================================
-   SEARCH
+   GLOBAL FUNCTIONS FOR EXISTING HTML
    ========================================================= */
 
-function setupSearches() {
+Object.assign(window,{
 
-  const ids = [
+  openVehicleModal,
+  saveVehicle,
+  deleteVehicle,
+  viewVehicle,
+  shareVehicle,
+  printVehicle,
 
-    "vehicleSearch",
-    "vehicleStatusFilter",
+  openExpenseModal,
+  saveExpense,
+  deleteExpense,
+  viewExpense,
+  shareExpense,
+  printExpenses,
 
-    "expenseSearch",
-    "expenseCategoryFilter",
+  openPettyModal,
+  savePetty,
+  deletePetty,
+  viewPetty,
+  sharePetty,
+  printPettyCash,
 
-    "pettySearch",
-    "pettyCategoryFilter",
+  openReqModal,
+  saveReq,
+  deleteReq,
+  viewReq,
+  shareReq,
+  printRequisitions,
 
-    "reqSearch",
-    "reqStatusFilter",
+  openInvoiceModal,
+  saveInvoice,
+  deleteInvoice,
+  viewInvoice,
+  shareInvoice,
+  printInvoices,
 
-    "invoiceSearch",
-    "invoiceStatusFilter",
+  openGatePassModal,
+  saveGatePass,
+  deleteGatePass,
+  viewGatePass,
+  shareGatePass,
+  printGatePasses,
 
-    "gateSearch",
-    "gateStatusFilter"
+  openEstimateModal,
+  saveEstimate,
+  viewEstimate,
+  shareEstimate,
+  deleteEstimate,
+  addEstimateItem,
 
-  ];
+  printVehicles,
 
-  ids.forEach(id => {
+  printVehicleExpensePreview,
+  printVehicleExpenses:printVehicleExpensePreview,
 
-    const el =
-      $(id);
+  closeModal,
+  showSection
 
-    if (!el)
-      return;
+});
 
-    if (
-      el.dataset
-        .garageSearchBound ===
-      "1"
-    ) {
-      return;
-    }
-
-    el.dataset
-      .garageSearchBound =
-      "1";
-
-    el.addEventListener(
-      "input",
-      () =>
-        refreshSearch(id)
-    );
-
-    el.addEventListener(
-      "change",
-      () =>
-        refreshSearch(id)
-    );
-
-  });
-}
-
-function refreshSearch(id) {
-
-  if (
-    id ===
-    "expenseSearch" ||
-    id ===
-    "expenseCategoryFilter"
-  ) {
-
-    renderExpenses();
-
-    return;
-  }
-
-  if (
-    id.startsWith(
-      "vehicle"
-    )
-  ) {
-
-    renderVehicles();
-
-    return;
-  }
-
-  if (
-    id.startsWith(
-      "petty"
-    )
-  ) {
-
-    renderPettyCash();
-
-    return;
-  }
-
-  if (
-    id.startsWith(
-      "req"
-    )
-  ) {
-
-    renderRequisitions();
-
-    return;
-  }
-
-  if (
-    id.startsWith(
-      "invoice"
-    )
-  ) {
-
-    renderInvoices();
-
-    return;
-  }
-
-  if (
-    id.startsWith(
-      "gate"
-    )
-  ) {
-
-    renderGatePasses();
-
-    return;
-  }
-}
 
 /* =========================================================
-   FORM LISTENERS
+   INITIALIZATION
    ========================================================= */
 
-function setupFormListeners() {
+async function initGarage(){
 
-  [
-    "reqQuantity",
-    "reqUnitCost"
-  ].forEach(id => {
+  if(window.__garageInitialized) return;
+  window.__garageInitialized=true;
 
-    $(id)?.addEventListener(
-      "input",
-      calculateReqTotal
-    );
+  injectStyles();
 
-  });
+  setupEstimateNavigation();
 
-  [
-    "invoiceLabour",
-    "invoiceParts",
-    "invoiceOther",
-    "invoicePaid"
-  ].forEach(id => {
+  ensureEstimateSection();
 
-    $(id)?.addEventListener(
-      "input",
-      calculateInvoice
-    );
+  bindEvents();
 
-  });
+  setupDashboardCards();
 
-  [
-    "vehicleDateIn",
-    "vehicleDateOut"
-  ].forEach(id => {
+  const logged=
+    sessionStorage.getItem("garageLoggedIn");
 
-    $(id)?.addEventListener(
-      "change",
-      () => {
+  if(logged==="true"){
 
-        const fakeVehicle = {
+    $("loginPage")?.style &&
+      ($("loginPage").style.display="none");
 
-          date_in:
-            $("vehicleDateIn")
-              ?.value,
-
-          date_out:
-            $("vehicleDateOut")
-              ?.value
-
-        };
-
-        if (
-          $("vehicleStorageDays")
-        ) {
-
-          $("vehicleStorageDays")
-            .value =
-              storageDays(
-                fakeVehicle
-              );
-        }
-
-      }
-    );
-
-  });
-
-  $("invoiceVehicle")
-    ?.addEventListener(
-      "change",
-      () => {
-
-        const v =
-          vehicleById(
-            $("invoiceVehicle")
-              .value
-          );
-
-        if (
-          v &&
-          $("invoiceCustomer")
-        ) {
-
-          $("invoiceCustomer")
-            .value =
-              v.customer || "";
-        }
-      }
-    );
-
-  $("gateVehicle")
-    ?.addEventListener(
-      "change",
-      () => {
-
-        const v =
-          vehicleById(
-            $("gateVehicle")
-              .value
-          );
-
-        if (!v) return;
-
-        if (
-          $("gateVehicleRegistration")
-        ) {
-
-          $("gateVehicleRegistration")
-            .value =
-              v.registration || "";
-        }
-
-        if ($("gateCustomer")) {
-
-          $("gateCustomer")
-            .value =
-              v.customer || "";
-        }
-
-        if ($("gateReleasedTo")) {
-
-          $("gateReleasedTo")
-            .value =
-              v.released_to || "";
-        }
-
-        if (
-          $("gateReleasedContact")
-        ) {
-
-          $("gateReleasedContact")
-            .value =
-              v.released_contact || "";
-        }
-
-      }
-    );
-}
-
-/* =========================================================
-   RENDER ALL
-   ========================================================= */
-
-function renderAll() {
-
-  renderDashboard();
-
-  renderVehicles();
-
-  renderExpenses();
-
-  renderPettyCash();
-
-  renderRequisitions();
-
-  renderInvoices();
-
-  renderGatePasses();
-
-  /*
-    Estimates is rendered only
-    after its page exists.
-  */
-
-  if ($("estimates"))
-    renderEstimates();
-}
-
-/* =========================================================
-   GLOBAL FUNCTIONS
-   ========================================================= */
-
-Object.assign(
-  window,
-  {
-
-    supabase,
-
-    loadAllData,
-    renderAll,
-
-    showSection,
-
-    openModal,
-    closeModal,
-    closeAllModals,
-
-    /* Vehicles */
-
-    openVehicleModal,
-    saveVehicle,
-    editVehicle,
-    deleteVehicle,
-    viewVehicle,
-    shareVehicle,
-
-    /* Vehicle Expenses */
-
-    viewVehicleExpenses,
-    shareVehicleExpenses,
-    printVehicleExpensePreview,
-    vehicleExpenseTotal,
-
-    /* Expenses */
-
-    openExpenseModal,
-    saveExpense,
-    editExpense,
-    deleteExpense,
-    viewExpense,
-    shareExpense,
-
-    /* Petty */
-
-    openPettyModal,
-    savePetty,
-    editPetty,
-    deletePetty,
-    viewPetty,
-    sharePetty,
-
-    /* Requisitions */
-
-    openReqModal,
-    saveReq,
-    editReq,
-    deleteReq,
-    viewReq,
-    shareReq,
-    calculateReqTotal,
-
-    /* Invoices */
-
-    openInvoiceModal,
-    saveInvoice,
-    editInvoice,
-    deleteInvoice,
-    viewInvoice,
-    shareInvoice,
-    calculateInvoice,
-
-    /* Gate Passes */
-
-    openGatePassModal,
-    saveGatePass,
-    editGatePass,
-    deleteGatePass,
-    viewGatePass,
-    shareGatePass,
-
-    /* Estimates */
-
-    openEstimateModal,
-    saveEstimate,
-    editEstimate,
-    deleteEstimate,
-    viewEstimate,
-    shareEstimate,
-    calculateEstimate,
-
-    /* Print */
-
-    printVehicles,
-    printExpenses,
-    printPettyCash,
-    printRequisitions,
-    printInvoices,
-    printGatePasses,
-    printCurrentPreview
-
+    if($("app"))
+      $("app").style.display="block";
   }
-);
 
-/* =========================================================
-   START APPLICATION
-   ========================================================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  async () => {
-
-    injectStyles();
-
-    setupSearches();
-
-    setupFormListeners();
-
-    /*
-      Adds:
-      📋 Estimates / Quotations
-      to the existing sidebar.
-    */
-
-    ensureEstimateNavigation();
-
-    /*
-      Default dates.
-    */
-
-    [
-      "vehicleDateIn",
-      "expenseDate",
-      "pettyDate",
-      "reqDate",
-      "invoiceDate",
-      "gatePassDate"
-    ].forEach(id => {
-
-      const el = $(id);
-
-      if (
-        el &&
-        !el.value
-      ) {
-
-        el.value =
-          today();
-      }
-
-    });
-
-    /*
-      Load Supabase.
-    */
+  try{
 
     await loadAllData();
 
-    /*
-      Dashboard cards.
-    */
+  }catch(error){
 
-    setupDashboardCards();
-
-    /*
-      ALWAYS start on Dashboard.
-      Estimates remains hidden until
-      its sidebar button is clicked.
-    */
-
-    document
-      .querySelectorAll(
-        ".section,.app-section"
-      )
-      .forEach(section => {
-
-        if (
-          section.id !==
-          "dashboard"
-        ) {
-
-          section.style.display =
-            "none";
-
-          section.classList.remove(
-            "active"
-          );
-        }
-
-      });
-
-    const dashboard =
-      $("dashboard");
-
-    if (dashboard) {
-
-      dashboard.style.display =
-        "";
-
-      dashboard.classList.add(
-        "active"
-      );
-    }
-
-    console.log(
-      "Garage Operations Pro ready."
-    );
-
+    console.error(error);
+    toast("Garage data could not be loaded.","error");
   }
-);
+
+  displayUser();
+
+  showSection("dashboard");
+}
+
+function displayUser(){
+
+  const user=
+    sessionStorage.getItem("garageUser")||
+    sessionStorage.getItem("username")||
+    "josephine";
+
+  const name=
+    user.charAt(0).toUpperCase()+user.slice(1);
+
+  if($("welcomeUser"))
+    $("welcomeUser").textContent=name;
+
+  if($("sidebarUser"))
+    $("sidebarUser").textContent=name;
+}
+
+if(document.readyState==="loading"){
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    initGarage
+  );
+
+}else{
+
+  initGarage();
+}
