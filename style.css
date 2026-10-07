@@ -91,4 +91,45 @@
     min-width:0 !important;
     font-size:13px !important;
   }
+} 
+
+/* =========================================================
+   ADD VEHICLE - PHONE DATE ROW
+   Keep Date In + Date Out side by side on phone
+   ========================================================= */
+
+#vehicleModal .form-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
 }
+
+#vehicleModal #vehicleDateIn,
+#vehicleModal #vehicleDateOut{
+  width:100% !important;
+  min-width:0 !important;
+}
+
+#vehicleModal #vehicleDateIn{
+  grid-column:1 !important;
+}
+
+#vehicleModal #vehicleDateOut{
+  grid-column:2 !important;
+}
+
+/* Phone */
+@media(max-width:600px){
+  #vehicleModal .form-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+
+  #vehicleModal .form-group{
+    min-width:0 !important;
+  }
+
+  #vehicleModal input[type="date"]{
+    width:100% !important;
+    min-width:0 !important;
+    font-size:13px !important;
+  }
+}
+
