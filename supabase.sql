@@ -1,7 +1,12 @@
 -- ==========================================================
 -- GARAGE OPERATIONS PRO
--- COMPLETE / CORRECTED SUPABASE DATABASE
+-- COMPLETE CORRECTED SUPABASE DATABASE
 -- ==========================================================
+-- IMPORTANT:
+-- This script is designed to preserve existing records.
+-- It uses IF NOT EXISTS when creating tables/columns.
+-- ==========================================================
+
 
 -- ==========================================================
 -- 1. VEHICLES
@@ -20,10 +25,11 @@ create table if not exists public.vehicles (
     description text,
     billed numeric(12,2) default 0,
     paid numeric(12,2) default 0,
+    model text,
+    model_year text,
+    color text,
     created_at timestamptz default now()
 );
-
--- Add missing columns if the vehicles table already exists
 
 alter table public.vehicles
 add column if not exists date_out date;
@@ -44,6 +50,15 @@ alter table public.vehicles
 add column if not exists paid numeric(12,2) default 0;
 
 alter table public.vehicles
+add column if not exists model text;
+
+alter table public.vehicles
+add column if not exists model_year text;
+
+alter table public.vehicles
+add column if not exists color text;
+
+alter table public.vehicles
 add column if not exists created_at timestamptz default now();
 
 
@@ -62,7 +77,22 @@ create table if not exists public.expenses (
 );
 
 alter table public.expenses
-add column if not exists category text not null default 'Parts';
+add column if not exists vehicle_id uuid;
+
+alter table public.expenses
+add column if not exists expense_date date
+default current_date;
+
+alter table public.expenses
+add column if not exists description text;
+
+alter table public.expenses
+add column if not exists category text
+not null default 'Parts';
+
+alter table public.expenses
+add column if not exists amount numeric(12,2)
+not null default 0;
 
 alter table public.expenses
 add column if not exists created_at timestamptz default now();
@@ -84,10 +114,21 @@ create table if not exists public.petty_cash (
 );
 
 alter table public.petty_cash
+add column if not exists cash_date date
+default current_date;
+
+alter table public.petty_cash
+add column if not exists description text;
+
+alter table public.petty_cash
 add column if not exists paid_to text;
 
 alter table public.petty_cash
 add column if not exists category text;
+
+alter table public.petty_cash
+add column if not exists amount numeric(12,2)
+not null default 0;
 
 alter table public.petty_cash
 add column if not exists notes text;
@@ -116,9 +157,40 @@ create table if not exists public.requisitions (
     created_at timestamptz default now()
 );
 
--- IMPORTANT:
--- The application uses expense_type for
--- Parts / Materials / Labour.
+alter table public.requisitions
+add column if not exists req_no text;
+
+alter table public.requisitions
+add column if not exists req_date date
+default current_date;
+
+alter table public.requisitions
+add column if not exists requested_by text;
+
+alter table public.requisitions
+add column if not exists vehicle_id uuid;
+
+alter table public.requisitions
+add column if not exists item_description text;
+
+alter table public.requisitions
+add column if not exists quantity numeric(12,2)
+not null default 1;
+
+alter table public.requisitions
+add column if not exists unit_cost numeric(12,2)
+not null default 0;
+
+alter table public.requisitions
+add column if not exists total_amount numeric(12,2)
+not null default 0;
+
+alter table public.requisitions
+add column if not exists status text
+default 'Pending';
+
+alter table public.requisitions
+add column if not exists notes text;
 
 alter table public.requisitions
 add column if not exists expense_type text
@@ -129,128 +201,66 @@ add column if not exists created_at timestamptz default now();
 
 
 -- ==========================================================
--- 5. BASIC VALIDATION
+-- 5. INVOICES
 -- ==========================================================
 
--- Vehicle expense categories:
--- Parts
--- Materials
--- Labour
+create table if not exists public.invoices (
+    id uuid primary key default gen_random_uuid(),
+    invoice_no text unique not null,
+    invoice_date date not null default current_date,
 
--- Requisition expense types:
--- Parts
--- Materials
--- Labour
+    company_name text default 'CRYSTAL MOTORS (K) LTD',
+    company_address text,
+    company_phone text,
+    company_email text,
 
+    vehicle_id uuid references public.vehicles(id) on delete set null,
 
--- ==========================================================
--- 6. ENABLE ROW LEVEL SECURITY
--- ==========================================================
+    customer text,
+    job_description text,
 
-alter table public.vehicles enable row level security;
-alter table public.expenses enable row level security;
-alter table public.petty_cash enable row level security;
-alter table public.requisitions enable row level security;
+    labour numeric(12,2) default 0,
+    parts numeric(12,2) default 0,
+    other numeric(12,2) default 0,
 
+    subtotal numeric(12,2) default 0,
+    paid numeric(12,2) default 0,
+    balance numeric(12,2) default 0,
 
--- ==========================================================
--- 7. REMOVE OLD POLICIES
--- ==========================================================
+    status text default 'Pending',
+    notes text,
 
-drop policy if exists "Allow all vehicle access"
-on public.vehicles;
+    created_at timestamptz default now()
+);
 
-drop policy if exists "Allow all expense access"
-on public.expenses;
+alter table public.invoices
+add column if not exists invoice_no text;
 
-drop policy if exists "Allow all petty cash access"
-on public.petty_cash;
+alter table public.invoices
+add column if not exists invoice_date date
+default current_date;
 
-drop policy if exists "Allow all requisition access"
-on public.requisitions;
+alter table public.invoices
+add column if not exists company_name text
+default 'CRYSTAL MOTORS (K) LTD';
 
-drop policy if exists "Enable all vehicle access"
-on public.vehicles;
+alter table public.invoices
+add column if not exists company_address text;
 
-drop policy if exists "Enable all expense access"
-on public.expenses;
+alter table public.invoices
+add column if not exists company_phone text;
 
-drop policy if exists "Enable all petty cash access"
-on public.petty_cash;
+alter table public.invoices
+add column if not exists company_email text;
 
-drop policy if exists "Enable all requisition access"
-on public.requisitions;
+alter table public.invoices
+add column if not exists vehicle_id uuid;
 
+alter table public.invoices
+add column if not exists customer text;
 
--- ==========================================================
--- 8. VEHICLES POLICY
--- ==========================================================
+alter table public.invoices
+add column if not exists job_description text;
 
-create policy "Garage vehicles access"
-on public.vehicles
-for all
-to anon, authenticated
-using (true)
-with check (true);
-
-
--- ==========================================================
--- 9. EXPENSES POLICY
--- ==========================================================
-
-create policy "Garage expenses access"
-on public.expenses
-for all
-to anon, authenticated
-using (true)
-with check (true);
-
-
--- ==========================================================
--- 10. PETTY CASH POLICY
--- ==========================================================
-
-create policy "Garage petty cash access"
-on public.petty_cash
-for all
-to anon, authenticated
-using (true)
-with check (true);
-
-
--- ==========================================================
--- 11. REQUISITIONS POLICY
--- ==========================================================
-
-create policy "Garage requisitions access"
-on public.requisitions
-for all
-to anon, authenticated
-using (true)
-with check (true);
-
-
--- ==========================================================
--- 12. FINISHED
--- ==========================================================
-
--- Tables:
--- vehicles
--- expenses
--- petty_cash
--- requisitions
-
--- Vehicle expenses:
--- Parts / Materials / Labour
-
--- Requisitions:
--- Parts / Materials / Labour
-
--- Vehicle storage/release:
--- date_out
--- released_to
--- released_contact
-
--- Vehicle billing:
--- billed
--- paid
+alter table public.invoices
+add column if not exists labour numeric(12,
