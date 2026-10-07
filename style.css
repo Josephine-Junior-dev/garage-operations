@@ -36,4 +36,20 @@
     min-width:32px !important;
     height:32px !important;
   }
+} 
+
+/* Add Vehicle - keep Date In and Date Out side by side */
+#vehicleModal .form-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
 }
+
+#vehicleModal .form-grid > div{
+  min-width:0 !important;
+}
+
+@media(max-width:600px){
+  #vehicleModal .form-grid{
+    grid-template-columns:1fr !important;
+  }
+}
+
