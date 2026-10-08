@@ -4,7 +4,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
    GARAGE OPERATIONS PRO
    COMPLETE APP.JS
    ONLY REQUESTED UPDATES:
-   1. CRUD ACTION ICONS HORIZONTAL
+   1. CRUD ACTIONS HORIZONTAL
    2. SHARE SENDS ACTUAL DATA
 ========================================================= */
 
@@ -12,7 +12,7 @@ const SUPABASE_URL =
   "https://ptluwoeogfkqavhspdjj.supabase.co";
 
 const SUPABASE_KEY =
-  "sb_publishable_wDsWINauH0jX9rezsEwczw_RovmR6Nv";
+  "sb_publishable_wDsWINauH0jX9rezsEwczw_RovrM6Nv";
 
 const supabase =
   createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -97,7 +97,6 @@ function money(v) {
       }
     )
   );
-
 }
 
 
@@ -109,7 +108,6 @@ function esc(v) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
-
 }
 
 
@@ -118,7 +116,6 @@ function today() {
   return new Date()
     .toISOString()
     .slice(0, 10);
-
 }
 
 
@@ -127,14 +124,14 @@ function fmtDate(v) {
   if (!v) return "";
 
   return String(v).slice(0, 10);
-
 }
 
 
 function storageDays(v) {
 
-  if (!v || !v.date_in)
+  if (!v || !v.date_in) {
     return 0;
+  }
 
   const start =
     new Date(
@@ -150,11 +147,11 @@ function storageDays(v) {
 
   const days =
     Math.ceil(
-      (end - start) / 86400000
+      (end - start) /
+      86400000
     );
 
   return Math.max(0, days);
-
 }
 
 
@@ -165,7 +162,6 @@ function vehicleById(id) {
       String(v.id) ===
       String(id)
   );
-
 }
 
 
@@ -182,7 +178,6 @@ function vehicleByRegistration(reg) {
         .trim()
         .toLowerCase() === x
   );
-
 }
 
 
@@ -194,7 +189,6 @@ function vehicleName(id) {
   return v
     ? v.registration
     : "General";
-
 }
 
 
@@ -203,7 +197,8 @@ function toast(
   good = true
 ) {
 
-  const t = $("toast");
+  const t =
+    $("toast");
 
   if (!t) return;
 
@@ -230,7 +225,6 @@ function toast(
       },
       3500
     );
-
 }
 
 
@@ -239,23 +233,18 @@ function statusClass(status) {
   return String(status || "")
     .toLowerCase()
     .replace(/\s+/g, "-");
-
 }
 
 
 /* =========================================================
-   HORIZONTAL CRUD ACTION ICONS
-   ONLY UI CHANGE
+   ACTION BUTTONS — HORIZONTAL
 ========================================================= */
 
-function makeActionsHorizontal() {
-
-  const styleId =
-    "garage-horizontal-actions";
+function forceHorizontalActions() {
 
   if (
     document.getElementById(
-      styleId
+      "garageHorizontalActionsCSS"
     )
   ) {
     return;
@@ -267,7 +256,7 @@ function makeActionsHorizontal() {
     );
 
   style.id =
-    styleId;
+    "garageHorizontalActionsCSS";
 
   style.textContent = `
 
@@ -276,29 +265,19 @@ function makeActionsHorizontal() {
       flex-direction: row !important;
       align-items: center !important;
       justify-content: flex-start !important;
-      flex-wrap: nowrap !important;
       gap: 6px !important;
+      flex-wrap: nowrap !important;
       white-space: nowrap !important;
     }
 
     .table-actions .action-btn {
       display: inline-flex !important;
       flex: 0 0 auto !important;
+      width: auto !important;
+      min-width: max-content !important;
+      white-space: nowrap !important;
       align-items: center !important;
       justify-content: center !important;
-      width: auto !important;
-      min-width: 38px !important;
-      height: 36px !important;
-      padding: 7px 10px !important;
-      margin: 0 !important;
-      white-space: nowrap !important;
-      border-radius: 7px !important;
-      cursor: pointer !important;
-    }
-
-    .table-actions .action-icon {
-      font-size: 17px;
-      line-height: 1;
     }
 
     @media (max-width: 700px) {
@@ -307,10 +286,11 @@ function makeActionsHorizontal() {
         overflow-x: auto !important;
         max-width: 100% !important;
         -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: thin !important;
       }
 
       .table-actions .action-btn {
-        flex: 0 0 auto !important;
+        flex-shrink: 0 !important;
       }
 
     }
@@ -320,7 +300,6 @@ function makeActionsHorizontal() {
   document.head.appendChild(
     style
   );
-
 }
 
 
@@ -349,7 +328,6 @@ async function loadTable(
             ascending: false
           }
         );
-
     }
 
     const {
@@ -370,7 +348,6 @@ async function loadTable(
       );
 
       return [];
-
     }
 
     return data || [];
@@ -388,9 +365,7 @@ async function loadTable(
     );
 
     return [];
-
   }
-
 }
 
 
@@ -426,7 +401,6 @@ async function loadAllData() {
         "invoice_date"
       ),
 
-      /* KEEPING YOUR ORIGINAL GATE PASS LOADER */
       loadTable(
         "gate_passes",
         "gate_pass_date"
@@ -502,7 +476,6 @@ async function loadAllData() {
         gatePasses.length
     }
   );
-
 }
 
 
@@ -517,7 +490,8 @@ function setLoadingState() {
     "gatePassesTableBody"
   ].forEach(id => {
 
-    const el = $(id);
+    const el =
+      $(id);
 
     if (el) {
 
@@ -535,11 +509,9 @@ function setLoadingState() {
           </td>
         </tr>
       `;
-
     }
 
   });
-
 }
 
 
@@ -552,15 +524,22 @@ function refreshAll() {
   populateVehicleSelects();
 
   renderVehicles();
+
   renderExpenses();
+
   renderPettyCash();
+
   renderRequisitions();
+
   renderInvoices();
+
   renderGatePasses();
+
   renderDashboard();
 
   bindDynamicCalculations();
 
+  forceHorizontalActions();
 }
 
 
@@ -589,7 +568,6 @@ function(
 
       s.style.display =
         "none";
-
     });
 
 
@@ -604,7 +582,6 @@ function(
 
     target.style.display =
       "block";
-
   }
 
 
@@ -638,7 +615,6 @@ function(
     button.classList.add(
       "active"
     );
-
   }
 
 
@@ -683,7 +659,6 @@ function(
     "gatePasses"
   )
     renderGatePasses();
-
 };
 
 
@@ -694,31 +669,29 @@ function(
 window.closeModal =
 function(id) {
 
-  const m = $(id);
+  const m =
+    $(id);
 
   if (m) {
 
     m.classList.remove(
       "show"
     );
-
   }
-
 };
 
 
 function openModal(id) {
 
-  const m = $(id);
+  const m =
+    $(id);
 
   if (m) {
 
     m.classList.add(
       "show"
     );
-
   }
-
 }
 
 
@@ -741,8 +714,7 @@ function populateVehicleSelects() {
   selects.forEach(
     select => {
 
-      if (!select)
-        return;
+      if (!select) return;
 
 
       if (
@@ -753,7 +725,6 @@ function populateVehicleSelects() {
         setupExpenseVehicleSearch();
 
         return;
-
       }
 
 
@@ -762,9 +733,11 @@ function populateVehicleSelects() {
 
 
       let html =
-        `<option value="">
+        `
+        <option value="">
           -- General / Select Vehicle --
-        </option>`;
+        </option>
+        `;
 
 
       vehicles
@@ -787,12 +760,13 @@ function populateVehicleSelects() {
               ${
                 v.customer
                   ? " — " +
-                    esc(v.customer)
+                    esc(
+                      v.customer
+                    )
                   : ""
               }
             </option>
           `;
-
         });
 
 
@@ -811,12 +785,10 @@ function populateVehicleSelects() {
 
         select.value =
           old;
-
       }
 
     }
   );
-
 }
 
 
@@ -829,8 +801,7 @@ function setupExpenseVehicleSearch() {
   const select =
     $("expenseVehicle");
 
-  if (!select)
-    return;
+  if (!select) return;
 
 
   let search =
@@ -897,14 +868,12 @@ function setupExpenseVehicleSearch() {
 
       }
     );
-
   }
 
 
   populateExpenseVehicleOptions(
     search.value
   );
-
 }
 
 
@@ -916,8 +885,7 @@ function populateExpenseVehicleOptions(
   const select =
     $("expenseVehicle");
 
-  if (!select)
-    return;
+  if (!select) return;
 
 
   const oldValue =
@@ -938,9 +906,9 @@ function populateExpenseVehicleOptions(
     vehicles
       .filter(v => {
 
-        if (!search)
+        if (!search) {
           return true;
-
+        }
 
         const searchableText =
           [
@@ -952,7 +920,6 @@ function populateExpenseVehicleOptions(
           ]
             .join(" ")
             .toLowerCase();
-
 
         return searchableText.includes(
           search
@@ -972,9 +939,11 @@ function populateExpenseVehicleOptions(
 
 
   let html =
-    `<option value="">
+    `
+    <option value="">
       -- Select Vehicle --
-    </option>`;
+    </option>
+    `;
 
 
   filteredVehicles.forEach(
@@ -1011,9 +980,7 @@ function populateExpenseVehicleOptions(
 
     select.value =
       oldValue;
-
   }
-
 }
 
 
@@ -1037,9 +1004,9 @@ function(id = "") {
 
   $("vehicleModalTitle")
     .textContent =
-      id
-        ? "Edit Vehicle"
-        : "Add Vehicle";
+    id
+      ? "Edit Vehicle"
+      : "Add Vehicle";
 
 
   $("vehicleDateIn").value =
@@ -1060,8 +1027,7 @@ function(id = "") {
     const v =
       vehicleById(id);
 
-    if (!v)
-      return;
+    if (!v) return;
 
 
     $("vehicleId").value =
@@ -1114,14 +1080,12 @@ function(id = "") {
 
 
     updateVehicleStorageDays();
-
   }
 
 
   openModal(
     "vehicleModal"
   );
-
 };
 
 
@@ -1140,24 +1104,19 @@ function updateVehicleStorageDays() {
       0;
 
     return;
-
   }
 
 
   const fake = {
-
     date_in:
       dateIn,
-
     date_out:
       dateOut
-
   };
 
 
   $("vehicleStorageDays").value =
     storageDays(fake);
-
 }
 
 
@@ -1186,20 +1145,20 @@ async function saveVehicle(e) {
     );
 
     return;
-
   }
 
 
   const duplicate =
-    vehicles.find(v =>
-      String(
-        v.registration || ""
-      )
-        .trim()
-        .toLowerCase() ===
-        registration.toLowerCase() &&
-      String(v.id) !==
-        String(id)
+    vehicles.find(
+      v =>
+        String(
+          v.registration || ""
+        )
+          .trim()
+          .toLowerCase() ===
+          registration.toLowerCase() &&
+        String(v.id) !==
+          String(id)
     );
 
 
@@ -1211,7 +1170,6 @@ async function saveVehicle(e) {
     );
 
     return;
-
   }
 
 
@@ -1231,8 +1189,7 @@ async function saveVehicle(e) {
       null,
 
     model_year:
-      $("vehicleModelYear")
-        .value
+      $("vehicleModelYear").value
         ? Number(
             $("vehicleModelYear")
               .value
@@ -1246,23 +1203,19 @@ async function saveVehicle(e) {
       null,
 
     date_in:
-      $("vehicleDateIn")
-        .value ||
+      $("vehicleDateIn").value ||
       today(),
 
     date_out:
-      $("vehicleDateOut")
-        .value ||
+      $("vehicleDateOut").value ||
       null,
 
     job_type:
-      $("vehicleJobType")
-        .value ||
+      $("vehicleJobType").value ||
       "Repair",
 
     status:
-      $("vehicleStatus")
-        .value ||
+      $("vehicleStatus").value ||
       "Under Repair",
 
     released_to:
@@ -1285,16 +1238,13 @@ async function saveVehicle(e) {
 
     billed:
       num(
-        $("vehicleBilled")
-          .value
+        $("vehicleBilled").value
       ),
 
     paid:
       num(
-        $("vehiclePaid")
-          .value
+        $("vehiclePaid").value
       )
-
   };
 
 
@@ -1321,7 +1271,6 @@ async function saveVehicle(e) {
           .insert(record)
           .select()
           .single();
-
     }
 
 
@@ -1338,7 +1287,6 @@ async function saveVehicle(e) {
       );
 
       return;
-
     }
 
 
@@ -1351,12 +1299,10 @@ async function saveVehicle(e) {
             String(id)
         );
 
-
       if (index >= 0) {
 
         vehicles[index] =
           result.data;
-
       }
 
     } else {
@@ -1364,7 +1310,6 @@ async function saveVehicle(e) {
       vehicles.unshift(
         result.data
       );
-
     }
 
 
@@ -1383,7 +1328,6 @@ async function saveVehicle(e) {
         : "Vehicle added successfully."
     );
 
-
   } catch (err) {
 
     console.error(err);
@@ -1392,9 +1336,7 @@ async function saveVehicle(e) {
       "Vehicle save failed.",
       false
     );
-
   }
-
 }
 
 
@@ -1402,7 +1344,6 @@ window.editVehicle =
 function(id) {
 
   openVehicleModal(id);
-
 };
 
 
@@ -1412,8 +1353,7 @@ async function(id) {
   const v =
     vehicleById(id);
 
-  if (!v)
-    return;
+  if (!v) return;
 
 
   if (
@@ -1421,9 +1361,7 @@ async function(id) {
       `Delete vehicle ${v.registration}? Its linked expenses will also be deleted.`
     )
   ) {
-
     return;
-
   }
 
 
@@ -1445,7 +1383,6 @@ async function(id) {
     );
 
     return;
-
   }
 
 
@@ -1472,7 +1409,6 @@ async function(id) {
   toast(
     "Vehicle deleted."
   );
-
 };
 
 
@@ -1487,7 +1423,6 @@ function getVehicleExpenses(
       ) ===
       String(vehicleId)
   );
-
 }
 
 
@@ -1502,9 +1437,12 @@ function vehicleExpenseTotal(
       sum + num(e.amount),
     0
   );
-
 }
 
+
+/* =========================================================
+   VEHICLE EXPENSE REPORT
+========================================================= */
 
 window.showVehicleExpenses =
 function(id) {
@@ -1512,8 +1450,7 @@ function(id) {
   const v =
     vehicleById(id);
 
-  if (!v)
-    return;
+  if (!v) return;
 
 
   const list =
@@ -1531,39 +1468,40 @@ function(id) {
   let rows = "";
 
 
-  list.forEach(e => {
+  list.forEach(
+    e => {
 
-    rows += `
-      <tr>
+      rows += `
+        <tr>
 
-        <td>
-          ${esc(
-            fmtDate(
-              e.expense_date
-            )
-          )}
-        </td>
+          <td>
+            ${esc(
+              fmtDate(
+                e.expense_date
+              )
+            )}
+          </td>
 
-        <td>
-          ${esc(
-            e.description
-          )}
-        </td>
+          <td>
+            ${esc(
+              e.description
+            )}
+          </td>
 
-        <td>
-          ${esc(
-            e.category
-          )}
-        </td>
+          <td>
+            ${esc(
+              e.category
+            )}
+          </td>
 
-        <td>
-          ${money(e.amount)}
-        </td>
+          <td>
+            ${money(e.amount)}
+          </td>
 
-      </tr>
-    `;
-
-  });
+        </tr>
+      `;
+    }
+  );
 
 
   if (!rows) {
@@ -1584,11 +1522,11 @@ function(id) {
 
       </tr>
     `;
-
   }
 
 
   currentVehicleExpenseHTML = `
+
     <div class="preview-paper">
 
       <div class="preview-head">
@@ -1615,16 +1553,13 @@ function(id) {
         <thead>
 
           <tr>
-
             <th>Date</th>
             <th>Description</th>
             <th>Category</th>
             <th>Amount</th>
-
           </tr>
 
         </thead>
-
 
         <tbody>
           ${rows}
@@ -1653,15 +1588,19 @@ function(id) {
   `;
 
 
-  $("vehicleExpensePreviewContent")
-    .innerHTML =
+  const preview =
+    $("vehicleExpensePreviewContent");
+
+  if (preview) {
+
+    preview.innerHTML =
       currentVehicleExpenseHTML;
+  }
 
 
   openModal(
     "vehicleExpensePreviewModal"
   );
-
 };
 
 
@@ -1672,12 +1611,11 @@ function() {
     "Vehicle Expense Report",
     currentVehicleExpenseHTML
   );
-
 };
 
 
 /* =========================================================
-   SHARE VEHICLE EXPENSES
+   VEHICLE EXPENSE SHARE
 ========================================================= */
 
 window.shareVehicleExpenses =
@@ -1686,8 +1624,7 @@ async function(id) {
   const v =
     vehicleById(id);
 
-  if (!v)
-    return;
+  if (!v) return;
 
 
   const list =
@@ -1703,28 +1640,47 @@ async function(id) {
 
 
   let text =
-    "VEHICLE EXPENSE REPORT\n" +
-    `Vehicle: ${v.registration}\n` +
-    `Customer: ${v.customer || ""}\n\n`;
+    "CRYSTAL MOTORS (K) LTD\n" +
+    "VEHICLE EXPENSE REPORT\n\n";
+
+
+  text +=
+    `Vehicle: ${v.registration}\n`;
+
+  text +=
+    `Customer: ${v.customer || ""}\n`;
+
+  text +=
+    `Date In: ${fmtDate(v.date_in)}\n`;
+
+  text +=
+    `Status: ${v.status || ""}\n\n`;
 
 
   if (!list.length) {
 
     text +=
-      "No expenses recorded.\n";
+      "No expenses recorded for this vehicle.\n";
 
   } else {
 
-    list.forEach(e => {
+    text +=
+      "DATE | DESCRIPTION | CATEGORY | AMOUNT\n";
 
-      text +=
-        `${fmtDate(e.expense_date)} | ` +
-        `${e.description || ""} | ` +
-        `${e.category || ""} | ` +
-        `${money(e.amount)}\n`;
+    text +=
+      "----------------------------------------\n";
 
-    });
 
+    list.forEach(
+      e => {
+
+        text +=
+          `${fmtDate(e.expense_date)} | ` +
+          `${e.description || ""} | ` +
+          `${e.category || ""} | ` +
+          `${money(e.amount)}\n`;
+      }
+    );
   }
 
 
@@ -1736,7 +1692,6 @@ async function(id) {
     `Vehicle Expenses - ${v.registration}`,
     text
   );
-
 };
 
 
@@ -1745,15 +1700,13 @@ function renderVehicles() {
   const body =
     $("vehiclesTableBody");
 
-  if (!body)
-    return;
+  if (!body) return;
 
 
   const search =
     (
       $("vehicleSearch")
-        ?.value ||
-      ""
+        ?.value || ""
     )
       .trim()
       .toLowerCase();
@@ -1761,40 +1714,42 @@ function renderVehicles() {
 
   const status =
     $("vehicleStatusFilter")
-      ?.value ||
-    "";
+      ?.value || "";
 
 
   const list =
-    vehicles.filter(v => {
+    vehicles.filter(
+      v => {
 
-      const text =
-        [
-          v.registration,
-          v.customer,
-          v.model,
-          v.color
-        ]
-          .join(" ")
-          .toLowerCase();
+        const text =
+          [
+            v.registration,
+            v.customer,
+            v.model,
+            v.color
+          ]
+            .join(" ")
+            .toLowerCase();
 
 
-      return (
-        (!search ||
-          text.includes(
-            search
-          )) &&
-        (!status ||
-          v.status ===
-            status)
-      );
+        return (
+          (!search ||
+            text.includes(
+              search
+            )) &&
+          (!status ||
+            v.status ===
+              status)
+        );
 
-    });
+      }
+    );
 
 
   if (!list.length) {
 
     body.innerHTML = `
+
       <tr>
 
         <td
@@ -1812,7 +1767,6 @@ function renderVehicles() {
     `;
 
     return;
-
   }
 
 
@@ -1835,6 +1789,7 @@ function renderVehicles() {
 
 
         return `
+
           <tr>
 
             <td>
@@ -1866,13 +1821,17 @@ function renderVehicles() {
             </td>
 
             <td>
+
               <span
-                class="status status-${statusClass(v.status)}"
+                class="status status-${statusClass(
+                  v.status
+                )}"
               >
                 ${esc(
                   v.status || ""
                 )}
               </span>
+
             </td>
 
             <td>
@@ -1888,7 +1847,9 @@ function renderVehicles() {
             </td>
 
             <td>
-              ${money(outstanding)}
+              ${money(
+                outstanding
+              )}
             </td>
 
             <td>
@@ -1903,42 +1864,30 @@ function renderVehicles() {
 
                 <button
                   class="action-btn blue"
-                  title="Vehicle Expenses"
                   onclick="showVehicleExpenses('${v.id}')"
                 >
-                  <span class="action-icon">
-                    💰
-                  </span>
+                  Expenses
                 </button>
 
                 <button
                   class="action-btn blue"
-                  title="Share Vehicle Expenses"
                   onclick="shareVehicleExpenses('${v.id}')"
                 >
-                  <span class="action-icon">
-                    📤
-                  </span>
+                  Share
                 </button>
 
                 <button
                   class="action-btn"
-                  title="Edit Vehicle"
                   onclick="editVehicle('${v.id}')"
                 >
-                  <span class="action-icon">
-                    ✏️
-                  </span>
+                  Edit
                 </button>
 
                 <button
                   class="action-btn danger"
-                  title="Delete Vehicle"
                   onclick="deleteVehicle('${v.id}')"
                 >
-                  <span class="action-icon">
-                    🗑️
-                  </span>
+                  Delete
                 </button>
 
               </div>
@@ -1950,7 +1899,6 @@ function renderVehicles() {
 
       })
       .join("");
-
 }
 
 
@@ -1984,7 +1932,6 @@ function(id = "") {
 
     vehicleSearch.value =
       "";
-
   }
 
 
@@ -2003,8 +1950,7 @@ function(id = "") {
       );
 
 
-    if (!e)
-      return;
+    if (!e) return;
 
 
     $("expenseId").value =
@@ -2023,7 +1969,6 @@ function(id = "") {
 
         vehicleSearch.value =
           linkedVehicle.registration;
-
       }
 
 
@@ -2039,9 +1984,7 @@ function(id = "") {
       );
 
       $("expenseVehicle").value =
-        e.vehicle_id ||
-        "";
-
+        e.vehicle_id || "";
     }
 
 
@@ -2058,29 +2001,26 @@ function(id = "") {
       num(e.amount);
 
     $("expenseDescription").value =
-      e.description ||
-      "";
+      e.description || "";
 
     $("expenseModalTitle")
       .textContent =
-        "Edit Expense";
+      "Edit Expense";
 
   } else {
 
     $("expenseModalTitle")
       .textContent =
-        "Add Expense";
+      "Add Expense";
 
     $("expenseVehicle").value =
       "";
-
   }
 
 
   openModal(
     "expenseModal"
   );
-
 };
 
 
@@ -2138,13 +2078,10 @@ async function saveExpense(e) {
     );
 
     return;
-
   }
 
 
-  if (
-    record.amount < 0
-  ) {
+  if (record.amount < 0) {
 
     toast(
       "Expense amount cannot be negative.",
@@ -2152,7 +2089,6 @@ async function saveExpense(e) {
     );
 
     return;
-
   }
 
 
@@ -2169,7 +2105,6 @@ async function saveExpense(e) {
     );
 
     return;
-
   }
 
 
@@ -2196,7 +2131,6 @@ async function saveExpense(e) {
           .insert(record)
           .select()
           .single();
-
     }
 
 
@@ -2213,7 +2147,6 @@ async function saveExpense(e) {
       );
 
       return;
-
     }
 
 
@@ -2231,7 +2164,6 @@ async function saveExpense(e) {
 
         expenses[i] =
           result.data;
-
       }
 
     } else {
@@ -2239,7 +2171,6 @@ async function saveExpense(e) {
       expenses.unshift(
         result.data
       );
-
     }
 
 
@@ -2256,7 +2187,6 @@ async function saveExpense(e) {
         : "Expense added."
     );
 
-
   } catch (err) {
 
     console.error(err);
@@ -2265,9 +2195,7 @@ async function saveExpense(e) {
       "Expense save failed.",
       false
     );
-
   }
-
 }
 
 
@@ -2275,7 +2203,6 @@ window.editExpense =
 function(id) {
 
   openExpenseModal(id);
-
 };
 
 
@@ -2289,7 +2216,6 @@ async function(id) {
   ) {
 
     return;
-
   }
 
 
@@ -2311,7 +2237,6 @@ async function(id) {
     );
 
     return;
-
   }
 
 
@@ -2328,7 +2253,6 @@ async function(id) {
   toast(
     "Expense deleted."
   );
-
 };
 
 
@@ -2337,8 +2261,7 @@ function filteredExpenses() {
   const search =
     (
       $("expenseSearch")
-        ?.value ||
-      ""
+        ?.value || ""
     )
       .trim()
       .toLowerCase();
@@ -2346,8 +2269,7 @@ function filteredExpenses() {
 
   const category =
     $("expenseCategoryFilter")
-      ?.value ||
-    "";
+      ?.value || "";
 
 
   return expenses.filter(
@@ -2386,7 +2308,6 @@ function filteredExpenses() {
 
     }
   );
-
 }
 
 
@@ -2395,8 +2316,7 @@ function renderExpenses() {
   const body =
     $("expensesTableBody");
 
-  if (!body)
-    return;
+  if (!body) return;
 
 
   const list =
@@ -2406,6 +2326,7 @@ function renderExpenses() {
   if (!list.length) {
 
     body.innerHTML = `
+
       <tr>
 
         <td
@@ -2423,7 +2344,6 @@ function renderExpenses() {
     `;
 
     return;
-
   }
 
 
@@ -2431,6 +2351,7 @@ function renderExpenses() {
     list
       .map(
         e => `
+
           <tr>
 
             <td>
@@ -2465,9 +2386,7 @@ function renderExpenses() {
 
             <td>
               <strong>
-                ${money(
-                  e.amount
-                )}
+                ${money(e.amount)}
               </strong>
             </td>
 
@@ -2477,22 +2396,16 @@ function renderExpenses() {
 
                 <button
                   class="action-btn"
-                  title="Edit Expense"
                   onclick="editExpense('${e.id}')"
                 >
-                  <span class="action-icon">
-                    ✏️
-                  </span>
+                  Edit
                 </button>
 
                 <button
                   class="action-btn danger"
-                  title="Delete Expense"
                   onclick="deleteExpense('${e.id}')"
                 >
-                  <span class="action-icon">
-                    🗑️
-                  </span>
+                  Delete
                 </button>
 
               </div>
@@ -2503,7 +2416,6 @@ function renderExpenses() {
         `
       )
       .join("");
-
 }
 
 
@@ -2536,8 +2448,7 @@ function(id = "") {
       );
 
 
-    if (!p)
-      return;
+    if (!p) return;
 
 
     $("pettyId").value =
@@ -2549,8 +2460,7 @@ function(id = "") {
       );
 
     $("pettyPaidTo").value =
-      p.paid_to ||
-      "";
+      p.paid_to || "";
 
     $("pettyCategory").value =
       p.category ||
@@ -2560,30 +2470,26 @@ function(id = "") {
       num(p.amount);
 
     $("pettyDescription").value =
-      p.description ||
-      "";
+      p.description || "";
 
     $("pettyNotes").value =
-      p.notes ||
-      "";
+      p.notes || "";
 
     $("pettyModalTitle")
       .textContent =
-        "Edit Petty Cash";
+      "Edit Petty Cash";
 
   } else {
 
     $("pettyModalTitle")
       .textContent =
-        "Add Petty Cash";
-
+      "Add Petty Cash";
   }
 
 
   openModal(
     "pettyModal"
   );
-
 };
 
 
@@ -2601,8 +2507,7 @@ async function savePetty(e) {
   const record = {
 
     cash_date:
-      $("pettyDate")
-        .value ||
+      $("pettyDate").value ||
       today(),
 
     paid_to:
@@ -2644,7 +2549,6 @@ async function savePetty(e) {
     );
 
     return;
-
   }
 
 
@@ -2669,7 +2573,6 @@ async function savePetty(e) {
         .insert(record)
         .select()
         .single();
-
   }
 
 
@@ -2682,7 +2585,6 @@ async function savePetty(e) {
     );
 
     return;
-
   }
 
 
@@ -2700,7 +2602,6 @@ async function savePetty(e) {
 
       pettyCash[i] =
         result.data;
-
     }
 
   } else {
@@ -2708,7 +2609,6 @@ async function savePetty(e) {
     pettyCash.unshift(
       result.data
     );
-
   }
 
 
@@ -2724,7 +2624,6 @@ async function savePetty(e) {
       ? "Petty cash updated."
       : "Petty cash added."
   );
-
 }
 
 
@@ -2732,7 +2631,6 @@ window.editPetty =
 function(id) {
 
   openPettyModal(id);
-
 };
 
 
@@ -2746,7 +2644,6 @@ async function(id) {
   ) {
 
     return;
-
   }
 
 
@@ -2768,7 +2665,6 @@ async function(id) {
     );
 
     return;
-
   }
 
 
@@ -2785,7 +2681,6 @@ async function(id) {
   toast(
     "Petty cash deleted."
   );
-
 };
 
 
@@ -2794,8 +2689,7 @@ function filteredPetty() {
   const search =
     (
       $("pettySearch")
-        ?.value ||
-      ""
+        ?.value || ""
     )
       .trim()
       .toLowerCase();
@@ -2803,8 +2697,7 @@ function filteredPetty() {
 
   const category =
     $("pettyCategoryFilter")
-      ?.value ||
-    "";
+      ?.value || "";
 
 
   return pettyCash.filter(
@@ -2833,7 +2726,6 @@ function filteredPetty() {
 
     }
   );
-
 }
 
 
@@ -2842,8 +2734,7 @@ function renderPettyCash() {
   const body =
     $("pettyTableBody");
 
-  if (!body)
-    return;
+  if (!body) return;
 
 
   const list =
@@ -2853,6 +2744,7 @@ function renderPettyCash() {
   if (!list.length) {
 
     body.innerHTML = `
+
       <tr>
 
         <td
@@ -2870,7 +2762,6 @@ function renderPettyCash() {
     `;
 
     return;
-
   }
 
 
@@ -2878,6 +2769,7 @@ function renderPettyCash() {
     list
       .map(
         p => `
+
           <tr>
 
             <td>
@@ -2924,22 +2816,16 @@ function renderPettyCash() {
 
                 <button
                   class="action-btn"
-                  title="Edit Petty Cash"
                   onclick="editPetty('${p.id}')"
                 >
-                  <span class="action-icon">
-                    ✏️
-                  </span>
+                  Edit
                 </button>
 
                 <button
                   class="action-btn danger"
-                  title="Delete Petty Cash"
                   onclick="deletePetty('${p.id}')"
                 >
-                  <span class="action-icon">
-                    🗑️
-                  </span>
+                  Delete
                 </button>
 
               </div>
@@ -2950,7 +2836,6 @@ function renderPettyCash() {
         `
       )
       .join("");
-
 }
 
 
@@ -2984,9 +2869,9 @@ function(id = "") {
 
   $("reqModalTitle")
     .textContent =
-      id
-        ? "Edit Requisition"
-        : "New Requisition";
+    id
+      ? "Edit Requisition"
+      : "New Requisition";
 
 
   populateVehicleSelects();
@@ -3002,16 +2887,14 @@ function(id = "") {
       );
 
 
-    if (!r)
-      return;
+    if (!r) return;
 
 
     $("reqId").value =
       r.id;
 
     $("reqNo").value =
-      r.req_no ||
-      "";
+      r.req_no || "";
 
     $("reqDate").value =
       fmtDate(
@@ -3019,16 +2902,13 @@ function(id = "") {
       );
 
     $("reqRequestedBy").value =
-      r.requested_by ||
-      "";
+      r.requested_by || "";
 
     $("reqVehicle").value =
-      r.vehicle_id ||
-      "";
+      r.vehicle_id || "";
 
     $("reqItemDescription").value =
-      r.item_description ||
-      "";
+      r.item_description || "";
 
     $("reqQuantity").value =
       num(r.quantity);
@@ -3044,24 +2924,19 @@ function(id = "") {
       "Pending";
 
     $("reqCategory").value =
-      r.category ||
-      "";
+      r.category || "";
 
     $("reqExpenseType").value =
-      r.expense_type ||
-      "";
+      r.expense_type || "";
 
     $("reqNotes").value =
-      r.notes ||
-      "";
-
+      r.notes || "";
   }
 
 
   openModal(
     "reqModal"
   );
-
 };
 
 
@@ -3087,9 +2962,7 @@ function updateReqTotal() {
       (
         q * unit
       ).toFixed(2);
-
   }
-
 }
 
 
@@ -3130,8 +3003,7 @@ async function saveReq(e) {
         .trim(),
 
     req_date:
-      $("reqDate")
-        .value ||
+      $("reqDate").value ||
       today(),
 
     requested_by:
@@ -3140,8 +3012,7 @@ async function saveReq(e) {
         .trim(),
 
     vehicle_id:
-      $("reqVehicle")
-        .value ||
+      $("reqVehicle").value ||
       null,
 
     item_description:
@@ -3158,18 +3029,15 @@ async function saveReq(e) {
       total,
 
     status:
-      $("reqStatus")
-        .value ||
+      $("reqStatus").value ||
       "Pending",
 
     category:
-      $("reqCategory")
-        .value ||
+      $("reqCategory").value ||
       null,
 
     expense_type:
-      $("reqExpenseType")
-        .value ||
+      $("reqExpenseType").value ||
       "Materials",
 
     notes:
@@ -3193,7 +3061,6 @@ async function saveReq(e) {
     );
 
     return;
-
   }
 
 
@@ -3218,7 +3085,6 @@ async function saveReq(e) {
         .insert(record)
         .select()
         .single();
-
   }
 
 
@@ -3231,7 +3097,6 @@ async function saveReq(e) {
     );
 
     return;
-
   }
 
 
@@ -3249,7 +3114,6 @@ async function saveReq(e) {
 
       requisitions[i] =
         result.data;
-
     }
 
   } else {
@@ -3257,7 +3121,6 @@ async function saveReq(e) {
     requisitions.unshift(
       result.data
     );
-
   }
 
 
@@ -3273,7 +3136,6 @@ async function saveReq(e) {
       ? "Requisition updated."
       : "Requisition created."
   );
-
 }
 
 
@@ -3281,7 +3143,6 @@ window.editReq =
 function(id) {
 
   openReqModal(id);
-
 };
 
 
@@ -3295,7 +3156,6 @@ async function(id) {
   ) {
 
     return;
-
   }
 
 
@@ -3317,7 +3177,6 @@ async function(id) {
     );
 
     return;
-
   }
 
 
@@ -3334,7 +3193,6 @@ async function(id) {
   toast(
     "Requisition deleted."
   );
-
 };
 
 
@@ -3343,8 +3201,7 @@ function filteredReqs() {
   const search =
     (
       $("reqSearch")
-        ?.value ||
-      ""
+        ?.value || ""
     )
       .trim()
       .toLowerCase();
@@ -3352,8 +3209,7 @@ function filteredReqs() {
 
   const status =
     $("reqStatusFilter")
-      ?.value ||
-    "";
+      ?.value || "";
 
 
   return requisitions.filter(
@@ -3384,7 +3240,6 @@ function filteredReqs() {
 
     }
   );
-
 }
 
 
@@ -3393,8 +3248,7 @@ function renderRequisitions() {
   const body =
     $("requisitionsTableBody");
 
-  if (!body)
-    return;
+  if (!body) return;
 
 
   const list =
@@ -3412,18 +3266,20 @@ function renderRequisitions() {
     );
 
 
-  if ($("reqOverallTotal")) {
+  if (
+    $("reqOverallTotal")
+  ) {
 
     $("reqOverallTotal")
       .textContent =
-        money(overall);
-
+      money(overall);
   }
 
 
   if (!list.length) {
 
     body.innerHTML = `
+
       <tr>
 
         <td
@@ -3441,7 +3297,6 @@ function renderRequisitions() {
     `;
 
     return;
-
   }
 
 
@@ -3449,6 +3304,7 @@ function renderRequisitions() {
     list
       .map(
         r => `
+
           <tr>
 
             <td>
@@ -3514,13 +3370,17 @@ function renderRequisitions() {
             </td>
 
             <td>
+
               <span
-                class="status status-${statusClass(r.status)}"
+                class="status status-${statusClass(
+                  r.status
+                )}"
               >
                 ${esc(
                   r.status || ""
                 )}
               </span>
+
             </td>
 
             <td>
@@ -3529,22 +3389,16 @@ function renderRequisitions() {
 
                 <button
                   class="action-btn"
-                  title="Edit Requisition"
                   onclick="editReq('${r.id}')"
                 >
-                  <span class="action-icon">
-                    ✏️
-                  </span>
+                  Edit
                 </button>
 
                 <button
                   class="action-btn danger"
-                  title="Delete Requisition"
                   onclick="deleteReq('${r.id}')"
                 >
-                  <span class="action-icon">
-                    🗑️
-                  </span>
+                  Delete
                 </button>
 
               </div>
@@ -3555,7 +3409,6 @@ function renderRequisitions() {
         `
       )
       .join("");
-
 }
 
 
@@ -3601,9 +3454,9 @@ function(id = "") {
 
   $("invoiceModalTitle")
     .textContent =
-      id
-        ? "Edit Invoice"
-        : "New Invoice";
+    id
+      ? "Edit Invoice"
+      : "New Invoice";
 
 
   if (id) {
@@ -3616,16 +3469,14 @@ function(id = "") {
       );
 
 
-    if (!inv)
-      return;
+    if (!inv) return;
 
 
     $("invoiceId").value =
       inv.id;
 
     $("invoiceNo").value =
-      inv.invoice_no ||
-      "";
+      inv.invoice_no || "";
 
     $("invoiceDate").value =
       fmtDate(
@@ -3633,16 +3484,13 @@ function(id = "") {
       );
 
     $("invoiceVehicle").value =
-      inv.vehicle_id ||
-      "";
+      inv.vehicle_id || "";
 
     $("invoiceCustomer").value =
-      inv.customer ||
-      "";
+      inv.customer || "";
 
     $("invoiceJobDescription").value =
-      inv.job_description ||
-      "";
+      inv.job_description || "";
 
     $("invoiceLabour").value =
       num(inv.labour);
@@ -3669,18 +3517,16 @@ function(id = "") {
       "Unpaid";
 
     $("invoiceNotes").value =
-      inv.notes ||
-      "";
-
+      inv.notes || "";
   }
 
 
   updateInvoiceTotals();
 
+
   openModal(
     "invoiceModal"
   );
-
 };
 
 
@@ -3728,25 +3574,29 @@ function updateInvoiceTotals() {
     );
 
 
-  if ($("invoiceSubtotal")) {
+  if (
+    $("invoiceSubtotal")
+  ) {
 
     $("invoiceSubtotal")
       .value =
-        subtotal.toFixed(2);
-
+      subtotal.toFixed(2);
   }
 
 
-  if ($("invoiceBalance")) {
+  if (
+    $("invoiceBalance")
+  ) {
 
     $("invoiceBalance")
       .value =
-        balance.toFixed(2);
-
+      balance.toFixed(2);
   }
 
 
-  if ($("invoiceStatus")) {
+  if (
+    $("invoiceStatus")
+  ) {
 
     if (
       balance <= 0 &&
@@ -3755,7 +3605,7 @@ function updateInvoiceTotals() {
 
       $("invoiceStatus")
         .value =
-          "Paid";
+        "Paid";
 
     } else if (
       paid > 0
@@ -3763,18 +3613,15 @@ function updateInvoiceTotals() {
 
       $("invoiceStatus")
         .value =
-          "Part Paid";
+        "Part Paid";
 
     } else {
 
       $("invoiceStatus")
         .value =
-          "Unpaid";
-
+        "Unpaid";
     }
-
   }
-
 }
 
 
@@ -3839,13 +3686,11 @@ async function saveInvoice(e) {
         .trim(),
 
     invoice_date:
-      $("invoiceDate")
-        .value ||
+      $("invoiceDate").value ||
       today(),
 
     vehicle_id:
-      $("invoiceVehicle")
-        .value ||
+      $("invoiceVehicle").value ||
       null,
 
     customer:
@@ -3872,8 +3717,7 @@ async function saveInvoice(e) {
     balance,
 
     status:
-      $("invoiceStatus")
-        .value ||
+      $("invoiceStatus").value ||
       "Unpaid",
 
     notes:
@@ -3913,7 +3757,6 @@ async function saveInvoice(e) {
     );
 
     return;
-
   }
 
 
@@ -3938,7 +3781,6 @@ async function saveInvoice(e) {
         .insert(record)
         .select()
         .single();
-
   }
 
 
@@ -3951,7 +3793,6 @@ async function saveInvoice(e) {
     );
 
     return;
-
   }
 
 
@@ -3969,7 +3810,6 @@ async function saveInvoice(e) {
 
       invoices[i] =
         result.data;
-
     }
 
   } else {
@@ -3977,7 +3817,6 @@ async function saveInvoice(e) {
     invoices.unshift(
       result.data
     );
-
   }
 
 
@@ -3993,7 +3832,6 @@ async function saveInvoice(e) {
       ? "Invoice updated."
       : "Invoice created."
   );
-
 }
 
 
@@ -4001,7 +3839,6 @@ window.editInvoice =
 function(id) {
 
   openInvoiceModal(id);
-
 };
 
 
@@ -4015,7 +3852,6 @@ async function(id) {
   ) {
 
     return;
-
   }
 
 
@@ -4037,7 +3873,6 @@ async function(id) {
     );
 
     return;
-
   }
 
 
@@ -4054,7 +3889,6 @@ async function(id) {
   toast(
     "Invoice deleted."
   );
-
 };
 
 
@@ -4063,8 +3897,7 @@ function filteredInvoices() {
   const search =
     (
       $("invoiceSearch")
-        ?.value ||
-      ""
+        ?.value || ""
     )
       .trim()
       .toLowerCase();
@@ -4072,8 +3905,7 @@ function filteredInvoices() {
 
   const status =
     $("invoiceStatusFilter")
-      ?.value ||
-    "";
+      ?.value || "";
 
 
   return invoices.filter(
@@ -4103,7 +3935,6 @@ function filteredInvoices() {
 
     }
   );
-
 }
 
 
@@ -4112,8 +3943,7 @@ function renderInvoices() {
   const body =
     $("invoicesTableBody");
 
-  if (!body)
-    return;
+  if (!body) return;
 
 
   const list =
@@ -4123,6 +3953,7 @@ function renderInvoices() {
   if (!list.length) {
 
     body.innerHTML = `
+
       <tr>
 
         <td
@@ -4140,7 +3971,6 @@ function renderInvoices() {
     `;
 
     return;
-
   }
 
 
@@ -4148,6 +3978,7 @@ function renderInvoices() {
     list
       .map(
         inv => `
+
           <tr>
 
             <td>
@@ -4201,13 +4032,17 @@ function renderInvoices() {
             </td>
 
             <td>
+
               <span
-                class="status status-${statusClass(inv.status)}"
+                class="status status-${statusClass(
+                  inv.status
+                )}"
               >
                 ${esc(
                   inv.status
                 )}
               </span>
+
             </td>
 
             <td>
@@ -4216,32 +4051,23 @@ function renderInvoices() {
 
                 <button
                   class="action-btn blue"
-                  title="View Invoice"
                   onclick="previewInvoice('${inv.id}')"
                 >
-                  <span class="action-icon">
-                    👁️
-                  </span>
+                  View
                 </button>
 
                 <button
                   class="action-btn"
-                  title="Edit Invoice"
                   onclick="editInvoice('${inv.id}')"
                 >
-                  <span class="action-icon">
-                    ✏️
-                  </span>
+                  Edit
                 </button>
 
                 <button
                   class="action-btn danger"
-                  title="Delete Invoice"
                   onclick="deleteInvoice('${inv.id}')"
                 >
-                  <span class="action-icon">
-                    🗑️
-                  </span>
+                  Delete
                 </button>
 
               </div>
@@ -4252,9 +4078,12 @@ function renderInvoices() {
         `
       )
       .join("");
-
 }
 
+
+/* =========================================================
+   INVOICE PREVIEW
+========================================================= */
 
 window.previewInvoice =
 function(id) {
@@ -4267,8 +4096,7 @@ function(id) {
     );
 
 
-  if (!inv)
-    return;
+  if (!inv) return;
 
 
   currentPreviewHTML =
@@ -4279,15 +4107,20 @@ function(id) {
       "TAX INVOICE",
 
       `
+
         <p>
-          <strong>Invoice No:</strong>
+          <strong>
+            Invoice No:
+          </strong>
           ${esc(
             inv.invoice_no
           )}
         </p>
 
         <p>
-          <strong>Date:</strong>
+          <strong>
+            Date:
+          </strong>
           ${esc(
             fmtDate(
               inv.invoice_date
@@ -4296,14 +4129,18 @@ function(id) {
         </p>
 
         <p>
-          <strong>Customer:</strong>
+          <strong>
+            Customer:
+          </strong>
           ${esc(
             inv.customer
           )}
         </p>
 
         <p>
-          <strong>Vehicle:</strong>
+          <strong>
+            Vehicle:
+          </strong>
           ${esc(
             vehicleName(
               inv.vehicle_id
@@ -4311,35 +4148,57 @@ function(id) {
           )}
         </p>
 
-        <table class="preview-table">
+
+        <table
+          class="preview-table"
+        >
 
           <thead>
 
             <tr>
-              <th>Description</th>
-              <th>Amount</th>
+              <th>
+                Description
+              </th>
+
+              <th>
+                Amount
+              </th>
             </tr>
 
           </thead>
 
+
           <tbody>
 
             <tr>
-              <td>Labour</td>
               <td>
-                ${money(inv.labour)}
+                Labour
+              </td>
+
+              <td>
+                ${money(
+                  inv.labour
+                )}
               </td>
             </tr>
 
             <tr>
-              <td>Parts</td>
               <td>
-                ${money(inv.parts)}
+                Parts
+              </td>
+
+              <td>
+                ${money(
+                  inv.parts
+                )}
               </td>
             </tr>
 
             <tr>
-              <td>Other</td>
+              <td>
+                Other
+              </td>
+
               <td>
                 ${money(
                   inv.other_amount
@@ -4351,61 +4210,89 @@ function(id) {
 
         </table>
 
+
         <div class="preview-total">
 
           <div>
-            <span>Subtotal</span>
+
+            <span>
+              Subtotal
+            </span>
+
             <strong>
-              ${money(inv.subtotal)}
+              ${money(
+                inv.subtotal
+              )}
             </strong>
+
           </div>
+
 
           <div>
-            <span>Paid</span>
+
+            <span>
+              Paid
+            </span>
+
             <strong>
-              ${money(inv.paid)}
+              ${money(
+                inv.paid
+              )}
             </strong>
+
           </div>
 
+
           <div class="grand">
-            <span>Balance</span>
+
+            <span>
+              Balance
+            </span>
+
             <strong>
-              ${money(inv.balance)}
+              ${money(
+                inv.balance
+              )}
             </strong>
+
           </div>
 
         </div>
 
+
         <p>
-          <strong>Job:</strong>
+          <strong>
+            Job:
+          </strong>
           ${esc(
             inv.job_description
           )}
         </p>
+
 
         <p>
           ${esc(
             inv.notes || ""
           )}
         </p>
+
       `
     );
 
 
   $("previewTitle")
     .textContent =
-      "Invoice Preview";
+    "Invoice Preview";
 
 
   $("previewContent")
     .innerHTML =
-      currentPreviewHTML;
+    currentPreviewHTML;
 
 
   openModal(
     "previewModal"
   );
-
 };
 
 
@@ -4442,9 +4329,9 @@ function(id = "") {
 
   $("gatePassModalTitle")
     .textContent =
-      id
-        ? "Edit Gate Pass"
-        : "New Gate Pass";
+    id
+      ? "Edit Gate Pass"
+      : "New Gate Pass";
 
 
   if (id) {
@@ -4457,16 +4344,14 @@ function(id = "") {
       );
 
 
-    if (!g)
-      return;
+    if (!g) return;
 
 
     $("gatePassId").value =
       g.id;
 
     $("gatePassNo").value =
-      g.gate_pass_no ||
-      "";
+      g.gate_pass_no || "";
 
     $("gatePassDate").value =
       fmtDate(
@@ -4474,28 +4359,23 @@ function(id = "") {
       );
 
     $("gateVehicle").value =
-      g.vehicle_id ||
-      "";
+      g.vehicle_id || "";
 
     $("gateVehicleRegistration").value =
       g.vehicle_registration ||
       "";
 
     $("gateCustomer").value =
-      g.customer ||
-      "";
+      g.customer || "";
 
     $("gateReleasedTo").value =
-      g.released_to ||
-      "";
+      g.released_to || "";
 
     $("gateReleasedContact").value =
-      g.released_contact ||
-      "";
+      g.released_contact || "";
 
     $("gateInvoice").value =
-      g.invoice_no ||
-      "";
+      g.invoice_no || "";
 
     $("gatePaid").value =
       num(g.paid);
@@ -4512,16 +4392,13 @@ function(id = "") {
       "Pending";
 
     $("gateNotes").value =
-      g.notes ||
-      "";
-
+      g.notes || "";
   }
 
 
   openModal(
     "gatePassModal"
   );
-
 };
 
 
@@ -4544,38 +4421,31 @@ function updateGateVehicleFields() {
 
       $("gateVehicleRegistration")
         .value =
-          "";
-
+        "";
     }
 
     return;
-
   }
 
 
   $("gateVehicleRegistration")
     .value =
-      v.registration ||
-      "";
+    v.registration || "";
 
 
   $("gateCustomer")
     .value =
-      v.customer ||
-      "";
+    v.customer || "";
 
 
   $("gateReleasedTo")
     .value =
-      v.released_to ||
-      "";
+    v.released_to || "";
 
 
   $("gateReleasedContact")
     .value =
-      v.released_contact ||
-      "";
-
+    v.released_contact || "";
 }
 
 
@@ -4589,12 +4459,10 @@ function updateGateBalance() {
 
   if (!invoiceNo) {
 
-    $("gateBalance")
-      .value =
-        0;
+    $("gateBalance").value =
+      0;
 
     return;
-
   }
 
 
@@ -4612,12 +4480,10 @@ function updateGateBalance() {
 
   if (!inv) {
 
-    $("gateBalance")
-      .value =
-        0;
+    $("gateBalance").value =
+      0;
 
     return;
-
   }
 
 
@@ -4628,14 +4494,12 @@ function updateGateBalance() {
     );
 
 
-  $("gateBalance")
-    .value =
-      Math.max(
-        0,
-        num(inv.subtotal) -
-          paid
-      ).toFixed(2);
-
+  $("gateBalance").value =
+    Math.max(
+      0,
+      num(inv.subtotal) -
+        paid
+    ).toFixed(2);
 }
 
 
@@ -4658,13 +4522,11 @@ async function saveGatePass(e) {
         .trim(),
 
     gate_pass_date:
-      $("gatePassDate")
-        .value ||
+      $("gatePassDate").value ||
       today(),
 
     vehicle_id:
-      $("gateVehicle")
-        .value ||
+      $("gateVehicle").value ||
       null,
 
     vehicle_registration:
@@ -4715,8 +4577,7 @@ async function saveGatePass(e) {
       null,
 
     status:
-      $("gateStatus")
-        .value ||
+      $("gateStatus").value ||
       "Pending",
 
     notes:
@@ -4755,7 +4616,6 @@ async function saveGatePass(e) {
     );
 
     return;
-
   }
 
 
@@ -4780,7 +4640,6 @@ async function saveGatePass(e) {
         .insert(record)
         .select()
         .single();
-
   }
 
 
@@ -4797,7 +4656,6 @@ async function saveGatePass(e) {
     );
 
     return;
-
   }
 
 
@@ -4815,7 +4673,6 @@ async function saveGatePass(e) {
 
       gatePasses[i] =
         result.data;
-
     }
 
   } else {
@@ -4823,7 +4680,6 @@ async function saveGatePass(e) {
     gatePasses.unshift(
       result.data
     );
-
   }
 
 
@@ -4839,7 +4695,6 @@ async function saveGatePass(e) {
       ? "Gate Pass updated."
       : "Gate Pass created."
   );
-
 }
 
 
@@ -4847,7 +4702,6 @@ window.editGatePass =
 function(id) {
 
   openGatePassModal(id);
-
 };
 
 
@@ -4861,7 +4715,6 @@ async function(id) {
   ) {
 
     return;
-
   }
 
 
@@ -4883,7 +4736,6 @@ async function(id) {
     );
 
     return;
-
   }
 
 
@@ -4900,7 +4752,6 @@ async function(id) {
   toast(
     "Gate Pass deleted."
   );
-
 };
 
 
@@ -4909,8 +4760,7 @@ function filteredGatePasses() {
   const search =
     (
       $("gateSearch")
-        ?.value ||
-      ""
+        ?.value || ""
     )
       .trim()
       .toLowerCase();
@@ -4918,8 +4768,7 @@ function filteredGatePasses() {
 
   const status =
     $("gateStatusFilter")
-      ?.value ||
-    "";
+      ?.value || "";
 
 
   return gatePasses.filter(
@@ -4949,7 +4798,6 @@ function filteredGatePasses() {
 
     }
   );
-
 }
 
 
@@ -4958,8 +4806,7 @@ function renderGatePasses() {
   const body =
     $("gatePassesTableBody");
 
-  if (!body)
-    return;
+  if (!body) return;
 
 
   const list =
@@ -4969,6 +4816,7 @@ function renderGatePasses() {
   if (!list.length) {
 
     body.innerHTML = `
+
       <tr>
 
         <td
@@ -4986,7 +4834,6 @@ function renderGatePasses() {
     `;
 
     return;
-
   }
 
 
@@ -4994,6 +4841,7 @@ function renderGatePasses() {
     list
       .map(
         g => `
+
           <tr>
 
             <td>
@@ -5029,15 +4877,13 @@ function renderGatePasses() {
 
             <td>
               ${esc(
-                g.released_to ||
-                ""
+                g.released_to || ""
               )}
             </td>
 
             <td>
               ${esc(
-                g.invoice_no ||
-                ""
+                g.invoice_no || ""
               )}
             </td>
 
@@ -5050,13 +4896,17 @@ function renderGatePasses() {
             </td>
 
             <td>
+
               <span
-                class="status status-${statusClass(g.status)}"
+                class="status status-${statusClass(
+                  g.status
+                )}"
               >
                 ${esc(
                   g.status || ""
                 )}
               </span>
+
             </td>
 
             <td>
@@ -5065,32 +4915,23 @@ function renderGatePasses() {
 
                 <button
                   class="action-btn blue"
-                  title="View Gate Pass"
                   onclick="previewGatePass('${g.id}')"
                 >
-                  <span class="action-icon">
-                    👁️
-                  </span>
+                  View
                 </button>
 
                 <button
                   class="action-btn"
-                  title="Edit Gate Pass"
                   onclick="editGatePass('${g.id}')"
                 >
-                  <span class="action-icon">
-                    ✏️
-                  </span>
+                  Edit
                 </button>
 
                 <button
                   class="action-btn danger"
-                  title="Delete Gate Pass"
                   onclick="deleteGatePass('${g.id}')"
                 >
-                  <span class="action-icon">
-                    🗑️
-                  </span>
+                  Delete
                 </button>
 
               </div>
@@ -5101,9 +4942,12 @@ function renderGatePasses() {
         `
       )
       .join("");
-
 }
 
+
+/* =========================================================
+   GATE PASS PREVIEW
+========================================================= */
 
 window.previewGatePass =
 function(id) {
@@ -5116,8 +4960,7 @@ function(id) {
     );
 
 
-  if (!g)
-    return;
+  if (!g) return;
 
 
   currentPreviewHTML =
@@ -5128,6 +4971,7 @@ function(id) {
       "GATE PASS",
 
       `
+
         <p>
           <strong>
             Gate Pass No:
@@ -5138,7 +4982,9 @@ function(id) {
         </p>
 
         <p>
-          <strong>Date:</strong>
+          <strong>
+            Date:
+          </strong>
           ${esc(
             fmtDate(
               g.gate_pass_date
@@ -5147,7 +4993,9 @@ function(id) {
         </p>
 
         <p>
-          <strong>Vehicle:</strong>
+          <strong>
+            Vehicle:
+          </strong>
           ${esc(
             g.vehicle_registration ||
             vehicleName(
@@ -5157,7 +5005,9 @@ function(id) {
         </p>
 
         <p>
-          <strong>Customer:</strong>
+          <strong>
+            Customer:
+          </strong>
           ${esc(
             g.customer || ""
           )}
@@ -5168,8 +5018,7 @@ function(id) {
             Released To:
           </strong>
           ${esc(
-            g.released_to ||
-            ""
+            g.released_to || ""
           )}
         </p>
 
@@ -5188,8 +5037,7 @@ function(id) {
             Invoice:
           </strong>
           ${esc(
-            g.invoice_no ||
-            ""
+            g.invoice_no || ""
           )}
         </p>
 
@@ -5222,35 +5070,33 @@ function(id) {
             Status:
           </strong>
           ${esc(
-            g.status ||
-            ""
+            g.status || ""
           )}
         </p>
 
         <p>
           ${esc(
-            g.notes ||
-            ""
+            g.notes || ""
           )}
         </p>
+
       `
     );
 
 
   $("previewTitle")
     .textContent =
-      "Gate Pass Preview";
+    "Gate Pass Preview";
 
 
   $("previewContent")
     .innerHTML =
-      currentPreviewHTML;
+    currentPreviewHTML;
 
 
   openModal(
     "previewModal"
   );
-
 };
 
 
@@ -5277,8 +5123,7 @@ function renderDashboard() {
   const billed =
     vehicles.reduce(
       (s, v) =>
-        s +
-        num(v.billed),
+        s + num(v.billed),
       0
     );
 
@@ -5286,8 +5131,7 @@ function renderDashboard() {
   const paid =
     vehicles.reduce(
       (s, v) =>
-        s +
-        num(v.paid),
+        s + num(v.paid),
       0
     );
 
@@ -5308,8 +5152,7 @@ function renderDashboard() {
   const expenseTotal =
     expenses.reduce(
       (s, e) =>
-        s +
-        num(e.amount),
+        s + num(e.amount),
       0
     );
 
@@ -5317,8 +5160,7 @@ function renderDashboard() {
   const pettyTotal =
     pettyCash.reduce(
       (s, p) =>
-        s +
-        num(p.amount),
+        s + num(p.amount),
       0
     );
 
@@ -5337,79 +5179,73 @@ function renderDashboard() {
   if ($("dashVehicles"))
     $("dashVehicles")
       .textContent =
-        totalVehicles;
+      totalVehicles;
 
 
   if ($("dashRepair"))
     $("dashRepair")
       .textContent =
-        underRepair;
+      underRepair;
 
 
   if ($("dashOutstanding"))
     $("dashOutstanding")
       .textContent =
-        money(
-          outstanding
-        );
+      money(outstanding);
 
 
   if ($("dashReq"))
     $("dashReq")
       .textContent =
-        requisitions.length;
+      requisitions.length;
 
 
   if ($("dashInvoices"))
     $("dashInvoices")
       .textContent =
-        invoices.length;
+      invoices.length;
 
 
   if ($("dashGatePasses"))
     $("dashGatePasses")
       .textContent =
-        gatePasses.length;
+      gatePasses.length;
 
 
   if ($("dashBilled"))
     $("dashBilled")
       .textContent =
-        money(billed);
+      money(billed);
 
 
   if ($("dashPaid"))
     $("dashPaid")
       .textContent =
-        money(paid);
+      money(paid);
 
 
   if ($("dashExpenses"))
     $("dashExpenses")
       .textContent =
-        money(
-          expenseTotal
-        );
+      money(expenseTotal);
 
 
   if ($("dashPetty"))
     $("dashPetty")
       .textContent =
-        money(
-          pettyTotal
-        );
+      money(pettyTotal);
 
 
   if ($("dashReqCount"))
     $("dashReqCount")
       .textContent =
-        requisitions.length;
+      requisitions.length;
 
 
   if ($("dashReqTotal"))
     $("dashReqTotal")
       .textContent =
-        money(reqTotal);
+      money(reqTotal);
 
 
   renderStatusSummary();
@@ -5417,7 +5253,6 @@ function renderDashboard() {
   renderMonthlyChart();
 
   renderActivity();
-
 }
 
 
@@ -5426,8 +5261,7 @@ function renderStatusSummary() {
   const box =
     $("vehicleStatusSummary");
 
-  if (!box)
-    return;
+  if (!box) return;
 
 
   const statuses = [
@@ -5440,33 +5274,36 @@ function renderStatusSummary() {
 
   box.innerHTML =
     statuses
-      .map(status => {
+      .map(
+        status => {
 
-        const count =
-          vehicles.filter(
-            v =>
-              v.status ===
-              status
-          ).length;
+          const count =
+            vehicles.filter(
+              v =>
+                v.status ===
+                status
+            ).length;
 
 
-        return `
-          <div class="status-row">
+          return `
 
-            <span>
-              ${esc(status)}
-            </span>
+            <div
+              class="status-row"
+            >
 
-            <strong>
-              ${count}
-            </strong>
+              <span>
+                ${esc(status)}
+              </span>
 
-          </div>
-        `;
+              <strong>
+                ${count}
+              </strong>
 
-      })
+            </div>
+          `;
+        }
+      )
       .join("");
-
 }
 
 
@@ -5475,8 +5312,7 @@ function renderMonthlyChart() {
   const box =
     $("monthlyExpenseChart");
 
-  if (!box)
-    return;
+  if (!box) return;
 
 
   const months = [];
@@ -5493,8 +5329,7 @@ function renderMonthlyChart() {
 
 
     d.setMonth(
-      d.getMonth() -
-        i
+      d.getMonth() - i
     );
 
 
@@ -5510,52 +5345,49 @@ function renderMonthlyChart() {
         d.toLocaleString(
           "en-US",
           {
-            month: "short"
+            month:
+              "short"
           }
         ),
 
       total:
         0
-
     });
-
   }
 
 
-  expenses.forEach(e => {
+  expenses.forEach(
+    e => {
 
-    const d =
-      new Date(
-        (
-          e.expense_date ||
-          ""
-        ) +
-        "T00:00:00"
-      );
+      const d =
+        new Date(
+          (e.expense_date || "") +
+          "T00:00:00"
+        );
 
 
-    if (isNaN(d))
-      return;
+      if (isNaN(d))
+        return;
 
 
-    const m =
-      months.find(
-        x =>
-          x.year ===
-            d.getFullYear() &&
-          x.month ===
-            d.getMonth()
-      );
+      const m =
+        months.find(
+          x =>
+            x.year ===
+              d.getFullYear() &&
+            x.month ===
+              d.getMonth()
+        );
 
 
-    if (m) {
+      if (m) {
 
-      m.total +=
-        num(e.amount);
+        m.total +=
+          num(e.amount);
+      }
 
     }
-
-  });
+  );
 
 
   const max =
@@ -5569,79 +5401,79 @@ function renderMonthlyChart() {
 
   box.innerHTML =
     months
-      .map(m => {
+      .map(
+        m => {
 
-        const height =
-          Math.max(
-            25,
-            Math.round(
-              (
-                m.total /
-                max
-              ) *
-              190
-            )
-          );
+          const height =
+            Math.max(
+              25,
+              Math.round(
+                (m.total / max) *
+                  190
+              )
+            );
 
 
-        return `
-          <div
-            style="
-              flex:1;
-              display:flex;
-              flex-direction:column;
-              align-items:center;
-              justify-content:flex-end;
-              height:100%
-            "
-          >
+          return `
 
             <div
               style="
-                font-size:9px;
-                color:#64748b;
-                margin-bottom:3px
+                flex:1;
+                display:flex;
+                flex-direction:column;
+                align-items:center;
+                justify-content:flex-end;
+                height:100%
               "
             >
-              ${
-                m.total
-                  ? money(
-                      m.total
-                    ).replace(
-                      ".00",
-                      ""
-                    )
-                  : ""
-              }
+
+              <div
+                style="
+                  font-size:9px;
+                  color:#64748b;
+                  margin-bottom:3px
+                "
+              >
+                ${
+                  m.total
+                    ? money(
+                        m.total
+                      ).replace(
+                        ".00",
+                        ""
+                      )
+                    : ""
+                }
+              </div>
+
+
+              <div
+                class="chart-bar"
+                style="
+                  height:${height}px
+                "
+                title="${money(
+                  m.total
+                )}"
+              >
+              </div>
+
+
+              <div
+                style="
+                  font-size:10px;
+                  color:#64748b;
+                  margin-top:5px
+                "
+              >
+                ${m.label}
+              </div>
+
             </div>
-
-            <div
-              class="chart-bar"
-              style="
-                height:${height}px
-              "
-              title="${money(
-                m.total
-              )}"
-            >
-            </div>
-
-            <div
-              style="
-                font-size:10px;
-                color:#64748b;
-                margin-top:5px
-              "
-            >
-              ${m.label}
-            </div>
-
-          </div>
-        `;
-
-      })
+          `;
+        }
+      )
       .join("");
-
 }
 
 
@@ -5650,8 +5482,7 @@ function renderActivity() {
   const box =
     $("dashboardActivity");
 
-  if (!box)
-    return;
+  if (!box) return;
 
 
   const activity = [];
@@ -5659,91 +5490,92 @@ function renderActivity() {
 
   vehicles
     .slice(0, 3)
-    .forEach(v => {
+    .forEach(
+      v => {
 
-      activity.push({
+        activity.push({
 
-        icon:
-          "🚘",
+          icon:
+            "🚘",
 
-        title:
-          `${v.registration} — ${
-            v.status ||
-            "Vehicle"
-          }`,
+          title:
+            `${v.registration} — ${
+              v.status ||
+              "Vehicle"
+            }`,
 
-        sub:
-          `Customer: ${
-            v.customer ||
-            ""
-          }`
+          sub:
+            `Customer: ${
+              v.customer || ""
+            }`
 
-      });
+        });
 
-    });
+      }
+    );
 
 
   expenses
     .slice(0, 3)
-    .forEach(e => {
+    .forEach(
+      e => {
 
-      activity.push({
+        activity.push({
 
-        icon:
-          "💳",
+          icon:
+            "💳",
 
-        title:
-          `Expense — ${
-            money(e.amount)
-          }`,
+          title:
+            `Expense — ${money(
+              e.amount
+            )}`,
 
-        sub:
-          `${
-            vehicleName(
+          sub:
+            `${vehicleName(
               e.vehicle_id
-            )
-          } • ${
-            e.description ||
-            ""
-          }`
+            )} • ${
+              e.description ||
+              ""
+            }`
 
-      });
+        });
 
-    });
+      }
+    );
 
 
   requisitions
     .slice(0, 2)
-    .forEach(r => {
+    .forEach(
+      r => {
 
-      activity.push({
+        activity.push({
 
-        icon:
-          "📋",
+          icon:
+            "📋",
 
-        title:
-          `Requisition ${
-            r.req_no
-          }`,
+          title:
+            `Requisition ${
+              r.req_no
+            }`,
 
-        sub:
-          `${
-            r.status ||
-            ""
-          } • ${
-            money(
+          sub:
+            `${
+              r.status || ""
+            } • ${money(
               r.total_amount
-            )
-          }`
+            )}`
 
-      });
+        });
 
-    });
+      }
+    );
 
 
   if (!activity.length) {
 
     box.innerHTML = `
+
       <div
         style="
           padding:20px;
@@ -5756,7 +5588,6 @@ function renderActivity() {
     `;
 
     return;
-
   }
 
 
@@ -5765,6 +5596,7 @@ function renderActivity() {
       .slice(0, 8)
       .map(
         a => `
+
           <div
             class="activity-item"
           >
@@ -5775,16 +5607,21 @@ function renderActivity() {
               ${a.icon}
             </div>
 
+
             <div
               class="activity-main"
             >
 
               <strong>
-                ${esc(a.title)}
+                ${esc(
+                  a.title
+                )}
               </strong>
 
               <span>
-                ${esc(a.sub)}
+                ${esc(
+                  a.sub
+                )}
               </span>
 
             </div>
@@ -5793,7 +5630,6 @@ function renderActivity() {
         `
       )
       .join("");
-
 }
 
 
@@ -5814,7 +5650,6 @@ function printHTML(
     );
 
     return;
-
   }
 
 
@@ -5833,7 +5668,6 @@ function printHTML(
     );
 
     return;
-
   }
 
 
@@ -5841,127 +5675,167 @@ function printHTML(
 
     <html>
 
-    <head>
+      <head>
 
-      <title>
-        ${esc(title)}
-      </title>
+        <title>
+          ${esc(title)}
+        </title>
 
-      <meta
-        name="viewport"
-        content="width=device-width,initial-scale=1"
-      >
+        <meta
+          name="viewport"
+          content="
+            width=device-width,
+            initial-scale=1
+          "
+        >
 
-      <style>
 
-        body {
-          font-family:
-            Arial,
-            sans-serif;
-
-          padding:25px;
-
-          color:#172033;
-        }
-
-        .preview-paper {
-          max-width:900px;
-          margin:auto;
-        }
-
-        .preview-head {
-          text-align:center;
-          border-bottom:
-            2px solid #07111f;
-          padding-bottom:15px;
-          margin-bottom:18px;
-        }
-
-        .preview-head h1 {
-          margin:0;
-          font-size:21px;
-        }
-
-        .preview-head p {
-          margin:4px 0;
-          color:#64748b;
-          font-size:12px;
-        }
-
-        .preview-table {
-          width:100%;
-          border-collapse:
-            collapse;
-          margin-top:15px;
-        }
-
-        .preview-table th,
-        .preview-table td {
-          border:
-            1px solid #dfe4ea;
-          padding:9px;
-          text-align:left;
-          font-size:12px;
-        }
-
-        .preview-table th {
-          background:#f8fafc;
-        }
-
-        .preview-total {
-          margin-top:16px;
-          margin-left:auto;
-          width:300px;
-          display:grid;
-          gap:7px;
-        }
-
-        .preview-total div {
-          display:flex;
-          justify-content:
-            space-between;
-        }
-
-        .preview-total .grand {
-          font-weight:900;
-          border-top:
-            2px solid #07111f;
-          padding-top:8px;
-        }
-
-        @media print {
+        <style>
 
           body {
-            padding:10px;
+            font-family:
+              Arial,
+              sans-serif;
+
+            padding:25px;
+
+            color:#172033;
           }
 
-        }
 
-      </style>
+          .preview-paper {
+            max-width:900px;
+            margin:auto;
+          }
 
-    </head>
 
-    <body>
+          .preview-head {
+            text-align:center;
 
-      ${content}
+            border-bottom:
+              2px solid #07111f;
 
-      <script>
+            padding-bottom:15px;
 
-        window.onload =
-          function() {
+            margin-bottom:18px;
+          }
 
-            setTimeout(
-              function() {
-                window.print();
-              },
-              300
-            );
 
-          };
+          .preview-head h1 {
+            margin:0;
+            font-size:21px;
+          }
 
-      <\/script>
 
-    </body>
+          .preview-head p {
+            margin:4px 0;
+
+            color:#64748b;
+
+            font-size:12px;
+          }
+
+
+          .preview-table {
+            width:100%;
+
+            border-collapse:
+              collapse;
+
+            margin-top:15px;
+          }
+
+
+          .preview-table th,
+          .preview-table td {
+
+            border:
+              1px solid #dfe4ea;
+
+            padding:9px;
+
+            text-align:left;
+
+            font-size:12px;
+          }
+
+
+          .preview-table th {
+            background:#f8fafc;
+          }
+
+
+          .preview-total {
+
+            margin-top:16px;
+
+            margin-left:auto;
+
+            width:300px;
+
+            display:grid;
+
+            gap:7px;
+          }
+
+
+          .preview-total div {
+
+            display:flex;
+
+            justify-content:
+              space-between;
+          }
+
+
+          .preview-total .grand {
+
+            font-weight:900;
+
+            border-top:
+              2px solid #07111f;
+
+            padding-top:8px;
+          }
+
+
+          @media print {
+
+            body {
+              padding:10px;
+            }
+
+          }
+
+        </style>
+
+      </head>
+
+
+      <body>
+
+        ${content}
+
+
+        <script>
+
+          window.onload =
+            function() {
+
+              setTimeout(
+                function() {
+
+                  window.print();
+
+                },
+                300
+              );
+
+            }
+
+        <\/script>
+
+      </body>
 
     </html>
 
@@ -5969,7 +5843,6 @@ function printHTML(
 
 
   win.document.close();
-
 }
 
 
@@ -5980,7 +5853,6 @@ function() {
     "Garage Operations Document",
     currentPreviewHTML
   );
-
 };
 
 
@@ -5991,7 +5863,7 @@ function() {
     filteredVehicleListForPrint();
 
 
-  const rows =
+  let rows =
     list
       .map(
         v => `
@@ -6035,11 +5907,15 @@ function() {
             </td>
 
             <td>
-              ${money(v.billed)}
+              ${money(
+                v.billed
+              )}
             </td>
 
             <td>
-              ${money(v.paid)}
+              ${money(
+                v.paid
+              )}
             </td>
 
             <td>
@@ -6053,7 +5929,6 @@ function() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
@@ -6061,9 +5936,13 @@ function() {
 
   currentPreviewHTML = `
 
-    <div class="preview-paper">
+    <div
+      class="preview-paper"
+    >
 
-      <div class="preview-head">
+      <div
+        class="preview-head"
+      >
 
         <h1>
           VEHICLE REGISTER
@@ -6077,7 +5956,10 @@ function() {
 
       </div>
 
-      <table class="preview-table">
+
+      <table
+        class="preview-table"
+      >
 
         <thead>
 
@@ -6123,6 +6005,7 @@ function() {
 
         </thead>
 
+
         <tbody>
           ${rows}
         </tbody>
@@ -6130,7 +6013,6 @@ function() {
       </table>
 
     </div>
-
   `;
 
 
@@ -6138,7 +6020,6 @@ function() {
     "Vehicle Register",
     currentPreviewHTML
   );
-
 };
 
 
@@ -6147,8 +6028,7 @@ function filteredVehicleListForPrint() {
   const search =
     (
       $("vehicleSearch")
-        ?.value ||
-      ""
+        ?.value || ""
     )
       .trim()
       .toLowerCase();
@@ -6156,8 +6036,7 @@ function filteredVehicleListForPrint() {
 
   const status =
     $("vehicleStatusFilter")
-      ?.value ||
-    "";
+      ?.value || "";
 
 
   return vehicles.filter(
@@ -6186,7 +6065,6 @@ function filteredVehicleListForPrint() {
 
     }
   );
-
 }
 
 
@@ -6247,7 +6125,6 @@ function() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
@@ -6255,9 +6132,13 @@ function() {
 
   currentPreviewHTML = `
 
-    <div class="preview-paper">
+    <div
+      class="preview-paper"
+    >
 
-      <div class="preview-head">
+      <div
+        class="preview-head"
+      >
 
         <h1>
           EXPENSE REPORT
@@ -6271,21 +6152,39 @@ function() {
 
       </div>
 
-      <table class="preview-table">
+
+      <table
+        class="preview-table"
+      >
 
         <thead>
 
           <tr>
 
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Amount</th>
+            <th>
+              Date
+            </th>
+
+            <th>
+              Vehicle
+            </th>
+
+            <th>
+              Description
+            </th>
+
+            <th>
+              Category
+            </th>
+
+            <th>
+              Amount
+            </th>
 
           </tr>
 
         </thead>
+
 
         <tbody>
           ${rows}
@@ -6294,9 +6193,13 @@ function() {
       </table>
 
 
-      <div class="preview-total">
+      <div
+        class="preview-total"
+      >
 
-        <div class="grand">
+        <div
+          class="grand"
+        >
 
           <span>
             Total Expenses
@@ -6311,7 +6214,6 @@ function() {
       </div>
 
     </div>
-
   `;
 
 
@@ -6319,7 +6221,6 @@ function() {
     "Expense Report",
     currentPreviewHTML
   );
-
 };
 
 
@@ -6378,7 +6279,6 @@ function() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
@@ -6386,9 +6286,13 @@ function() {
 
   currentPreviewHTML = `
 
-    <div class="preview-paper">
+    <div
+      class="preview-paper"
+    >
 
-      <div class="preview-head">
+      <div
+        class="preview-head"
+      >
 
         <h1>
           PETTY CASH REPORT
@@ -6396,21 +6300,39 @@ function() {
 
       </div>
 
-      <table class="preview-table">
+
+      <table
+        class="preview-table"
+      >
 
         <thead>
 
           <tr>
 
-            <th>Date</th>
-            <th>Description</th>
-            <th>Paid To</th>
-            <th>Category</th>
-            <th>Amount</th>
+            <th>
+              Date
+            </th>
+
+            <th>
+              Description
+            </th>
+
+            <th>
+              Paid To
+            </th>
+
+            <th>
+              Category
+            </th>
+
+            <th>
+              Amount
+            </th>
 
           </tr>
 
         </thead>
+
 
         <tbody>
           ${rows}
@@ -6419,9 +6341,13 @@ function() {
       </table>
 
 
-      <div class="preview-total">
+      <div
+        class="preview-total"
+      >
 
-        <div class="grand">
+        <div
+          class="grand"
+        >
 
           <span>
             Total
@@ -6436,7 +6362,6 @@ function() {
       </div>
 
     </div>
-
   `;
 
 
@@ -6444,7 +6369,6 @@ function() {
     "Petty Cash Report",
     currentPreviewHTML
   );
-
 };
 
 
@@ -6474,7 +6398,9 @@ function() {
           <tr>
 
             <td>
-              ${esc(r.req_no)}
+              ${esc(
+                r.req_no
+              )}
             </td>
 
             <td>
@@ -6518,7 +6444,6 @@ function() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
@@ -6526,9 +6451,13 @@ function() {
 
   currentPreviewHTML = `
 
-    <div class="preview-paper">
+    <div
+      class="preview-paper"
+    >
 
-      <div class="preview-head">
+      <div
+        class="preview-head"
+      >
 
         <h1>
           REQUISITION REPORT
@@ -6536,23 +6465,47 @@ function() {
 
       </div>
 
-      <table class="preview-table">
+
+      <table
+        class="preview-table"
+      >
 
         <thead>
 
           <tr>
 
-            <th>Req No.</th>
-            <th>Date</th>
-            <th>Requested By</th>
-            <th>Vehicle</th>
-            <th>Description</th>
-            <th>Total</th>
-            <th>Status</th>
+            <th>
+              Req No.
+            </th>
+
+            <th>
+              Date
+            </th>
+
+            <th>
+              Requested By
+            </th>
+
+            <th>
+              Vehicle
+            </th>
+
+            <th>
+              Description
+            </th>
+
+            <th>
+              Total
+            </th>
+
+            <th>
+              Status
+            </th>
 
           </tr>
 
         </thead>
+
 
         <tbody>
           ${rows}
@@ -6561,9 +6514,13 @@ function() {
       </table>
 
 
-      <div class="preview-total">
+      <div
+        class="preview-total"
+      >
 
-        <div class="grand">
+        <div
+          class="grand"
+        >
 
           <span>
             Total
@@ -6578,7 +6535,6 @@ function() {
       </div>
 
     </div>
-
   `;
 
 
@@ -6586,7 +6542,6 @@ function() {
     "Requisition Report",
     currentPreviewHTML
   );
-
 };
 
 
@@ -6651,7 +6606,6 @@ function() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
@@ -6659,9 +6613,13 @@ function() {
 
   currentPreviewHTML = `
 
-    <div class="preview-paper">
+    <div
+      class="preview-paper"
+    >
 
-      <div class="preview-head">
+      <div
+        class="preview-head"
+      >
 
         <h1>
           INVOICE REGISTER
@@ -6669,23 +6627,47 @@ function() {
 
       </div>
 
-      <table class="preview-table">
+
+      <table
+        class="preview-table"
+      >
 
         <thead>
 
           <tr>
 
-            <th>Invoice</th>
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Customer</th>
-            <th>Subtotal</th>
-            <th>Paid</th>
-            <th>Balance</th>
+            <th>
+              Invoice
+            </th>
+
+            <th>
+              Date
+            </th>
+
+            <th>
+              Vehicle
+            </th>
+
+            <th>
+              Customer
+            </th>
+
+            <th>
+              Subtotal
+            </th>
+
+            <th>
+              Paid
+            </th>
+
+            <th>
+              Balance
+            </th>
 
           </tr>
 
         </thead>
+
 
         <tbody>
           ${rows}
@@ -6694,7 +6676,6 @@ function() {
       </table>
 
     </div>
-
   `;
 
 
@@ -6702,7 +6683,6 @@ function() {
     "Invoice Register",
     currentPreviewHTML
   );
-
 };
 
 
@@ -6762,7 +6742,6 @@ function() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
@@ -6770,9 +6749,13 @@ function() {
 
   currentPreviewHTML = `
 
-    <div class="preview-paper">
+    <div
+      class="preview-paper"
+    >
 
-      <div class="preview-head">
+      <div
+        class="preview-head"
+      >
 
         <h1>
           GATE PASS REGISTER
@@ -6780,22 +6763,43 @@ function() {
 
       </div>
 
-      <table class="preview-table">
+
+      <table
+        class="preview-table"
+      >
 
         <thead>
 
           <tr>
 
-            <th>Gate Pass</th>
-            <th>Date</th>
-            <th>Vehicle</th>
-            <th>Customer</th>
-            <th>Released To</th>
-            <th>Status</th>
+            <th>
+              Gate Pass
+            </th>
+
+            <th>
+              Date
+            </th>
+
+            <th>
+              Vehicle
+            </th>
+
+            <th>
+              Customer
+            </th>
+
+            <th>
+              Released To
+            </th>
+
+            <th>
+              Status
+            </th>
 
           </tr>
 
         </thead>
+
 
         <tbody>
           ${rows}
@@ -6804,7 +6808,6 @@ function() {
       </table>
 
     </div>
-
   `;
 
 
@@ -6812,7 +6815,6 @@ function() {
     "Gate Pass Register",
     currentPreviewHTML
   );
-
 };
 
 
@@ -6827,21 +6829,28 @@ function documentHTML(
 ) {
 
   const company =
-    COMPANIES[companyType] ||
+    COMPANIES[
+      companyType
+    ] ||
     DEFAULT_COMPANY;
 
 
   return `
 
-    <div class="preview-paper">
+    <div
+      class="preview-paper"
+    >
 
-      <div class="preview-head">
+      <div
+        class="preview-head"
+      >
 
         <h1>
           ${esc(
             company.name
           )}
         </h1>
+
 
         <p>
           ${esc(
@@ -6852,19 +6861,26 @@ function documentHTML(
           )}
         </p>
 
+
         <p>
           ${esc(
             company.phone
           )}
         </p>
 
+
         ${
           company.email
-            ? `<p>${esc(
-                company.email
-              )}</p>`
+            ? `
+              <p>
+                ${esc(
+                  company.email
+                )}
+              </p>
+            `
             : ""
         }
+
 
         <h2
           style="
@@ -6876,40 +6892,53 @@ function documentHTML(
 
       </div>
 
+
       ${body}
 
     </div>
-
   `;
-
 }
 
 
 /* =========================================================
    SHARE
-   ACTUAL DATA
-   NEVER OPENS ABOUT:BLANK
 ========================================================= */
+
+/*
+   IMPORTANT:
+
+   This function NEVER uses window.open()
+   for sharing.
+
+   It sends the ACTUAL report data through
+   Android Web Share.
+
+   If native sharing is unavailable,
+   clipboard sharing is used.
+
+   No about:blank is created.
+*/
+
 
 async function shareText(
   title,
   text
 ) {
 
-  const cleanTitle =
+  const shareTitle =
     String(
       title ||
-        "Garage Operations Pro"
+      "Garage Operations Pro"
     ).trim();
 
 
-  const cleanText =
+  const shareTextValue =
     String(
       text || ""
     ).trim();
 
 
-  if (!cleanText) {
+  if (!shareTextValue) {
 
     toast(
       "Nothing to share.",
@@ -6917,29 +6946,28 @@ async function shareText(
     );
 
     return;
-
   }
 
 
-  /* -------------------------------------------------------
-     1. ANDROID / NATIVE SHARE
-  ------------------------------------------------------- */
+  /* =====================================================
+     ANDROID / NATIVE SHARE
+  ===================================================== */
 
-  if (
-    navigator.share &&
-    typeof navigator.share ===
-      "function"
-  ) {
+  try {
 
-    try {
+    if (
+      navigator.share &&
+      typeof navigator.share ===
+        "function"
+    ) {
 
       await navigator.share({
 
         title:
-          cleanTitle,
+          shareTitle,
 
         text:
-          cleanText
+          shareTextValue
 
       });
 
@@ -6948,72 +6976,71 @@ async function shareText(
         "Report shared successfully."
       );
 
-
       return;
-
-    } catch (err) {
-
-      if (
-        err &&
-        err.name ===
-          "AbortError"
-      ) {
-
-        return;
-
-      }
-
-
-      console.log(
-        "Native share failed:",
-        err
-      );
-
     }
 
+  } catch (err) {
+
+    /*
+       Cancelled Android share:
+       do nothing.
+    */
+
+    if (
+      err &&
+      err.name ===
+        "AbortError"
+    ) {
+
+      return;
+    }
+
+
+    console.warn(
+      "Native sharing failed:",
+      err
+    );
   }
 
 
-  /* -------------------------------------------------------
-     2. CLIPBOARD
-  ------------------------------------------------------- */
+  /* =====================================================
+     CLIPBOARD FALLBACK
+  ===================================================== */
 
   try {
 
     if (
       navigator.clipboard &&
-      typeof navigator.clipboard
+      typeof navigator
+        .clipboard
         .writeText ===
         "function"
     ) {
 
       await navigator.clipboard.writeText(
-        cleanText
+        shareTextValue
       );
 
 
       toast(
-        "Report copied with all data. Paste it into WhatsApp, email, or SMS."
+        "Report copied. Paste it into WhatsApp, email, or another app."
       );
 
-
       return;
-
     }
 
   } catch (err) {
 
-    console.log(
-      "Clipboard failed:",
+    console.warn(
+      "Clipboard API failed:",
       err
     );
-
   }
 
 
-  /* -------------------------------------------------------
-     3. FINAL BROWSER COPY FALLBACK
-  ------------------------------------------------------- */
+  /* =====================================================
+     OLD BROWSER FALLBACK
+  ===================================================== */
 
   try {
 
@@ -7024,7 +7051,7 @@ async function shareText(
 
 
     area.value =
-      cleanText;
+      shareTextValue;
 
 
     area.setAttribute(
@@ -7042,6 +7069,12 @@ async function shareText(
     area.style.top =
       "0";
 
+    area.style.width =
+      "1px";
+
+    area.style.height =
+      "1px";
+
     area.style.opacity =
       "0";
 
@@ -7056,17 +7089,10 @@ async function shareText(
     area.select();
 
 
-    if (
-      typeof area.setSelectionRange ===
-      "function"
-    ) {
-
-      area.setSelectionRange(
-        0,
-        area.value.length
-      );
-
-    }
+    area.setSelectionRange(
+      0,
+      area.value.length
+    );
 
 
     const copied =
@@ -7081,33 +7107,30 @@ async function shareText(
     if (copied) {
 
       toast(
-        "Report copied with all data. Paste it into WhatsApp or email."
+        "Report copied. Paste it into WhatsApp, email, or another app."
       );
 
     } else {
 
       toast(
-        "Could not share the report.",
+        "Unable to share or copy the report.",
         false
       );
-
     }
 
   } catch (err) {
 
     console.error(
-      "Share failed:",
+      "Final share fallback failed:",
       err
     );
 
 
     toast(
-      "Could not share the report.",
+      "Unable to share the report.",
       false
     );
-
   }
-
 }
 
 
@@ -7117,6 +7140,19 @@ async function shareText(
 
 window.shareExpenses =
 async function() {
+
+  /*
+     Uses the SAME filters as the
+     Expense screen.
+
+     Therefore if the user searches:
+
+     KBN 084E
+
+     only KBN 084E expenses
+     are shared.
+  */
+
 
   const list =
     filteredExpenses();
@@ -7131,6 +7167,7 @@ async function() {
 
 
   let text =
+    "CRYSTAL MOTORS (K) LTD\n" +
     "GARAGE OPERATIONS PRO\n" +
     "EXPENSE REPORT\n\n";
 
@@ -7142,29 +7179,44 @@ async function() {
 
   } else {
 
-    list.forEach(e => {
+    text +=
+      "DATE | VEHICLE | DESCRIPTION | CATEGORY | AMOUNT\n";
 
-      text +=
-        `${fmtDate(e.expense_date)} | ` +
-        `${vehicleName(e.vehicle_id)} | ` +
-        `${e.description || ""} | ` +
-        `${e.category || ""} | ` +
-        `${money(e.amount)}\n`;
+    text +=
+      "------------------------------------------------------------\n";
 
-    });
 
+    list.forEach(
+      e => {
+
+        text +=
+          `${fmtDate(
+            e.expense_date
+          )} | ` +
+          `${vehicleName(
+            e.vehicle_id
+          )} | ` +
+          `${e.description || ""} | ` +
+          `${e.category || ""} | ` +
+          `${money(
+            e.amount
+          )}\n`;
+
+      }
+    );
   }
 
 
   text +=
-    `\nTOTAL EXPENSES: ${money(total)}`;
+    `\nTOTAL EXPENSES: ${money(
+      total
+    )}`;
 
 
   await shareText(
     "Garage Expense Report",
     text
   );
-
 };
 
 
@@ -7186,6 +7238,7 @@ function bindSearchEvents() {
       renderVehicles
     ],
 
+
     [
       "expenseSearch",
       renderExpenses
@@ -7195,6 +7248,7 @@ function bindSearchEvents() {
       "expenseCategoryFilter",
       renderExpenses
     ],
+
 
     [
       "pettySearch",
@@ -7206,6 +7260,7 @@ function bindSearchEvents() {
       renderPettyCash
     ],
 
+
     [
       "reqSearch",
       renderRequisitions
@@ -7216,6 +7271,7 @@ function bindSearchEvents() {
       renderRequisitions
     ],
 
+
     [
       "invoiceSearch",
       renderInvoices
@@ -7225,6 +7281,7 @@ function bindSearchEvents() {
       "invoiceStatusFilter",
       renderInvoices
     ],
+
 
     [
       "gateSearch",
@@ -7253,7 +7310,6 @@ function bindSearchEvents() {
       ) {
 
         return;
-
       }
 
 
@@ -7271,10 +7327,8 @@ function bindSearchEvents() {
 
       el.dataset.bound =
         "1";
-
     }
   );
-
 }
 
 
@@ -7333,7 +7387,6 @@ function bindForms() {
       ) {
 
         return;
-
       }
 
 
@@ -7345,10 +7398,8 @@ function bindForms() {
 
       form.dataset.bound =
         "1";
-
     }
   );
-
 }
 
 
@@ -7361,59 +7412,61 @@ function bindDynamicCalculations() {
   [
     "vehicleDateIn",
     "vehicleDateOut"
-  ].forEach(id => {
+  ].forEach(
+    id => {
 
-    const el =
-      $(id);
-
-
-    if (
-      el &&
-      el.dataset.boundStorage !==
-        "1"
-    ) {
-
-      el.addEventListener(
-        "change",
-        updateVehicleStorageDays
-      );
+      const el =
+        $(id);
 
 
-      el.dataset.boundStorage =
-        "1";
+      if (
+        el &&
+        el.dataset.boundStorage !==
+          "1"
+      ) {
+
+        el.addEventListener(
+          "change",
+          updateVehicleStorageDays
+        );
+
+
+        el.dataset.boundStorage =
+          "1";
+      }
 
     }
-
-  });
+  );
 
 
   [
     "reqQuantity",
     "reqUnitCost"
-  ].forEach(id => {
+  ].forEach(
+    id => {
 
-    const el =
-      $(id);
-
-
-    if (
-      el &&
-      el.dataset.boundCalc !==
-        "1"
-    ) {
-
-      el.addEventListener(
-        "input",
-        updateReqTotal
-      );
+      const el =
+        $(id);
 
 
-      el.dataset.boundCalc =
-        "1";
+      if (
+        el &&
+        el.dataset.boundCalc !==
+          "1"
+      ) {
+
+        el.addEventListener(
+          "input",
+          updateReqTotal
+        );
+
+
+        el.dataset.boundCalc =
+          "1";
+      }
 
     }
-
-  });
+  );
 
 
   [
@@ -7421,30 +7474,31 @@ function bindDynamicCalculations() {
     "invoiceParts",
     "invoiceOther",
     "invoicePaid"
-  ].forEach(id => {
+  ].forEach(
+    id => {
 
-    const el =
-      $(id);
-
-
-    if (
-      el &&
-      el.dataset.boundCalc !==
-        "1"
-    ) {
-
-      el.addEventListener(
-        "input",
-        updateInvoiceTotals
-      );
+      const el =
+        $(id);
 
 
-      el.dataset.boundCalc =
-        "1";
+      if (
+        el &&
+        el.dataset.boundCalc !==
+          "1"
+      ) {
+
+        el.addEventListener(
+          "input",
+          updateInvoiceTotals
+        );
+
+
+        el.dataset.boundCalc =
+          "1";
+      }
 
     }
-
-  });
+  );
 
 
   const gateVehicle =
@@ -7465,7 +7519,6 @@ function bindDynamicCalculations() {
 
     gateVehicle.dataset.boundGate =
       "1";
-
   }
 
 
@@ -7491,7 +7544,6 @@ function bindDynamicCalculations() {
 
     gateInvoice.dataset.boundGate =
       "1";
-
   }
 
 
@@ -7509,9 +7561,7 @@ function bindDynamicCalculations() {
 
     gatePaid.dataset.boundGate =
       "1";
-
   }
-
 }
 
 
@@ -7538,8 +7588,7 @@ function updateUserDisplay() {
 
     $("sidebarUser")
       .textContent =
-        display;
-
+      display;
   }
 
 
@@ -7547,12 +7596,9 @@ function updateUserDisplay() {
 
     $("welcomeUser")
       .textContent =
-        display
-          .charAt(0)
-          .toUpperCase();
-
+      display.charAt(0)
+        .toUpperCase();
   }
-
 }
 
 
@@ -7566,7 +7612,6 @@ function() {
   closeModal(
     "previewModal"
   );
-
 };
 
 
@@ -7581,9 +7626,10 @@ async function init() {
     updateUserDisplay();
 
     /*
-      ONLY NEW UI INITIALIZATION
+       Requested UI change:
+       keep all CRUD actions horizontal.
     */
-    makeActionsHorizontal();
+    forceHorizontalActions();
 
     bindForms();
 
@@ -7596,10 +7642,16 @@ async function init() {
     await loadAllData();
 
 
+    /*
+       Run once more after all
+       tables have rendered.
+    */
+    forceHorizontalActions();
+
+
     console.log(
       "Garage Operations Pro initialized."
     );
-
 
   } catch (err) {
 
@@ -7613,10 +7665,9 @@ async function init() {
       "Application started with an error. Check the browser console.",
       false
     );
-
   }
-
 }
 
 
 init();
+
