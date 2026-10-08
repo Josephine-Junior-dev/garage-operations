@@ -333,10 +333,6 @@ function openModal(id) {
 
 /* =========================================================
    VEHICLE SELECTS
-   =========================================================
-   EXPENSE UPDATE:
-   The Expense vehicle select now has a search field.
-   It searches the EXISTING vehicles array.
    ========================================================= */
 
 function populateVehicleSelects() {
@@ -350,12 +346,6 @@ function populateVehicleSelects() {
   selects.forEach(select => {
     if (!select) return;
 
-    /*
-     * EXPENSE VEHICLE
-     *
-     * Do not create another vehicle.
-     * Use the existing vehicles loaded from Supabase.
-     */
     if (select.id === "expenseVehicle") {
       setupExpenseVehicleSearch();
       return;
@@ -405,9 +395,6 @@ function setupExpenseVehicleSearch() {
 
   let search = $("expenseVehicleSearch");
 
-  /*
-   * Create the search box only once.
-   */
   if (!search) {
     search = document.createElement("input");
 
@@ -426,10 +413,6 @@ function setupExpenseVehicleSearch() {
     search.style.fontSize = "14px";
     search.style.background = "#fff";
 
-    /*
-     * Search appears immediately before
-     * the Expense vehicle option.
-     */
     select.parentNode.insertBefore(
       search,
       select
@@ -470,7 +453,6 @@ function populateExpenseVehicleOptions(
 
   const filteredVehicles = vehicles
     .filter(v => {
-
       if (!search) {
         return true;
       }
@@ -506,10 +488,6 @@ function populateExpenseVehicleOptions(
 
   select.innerHTML = html;
 
-  /*
-   * Keep selected vehicle if it is in the
-   * filtered results.
-   */
   if (
     oldValue &&
     filteredVehicles.some(
@@ -1105,15 +1083,8 @@ window.openExpenseModal =
     $("expenseCategory").value =
       "Parts";
 
-    /*
-     * Load the EXISTING vehicles.
-     */
     populateVehicleSelects();
 
-    /*
-     * Reset the Expense vehicle search
-     * for a new Expense.
-     */
     const vehicleSearch =
       $("expenseVehicleSearch");
 
@@ -1121,9 +1092,6 @@ window.openExpenseModal =
       vehicleSearch.value = "";
     }
 
-    /*
-     * Show all existing vehicles.
-     */
     populateExpenseVehicleOptions("");
 
     if (id) {
@@ -1140,28 +1108,16 @@ window.openExpenseModal =
       $("expenseId").value =
         e.id;
 
-      /*
-       * Find the existing vehicle
-       * connected to this Expense.
-       */
       const linkedVehicle =
         vehicleById(e.vehicle_id);
 
       if (linkedVehicle) {
 
-        /*
-         * Put the vehicle registration
-         * into the search field.
-         */
         if (vehicleSearch) {
           vehicleSearch.value =
             linkedVehicle.registration;
         }
 
-        /*
-         * Filter to the existing vehicle
-         * and select its existing ID.
-         */
         populateExpenseVehicleOptions(
           linkedVehicle.registration,
           e.vehicle_id
@@ -1169,9 +1125,6 @@ window.openExpenseModal =
 
       } else {
 
-        /*
-         * General Expense.
-         */
         populateExpenseVehicleOptions("");
 
         $("expenseVehicle").value =
@@ -1204,10 +1157,6 @@ window.openExpenseModal =
     openModal("expenseModal");
   };
 
-/* =========================================================
-   SAVE EXPENSE
-   ========================================================= */
-
 async function saveExpense(e) {
   e.preventDefault();
 
@@ -1217,11 +1166,6 @@ async function saveExpense(e) {
   const selectedVehicleId =
     $("expenseVehicle").value || null;
 
-  /*
-   * IMPORTANT:
-   * vehicle_id is the ID from the EXISTING
-   * Vehicles table.
-   */
   const record = {
     vehicle_id:
       selectedVehicleId,
@@ -1261,10 +1205,6 @@ async function saveExpense(e) {
     return;
   }
 
-  /*
-   * Verify that the selected vehicle
-   * really exists in Vehicles.
-   */
   if (
     record.vehicle_id &&
     !vehicleById(
@@ -4718,18 +4658,45 @@ function documentHTML(
    SHARE
    ========================================================= */
 
-async function shareText(
-  title,
-  text
-) {
+/*
+ * IMPORTANT:
+ * This sharing function NEVER uses window.open().
+ *
+ * Therefore sharing will not create about:blank.
+ *
+ * On a phone:
+ * 1. Native Android Share opens first.
+ * 2. If native sharing is unavailable, the report
+ *    is copied to clipboard.
+ * 3. A final copy fallback is used.
+ */
+
+async function shareText(title, text) {
+
+  if (!text || !String(text).trim()) {
+    toast(
+      "Nothing to share.",
+      false
+    );
+    return;
+  }
 
   try {
 
-    if (navigator.share) {
+    if (
+      navigator.share &&
+      typeof navigator.share === "function"
+    ) {
 
       await navigator.share({
-        title,
-        text
+        title:
+          String(
+            title ||
+            "Garage Operations Pro"
+          ),
+
+        text:
+          String(text)
       });
 
       toast(
@@ -4739,49 +4706,183 @@ async function shareText(
       return;
     }
 
-    if (navigator.clipboard) {
+  } catch (err) {
 
-      await navigator.clipboard
-        .writeText(text);
+    /*
+     * If the user presses Cancel on
+     * the Android share screen, do
+     * nothing.
+     */
+    if (
+      err &&
+      err.name === "AbortError"
+    ) {
+      return;
+    }
+
+    console.log(
+      "Native share unavailable:",
+      err
+    );
+  }
+
+  /*
+   * Clipboard fallback.
+   */
+  try {
+
+    if (
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText ===
+        "function"
+    ) {
+
+      await navigator.clipboard.writeText(
+        String(text)
+      );
 
       toast(
-        "Report copied to clipboard."
+        "Report copied to clipboard. You can paste it into WhatsApp or email."
       );
 
       return;
     }
+
+  } catch (err) {
+
+    console.log(
+      "Clipboard unavailable:",
+      err
+    );
+  }
+
+  /*
+   * Final phone/browser fallback.
+   */
+  try {
 
     const area =
       document.createElement(
         "textarea"
       );
 
-    area.value = text;
+    area.value =
+      String(text);
+
+    area.style.position =
+      "fixed";
+
+    area.style.left =
+      "-9999px";
+
+    area.style.top =
+      "0";
+
+    area.style.opacity =
+      "0";
 
     document.body.appendChild(
       area
     );
 
+    area.focus();
     area.select();
 
-    document.execCommand(
-      "copy"
+    area.setSelectionRange(
+      0,
+      area.value.length
     );
+
+    const copied =
+      document.execCommand(
+        "copy"
+      );
 
     area.remove();
 
-    toast(
-      "Report copied."
-    );
+    if (copied) {
+
+      toast(
+        "Report copied. Paste it into WhatsApp, email, or another app."
+      );
+
+    } else {
+
+      toast(
+        "Unable to share or copy the report.",
+        false
+      );
+    }
 
   } catch (err) {
 
-    console.log(
-      "Share cancelled or unavailable:",
+    console.error(
+      "Share failed:",
       err
+    );
+
+    toast(
+      "Unable to share the report.",
+      false
     );
   }
 }
+
+/* =========================================================
+   SHARE GENERAL EXPENSE REPORT
+   ========================================================= */
+
+window.shareExpenses =
+  async function() {
+
+    /*
+     * Uses the SAME current expense
+     * filters as the Expense screen.
+     *
+     * If KBN 084E is searched,
+     * only KBN 084E expenses are shared.
+     */
+
+    const list =
+      filteredExpenses();
+
+    const total =
+      list.reduce(
+        (s, e) =>
+          s + num(e.amount),
+        0
+      );
+
+    let text =
+      "GARAGE OPERATIONS PRO\n" +
+      "EXPENSE REPORT\n\n";
+
+    if (!list.length) {
+
+      text +=
+        "No expenses found for the current selection.\n";
+
+    } else {
+
+      list.forEach(e => {
+
+        text +=
+          `${fmtDate(e.expense_date)} | ` +
+          `${vehicleName(e.vehicle_id)} | ` +
+          `${e.description || ""} | ` +
+          `${e.category || ""} | ` +
+          `${money(e.amount)}\n`;
+      });
+    }
+
+    text +=
+      `\nTOTAL EXPENSES: ${money(total)}`;
+
+    await shareText(
+      "Garage Expense Report",
+      text
+    );
+  };
 
 /* =========================================================
    SEARCH / FILTER EVENTS
