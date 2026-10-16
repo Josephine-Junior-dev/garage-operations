@@ -1790,11 +1790,11 @@ function renderVehicles() {
 
         return `
 
-          <tr>
-onclick="openVehicleModal('${v.id}')"
+          <tr
+            onclick="openVehicleModal('${v.id}')"
             title="Tap to open vehicle details"
             style="cursor:pointer"
-       
+          >
             <td>
               <strong>
                 ${esc(
@@ -1863,32 +1863,40 @@ onclick="openVehicleModal('${v.id}')"
 
             <td>
 
-              <div class="table-actions">
+              <div
+                class="table-actions"
+                style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap;"
+                onclick="event.stopPropagation()"
+              >
 
                 <button
                   class="action-btn blue"
-                  onclick="showVehicleExpenses('${v.id}')"
+                  type="button"
+                  onclick="event.stopPropagation(); showVehicleExpenses('${v.id}')"
                 >
                   Expenses
                 </button>
 
                 <button
                   class="action-btn blue"
-                  onclick="shareVehicleExpenses('${v.id}')"
+                  type="button"
+                  onclick="event.stopPropagation(); shareVehicleExpenses('${v.id}')"
                 >
                   Share
                 </button>
 
                 <button
                   class="action-btn"
-                  onclick="editVehicle('${v.id}')"
+                  type="button"
+                  onclick="event.stopPropagation(); editVehicle('${v.id}')"
                 >
                   Edit
                 </button>
 
                 <button
                   class="action-btn danger"
-                  onclick="deleteVehicle('${v.id}')"
+                  type="button"
+                  onclick="event.stopPropagation(); deleteVehicle('${v.id}')"
                 >
                   Delete
                 </button>
