@@ -1791,7 +1791,10 @@ function renderVehicles() {
         return `
 
           <tr>
-
+onclick="openVehicleModal('${v.id}')"
+            title="Tap to open vehicle details"
+            style="cursor:pointer"
+       
             <td>
               <strong>
                 ${esc(
