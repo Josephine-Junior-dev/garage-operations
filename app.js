@@ -311,59 +311,37 @@ async function loadTable(
   table,
   orderColumn = "created_at"
 ) {
-
   try {
-
-    let q =
-      supabase
-        .from(table)
-        .select("*");
+    let query = supabase.from(table).select("*");
 
     if (orderColumn) {
-
-      q =
-        q.order(
-          orderColumn,
-          {
-            ascending: false
-          }
-        );
+      query = query.order(orderColumn, { ascending: false });
     }
 
-    const {
-      data,
-      error
-    } = await q;
+    let { data, error } = await query;
+
+    // If the requested sort column is absent, retry without sorting.
+    if (error && orderColumn) {
+      console.warn(
+        "Could not sort " + table + ' by "' + orderColumn + '". Retrying without sorting:',
+        error.message
+      );
+      const retry = await supabase.from(table).select("*");
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
-
-      console.error(
-        table,
-        error
-      );
-
-      toast(
-        `${table} could not load: ${error.message}`,
-        false
-      );
-
+      console.error("Supabase load failed for " + table + ":", error);
+      toast(table + " could not load: " + error.message, false);
       return [];
     }
 
-    return data || [];
-
+    console.log("Loaded " + table + ": " + ((data || []).length) + " rows");
+    return Array.isArray(data) ? data : [];
   } catch (err) {
-
-    console.error(
-      table,
-      err
-    );
-
-    toast(
-      `${table} could not load`,
-      false
-    );
-
+    console.error("Unexpected error loading " + table + ":", err);
+    toast(table + " could not load: " + (err?.message || "Unknown error"), false);
     return [];
   }
 }
