@@ -1239,7 +1239,7 @@ async function saveVehicle(e) {
           .update(record)
           .eq("id", id)
           .select()
-          .single();
+          .maybeSingle();
 
     } else {
 
@@ -1248,13 +1248,14 @@ async function saveVehicle(e) {
           .from("vehicles")
           .insert(record)
           .select()
-          .single();
+          .maybeSingle();
     }
 
 
     if (result.error) {
 
       console.error(
+        "Vehicle save failed:",
         result.error
       );
 
@@ -1264,6 +1265,19 @@ async function saveVehicle(e) {
         false
       );
 
+      return;
+    }
+
+    // A stale cached vehicle ID or an RLS policy can make an UPDATE
+    // affect zero visible rows. Do not pretend that save succeeded.
+    if (!result.data) {
+      await loadAllData();
+      toast(
+        id
+          ? "Vehicle was not updated. It may have been deleted or your account cannot update it. The list has been refreshed."
+          : "Supabase did not return the saved vehicle. The list has been refreshed; check whether the vehicle was added before trying again.",
+        false
+      );
       return;
     }
 
