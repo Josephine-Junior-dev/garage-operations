@@ -1,13 +1,29 @@
-/* Garage Operations Pro service worker.
-   Never cache Supabase/API responses: stale API caching caused deleted vehicles
-   to reappear and newly added vehicles not to show. */
-const CACHE = 'garage-ops-pro-v4';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './manifest.json'];
+/* Garage Operations Pro service worker v5.
+   Supabase API requests are never cached. Use a resilient install so one missing
+   optional asset cannot prevent the worker update from activating. */
+const CACHE = 'garage-ops-pro-v5';
+const ASSETS = [
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './manifest.json'
+];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(ASSETS);
+    await Promise.all(ASSETS.map(async asset => {
+      try {
+        const response = await fetch(asset, { cache: 'reload' });
+        if (response && response.ok) {
+          await cache.put(asset, response.clone());
+        }
+      } catch (error) {
+        // Do not fail installation because an optional/offline asset is missing.
+        console.warn('Could not pre-cache app asset:', asset, error);
+      }
+    }));
     await self.skipWaiting();
   })());
 });
@@ -15,29 +31,27 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)));
+    await Promise.all(keys.filter(key => key.startsWith('garage-ops-pro-') && key !== CACHE)
+      .map(key => caches.delete(key)));
     await self.clients.claim();
   })());
 });
 
 self.addEventListener('fetch', event => {
   const request = event.request;
+  if (request.method !== 'GET') return;
   const url = new URL(request.url);
 
-  if (request.method !== 'GET') return;
-
-  // Leave Supabase and every other cross-origin request untouched.
+  // Never intercept cross-origin calls, including Supabase REST/API requests.
   if (url.origin !== self.location.origin) return;
 
-  // Only cache the app's static shell, never arbitrary same-origin data.
-  const isAppAsset = ASSETS.some(asset => {
+  const isKnownAsset = ASSETS.some(asset => {
     const assetUrl = new URL(asset, self.location.origin);
     return url.pathname === assetUrl.pathname;
   }) || request.mode === 'navigate';
 
-  if (!isAppAsset) return;
+  if (!isKnownAsset) return;
 
-  // Network-first keeps HTML and JavaScript updates current; cache is fallback offline.
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     try {
@@ -47,7 +61,7 @@ self.addEventListener('fetch', event => {
       }
       return response;
     } catch (error) {
-      const cached = await cache.match(request) || await cache.match('./index.html');
+      const cached = await cache.match(request);
       if (cached) return cached;
       throw error;
     }
