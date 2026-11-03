@@ -2060,7 +2060,7 @@ async function syncExpenseTarget() {
   if (type !== "Vehicle" && $("expenseVehicle")) $("expenseVehicle").value = "";
 }
 
-function saveExpense(e) {
+async function saveExpense(e) {
 
   e.preventDefault();
 
