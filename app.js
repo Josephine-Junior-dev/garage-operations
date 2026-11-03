@@ -1614,12 +1614,29 @@ function(id) {
 };
 
 
+// Remove management controls from any printable or shareable report.
+function cleanVehicleExpenseReportHTML(html) {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = html;
+
+  wrapper.querySelectorAll(".expense-crud-actions").forEach(el => el.closest("td")?.remove());
+  wrapper.querySelectorAll("table thead th").forEach(th => {
+    if (th.textContent.trim().toLowerCase() === "actions") th.remove();
+  });
+  wrapper.querySelectorAll("table tbody tr").forEach(row => {
+    // Keep the report layout consistent after removing the Actions column.
+    if (row.cells.length === 5) row.deleteCell(4);
+  });
+  wrapper.querySelectorAll("button").forEach(button => button.remove());
+
+  return wrapper.innerHTML;
+}
+
 window.printVehicleExpensePreview =
 function() {
-
   printHTML(
     "Vehicle Expense Report",
-    currentVehicleExpenseHTML
+    cleanVehicleExpenseReportHTML(currentVehicleExpenseHTML)
   );
 };
 
