@@ -1497,9 +1497,9 @@ function(id) {
             ${money(e.amount)}
           </td>
           <td>
-            <div class="table-actions">
-              <button class="action-btn" type="button" onclick="editExpense('${e.id}')">Edit</button>
-              <button class="action-btn danger" type="button" onclick="deleteExpense('${e.id}')">Delete</button>
+            <div class="table-actions expense-crud-actions" onclick="event.stopPropagation()">
+              <button class="action-btn blue" type="button" title="Edit expense" aria-label="Edit expense" onclick="event.stopPropagation(); editExpense('${e.id}')">✏️</button>
+              <button class="action-btn danger" type="button" title="Delete expense" aria-label="Delete expense" onclick="event.stopPropagation(); deleteExpense('${e.id}')">🗑️</button>
             </div>
           </td>
 
