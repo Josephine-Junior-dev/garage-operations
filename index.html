@@ -64,6 +64,9 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .login-footer{font-size:11px;color:#94a3b8;margin-top:20px;text-align:center}
 .login-msg{min-height:20px;color:#b42318;font-size:13px;margin-top:4px}
 
+/* Keep the Add Expense form above the vehicle expense report overlay. */
+#expenseModal{z-index:120!important}
+
 /* APP */
 .app-shell{min-height:100vh;display:flex}
 .sidebar{
@@ -1435,7 +1438,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 })();
 </script>
 
-<script type="module" src="./app.js?v=20261103-expense-crud-icons"></script>
+<script type="module" src="./app.js?v=20261103-expense-modal-top"></script>
 
 <script>
 if ('serviceWorker' in navigator) {
