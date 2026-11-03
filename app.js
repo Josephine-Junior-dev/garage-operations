@@ -31,6 +31,7 @@ let gatePasses = [];
 
 let currentPreviewHTML = "";
 let currentVehicleExpenseHTML = "";
+let currentVehicleExpenseId = "";
 let currentSection = "dashboard";
 
 
@@ -1449,6 +1450,7 @@ function(id) {
 
   if (!v) return;
 
+  currentVehicleExpenseId = String(id);
 
   const list =
     getVehicleExpenses(id);
@@ -2220,6 +2222,9 @@ function saveExpense(e) {
 
     refreshAll();
 
+    if (currentVehicleExpenseId && $("vehicleExpensePreviewModal")?.classList.contains("show")) {
+      showVehicleExpenses(currentVehicleExpenseId);
+    }
 
     toast(
       id
@@ -2289,6 +2294,10 @@ async function(id) {
 
 
   refreshAll();
+
+  if (currentVehicleExpenseId && $("vehicleExpensePreviewModal")?.classList.contains("show")) {
+    showVehicleExpenses(currentVehicleExpenseId);
+  }
 
   toast(
     "Expense deleted."
