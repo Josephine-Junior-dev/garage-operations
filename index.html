@@ -938,7 +938,17 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <div class="form-grid">
 
 <div class="form-group">
-<label>Vehicle</label>
+<label>Expense For</label>
+<select id="expenseType">
+<option value="Vehicle">Vehicle</option>
+<option value="General">General</option>
+<option value="Workshop Management">Workshop Management</option>
+<option value="Dogs">Dogs</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Vehicle (select when Expense For is Vehicle)</label>
 <select id="expenseVehicle"></select>
 </div>
 
@@ -1364,7 +1374,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <div id="vehicleExpensePreviewModal" class="modal">
 <div class="modal-content">
 <div class="modal-header">
-<h3>Vehicle Expense Summary</h3>
+<h3>Vehicle Expense Management</h3>
 <button class="modal-close" type="button" onclick="closeModal('vehicleExpensePreviewModal')">×</button>
 </div>
 <div class="modal-body" id="vehicleExpensePreviewContent"></div>
