@@ -1436,6 +1436,11 @@ function vehicleExpenseTotal(
    VEHICLE EXPENSE REPORT
 ========================================================= */
 
+window.addVehicleExpense =
+function(vehicleId) {
+  openExpenseModal("", vehicleId);
+};
+
 window.showVehicleExpenses =
 function(id) {
 
@@ -1489,6 +1494,12 @@ function(id) {
           <td>
             ${money(e.amount)}
           </td>
+          <td>
+            <div class="table-actions">
+              <button class="action-btn" type="button" onclick="editExpense('${e.id}')">Edit</button>
+              <button class="action-btn danger" type="button" onclick="deleteExpense('${e.id}')">Delete</button>
+            </div>
+          </td>
 
         </tr>
       `;
@@ -1502,7 +1513,7 @@ function(id) {
       <tr>
 
         <td
-          colspan="4"
+          colspan="5"
           style="
             text-align:center;
             padding:20px
@@ -1549,6 +1560,7 @@ function(id) {
             <th>Description</th>
             <th>Category</th>
             <th>Amount</th>
+            <th>Actions</th>
           </tr>
 
         </thead>
@@ -1559,6 +1571,10 @@ function(id) {
 
       </table>
 
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0">
+        <button class="btn btn-primary" type="button" onclick="addVehicleExpense('${v.id}')">+ Add Expense for ${esc(v.registration)}</button>
+      </div>
 
       <div class="preview-total">
 
@@ -1783,8 +1799,8 @@ function renderVehicles() {
         return `
 
           <tr
-            onclick="openVehicleModal('${v.id}')"
-            title="Tap to open vehicle details"
+            onclick="showVehicleExpenses('${v.id}')"
+            title="Tap to manage this vehicle's expenses"
             style="cursor:pointer"
           >
             <td>
@@ -1910,7 +1926,7 @@ function renderVehicles() {
 ========================================================= */
 
 window.openExpenseModal =
-function(id = "") {
+function(id = "", presetVehicleId = "") {
 
   $("expenseForm")?.reset();
 
@@ -1923,6 +1939,7 @@ function(id = "") {
   $("expenseCategory").value =
     "Parts";
 
+  if ($("expenseType")) $("expenseType").value = presetVehicleId ? "Vehicle" : "General";
 
   populateVehicleSelects();
 
@@ -2017,9 +2034,16 @@ function(id = "") {
       "Add Expense";
 
     $("expenseVehicle").value =
-      "";
+      presetVehicleId || "";
   }
 
+  if ($("expenseType")) {
+    const editingExpense = expenses.find(x => String(x.id) === String(id));
+    $("expenseType").value = id
+      ? (editingExpense?.expense_type || (editingExpense?.vehicle_id ? "Vehicle" : "General"))
+      : (presetVehicleId ? "Vehicle" : "General");
+    $("expenseType").dispatchEvent(new Event("change"));
+  }
 
   openModal(
     "expenseModal"
@@ -2027,7 +2051,14 @@ function(id = "") {
 };
 
 
-async function saveExpense(e) {
+async function syncExpenseTarget() {
+  const type = $("expenseType")?.value || "Vehicle";
+  const group = $("expenseVehicle")?.closest(".form-group");
+  if (group) group.style.display = type === "Vehicle" ? "" : "none";
+  if (type !== "Vehicle" && $("expenseVehicle")) $("expenseVehicle").value = "";
+}
+
+function saveExpense(e) {
 
   e.preventDefault();
 
@@ -2038,13 +2069,14 @@ async function saveExpense(e) {
       .trim();
 
 
+  const expenseType = $("expenseType")?.value || "Vehicle";
   const selectedVehicleId =
-    $("expenseVehicle")
-      .value ||
-    null;
-
+    expenseType === "Vehicle"
+      ? ($("expenseVehicle").value || null)
+      : null;
 
   const record = {
+    expense_type: expenseType,
 
     vehicle_id:
       selectedVehicleId,
@@ -2094,6 +2126,11 @@ async function saveExpense(e) {
     return;
   }
 
+
+  if (expenseType === "Vehicle" && !record.vehicle_id) {
+    toast("Please select a vehicle for this expense.", false);
+    return;
+  }
 
   if (
     record.vehicle_id &&
@@ -2368,9 +2405,9 @@ function renderExpenses() {
             <td>
               <strong>
                 ${esc(
-                  vehicleName(
-                    e.vehicle_id
-                  )
+                  e.vehicle_id
+                    ? vehicleName(e.vehicle_id)
+                    : (e.expense_type || "General")
                 )}
               </strong>
             </td>
@@ -7340,6 +7377,8 @@ function bindSearchEvents() {
 ========================================================= */
 
 function bindForms() {
+
+  $("expenseType")?.addEventListener("change", syncExpenseTarget);
 
   const forms = [
 
