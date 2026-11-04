@@ -284,7 +284,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
   .avatar{width:34px;height:34px}
   .mobile-nav-btn{font-size:8px}
 }
-</style>
+\n/* Expense description: roomy, readable, and phone-friendly */\n.expense-description-field textarea{display:block;width:100%;min-height:110px;padding:12px 14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;resize:vertical;font-size:16px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#172033;}\n.expense-description-field textarea:focus{outline:none;border-color:#1769aa;box-shadow:0 0 0 3px #1769aa1a;}\n.description-help{font-size:11px;color:#64748b;line-height:1.4;}\n@media(max-width:720px){.expense-description-field textarea{min-height:125px;font-size:16px;}}\n</style>
 </head>
 
 <body>
@@ -976,9 +976,10 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <input id="expenseAmount" type="number" min="0" step="0.01" required>
 </div>
 
-<div class="form-group full">
-<label>Description</label>
-<input id="expenseDescription" required>
+<div class="form-group full expense-description-field">
+<label for="expenseDescription">Description</label>
+<textarea id="expenseDescription" rows="3" maxlength="1000" placeholder="Describe the expense (e.g. spare parts, work done, transport...)..." required></textarea>
+<small class="description-help">Enter a detailed description. The field expands as you type.</small>
 </div>
 
 </div>
