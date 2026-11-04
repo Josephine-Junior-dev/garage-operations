@@ -5703,214 +5703,74 @@ function renderActivity() {
    PRINTING
 ========================================================= */
 
-function printHTML(
-  title,
-  content
-) {
+function printHTML(title, content) {
+  const reportContent = String(content || "").trim();
 
-  if (!content) {
-
-    toast(
-      "Nothing to print.",
-      false
-    );
-
+  if (!reportContent) {
+    toast("Nothing to print.", false);
     return;
   }
 
+  // Open the print tab immediately during the button click so mobile
+  // browsers do not leave the user on an empty about:blank page.
+  const printWindow = window.open("about:blank", "_blank");
 
-  const win =
-    window.open(
-      "",
-      "_blank"
-    );
-
-
-  if (!win) {
-
-    toast(
-      "Please allow pop-ups to print.",
-      false
-    );
-
+  if (!printWindow) {
+    toast("Allow pop-ups for this site, then tap Print again.", false);
     return;
   }
 
-
-  win.document.write(`
-
-    <html>
-
-      <head>
-
-        <title>
-          ${esc(title)}
-        </title>
-
-        <meta
-          name="viewport"
-          content="
-            width=device-width,
-            initial-scale=1
-          "
-        >
-
-
-        <style>
-
-          body {
-            font-family:
-              Arial,
-              sans-serif;
-
-            padding:25px;
-
-            color:#172033;
-          }
-
-
-          .preview-paper {
-            max-width:900px;
-            margin:auto;
-          }
-
-
-          .preview-head {
-            text-align:center;
-
-            border-bottom:
-              2px solid #07111f;
-
-            padding-bottom:15px;
-
-            margin-bottom:18px;
-          }
-
-
-          .preview-head h1 {
-            margin:0;
-            font-size:21px;
-          }
-
-
-          .preview-head p {
-            margin:4px 0;
-
-            color:#64748b;
-
-            font-size:12px;
-          }
-
-
-          .preview-table {
-            width:100%;
-
-            border-collapse:
-              collapse;
-
-            margin-top:15px;
-          }
-
-
-          .preview-table th,
-          .preview-table td {
-
-            border:
-              1px solid #dfe4ea;
-
-            padding:9px;
-
-            text-align:left;
-
-            font-size:12px;
-          }
-
-
-          .preview-table th {
-            background:#f8fafc;
-          }
-
-
-          .preview-total {
-
-            margin-top:16px;
-
-            margin-left:auto;
-
-            width:300px;
-
-            display:grid;
-
-            gap:7px;
-          }
-
-
-          .preview-total div {
-
-            display:flex;
-
-            justify-content:
-              space-between;
-          }
-
-
-          .preview-total .grand {
-
-            font-weight:900;
-
-            border-top:
-              2px solid #07111f;
-
-            padding-top:8px;
-          }
-
-
-          @media print {
-
-            body {
-              padding:10px;
-            }
-
-          }
-
-        </style>
-
-      </head>
-
-
-      <body>
-
-        ${content}
-
-
-        <script>
-
-          window.onload =
-            function() {
-
-              setTimeout(
-                function() {
-
-                  window.print();
-
-                },
-                300
-              );
-
-            }
-
-        <\/script>
-
-      </body>
-
-    </html>
-
-  `);
-
-
-  win.document.close();
+  const safeTitle = esc(title || "Garage Operations Report");
+  const printDocument = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${safeTitle}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 24px; color: #172033; }
+    .preview-paper { max-width: 900px; margin: auto; }
+    .preview-head { text-align: center; border-bottom: 2px solid #07111f; padding-bottom: 15px; margin-bottom: 18px; }
+    .preview-head h1 { margin: 0; font-size: 21px; }
+    .preview-head p { margin: 4px 0; color: #64748b; font-size: 12px; }
+    .preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .preview-table th, .preview-table td { border: 1px solid #dfe4ea; padding: 9px; text-align: left; font-size: 12px; }
+    .preview-table th { background: #f1f5f9; }
+    .preview-total { margin-top: 16px; margin-left: auto; width: min(300px, 100%); display: grid; gap: 7px; }
+    .preview-total div { display: flex; justify-content: space-between; gap: 12px; }
+    .preview-total .grand { font-weight: 900; border-top: 2px solid #07111f; padding-top: 8px; }
+    @page { margin: 12mm; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  ${reportContent}
+</body>
+</html>`;
+
+  try {
+    printWindow.document.open();
+    printWindow.document.write(printDocument);
+    printWindow.document.close();
+
+    // Wait for the document to render before opening the print dialog.
+    window.setTimeout(function () {
+      try {
+        if (!printWindow.closed) {
+          printWindow.focus();
+          printWindow.print();
+        }
+      } catch (error) {
+        console.error("Print dialog failed:", error);
+        toast("Report opened. Use the browser menu to Print or Save as PDF.", false);
+      }
+    }, 900);
+  } catch (error) {
+    console.error("Could not prepare print report:", error);
+    toast("Could not prepare the report for printing. Please try again.", false);
+  }
 }
-
 
 window.printCurrentPreview =
 function() {
