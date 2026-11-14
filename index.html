@@ -490,12 +490,24 @@ button:disabled{opacity:.55;cursor:not-allowed}
             <input id="vehicleSearch" type="search" placeholder="Search registration, customer, model or color...">
           </div>
 
-          <select id="vehicleStatusFilter" style="max-width:200px">
+          <select id="vehicleCustomerFilter" aria-label="Filter vehicles by customer" style="max-width:220px">
+            <option value="">All customers</option>
+          </select>
+
+          <select id="vehicleStatusFilter" aria-label="Filter vehicles by status" style="max-width:200px">
             <option value="">All statuses</option>
             <option>Storage</option>
             <option>Under Repair</option>
             <option>Completed</option>
             <option>Released</option>
+          </select>
+
+          <select id="vehicleSort" aria-label="Sort vehicles" style="max-width:210px">
+            <option value="customer-asc">Customer: A to Z</option>
+            <option value="customer-desc">Customer: Z to A</option>
+            <option value="registration-asc">Registration: A to Z</option>
+            <option value="date-desc">Date in: Newest first</option>
+            <option value="date-asc">Date in: Oldest first</option>
           </select>
         </div>
 
