@@ -1748,10 +1748,20 @@ function populateVehicleCustomerFilter() {
   const select = $("vehicleCustomerFilter");
   if (!select) return;
   const selected = select.value;
-  const names = [...new Set(vehicles.map(v => String(v.customer || "").trim()).filter(Boolean))]
+  const counts = new Map();
+  vehicles.forEach(v => {
+    const name = String(v.customer || "").trim();
+    if (name) counts.set(name, (counts.get(name) || 0) + 1);
+  });
+  const names = [...counts.keys()]
     .sort((a,b) => a.localeCompare(b, undefined, {sensitivity:"base"}));
-  select.innerHTML = '<option value="">All customers</option>' +
-    names.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join("");
+  const totalVehicles = vehicles.length;
+  select.innerHTML = '<option value="">All customers (' + totalVehicles + ' vehicles)</option>' +
+    names.map(name => {
+      const count = counts.get(name);
+      const label = count + (count === 1 ? " vehicle" : " vehicles");
+      return '<option value="' + esc(name) + '">' + esc(name) + ' (' + label + ')</option>';
+    }).join("");
   const match = names.find(name => name.toLowerCase() === selected.toLowerCase());
   if (match) select.value = match;
 }
