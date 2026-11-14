@@ -1751,19 +1751,22 @@ function populateVehicleCustomerFilter() {
   const counts = new Map();
   vehicles.forEach(v => {
     const name = String(v.customer || "").trim();
-    if (name) counts.set(name, (counts.get(name) || 0) + 1);
+    if (!name) return;
+    const key = name.toLocaleLowerCase();
+    const current = counts.get(key) || { name, count: 0 };
+    current.count += 1;
+    counts.set(key, current);
   });
-  const names = [...counts.keys()]
-    .sort((a,b) => a.localeCompare(b, undefined, {sensitivity:"base"}));
+  const customers = [...counts.values()]
+    .sort((a,b) => a.name.localeCompare(b.name, undefined, {sensitivity:"base"}));
   const totalVehicles = vehicles.length;
   select.innerHTML = '<option value="">All customers (' + totalVehicles + ' vehicles)</option>' +
-    names.map(name => {
-      const count = counts.get(name);
-      const label = count + (count === 1 ? " vehicle" : " vehicles");
-      return '<option value="' + esc(name) + '">' + esc(name) + ' (' + label + ')</option>';
+    customers.map(customer => {
+      const label = customer.count + (customer.count === 1 ? " vehicle" : " vehicles");
+      return '<option value="' + esc(customer.name) + '">' + esc(customer.name) + ' (' + label + ')</option>';
     }).join("");
-  const match = names.find(name => name.toLowerCase() === selected.toLowerCase());
-  if (match) select.value = match;
+  const match = customers.find(customer => customer.name.toLocaleLowerCase() === selected.toLocaleLowerCase());
+  if (match) select.value = match.name;
 }
 
 function renderVehicles() {
