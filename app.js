@@ -1722,15 +1722,20 @@ async function(id) {
 };
 
 
+function normalizeVehicleStatus(value) {
+  return String(value || "").trim().toLowerCase().replace(/\\s+/g, " ");
+}
+
 function getFilteredVehicles() {
   const search = ($("vehicleSearch")?.value || "").trim().toLowerCase();
-  const status = $("vehicleStatusFilter")?.value || "";
+  const status = normalizeVehicleStatus($("vehicleStatusFilter")?.value || "");
   const customer = $("vehicleCustomerFilter")?.value || "";
   const sort = $("vehicleSort")?.value || "customer-asc";
   const list = vehicles.filter(v => {
     const name = String(v.customer || "").trim();
     const text = [v.registration, name, v.model, v.color].join(" ").toLowerCase();
-    return (!search || text.includes(search)) && (!status || v.status === status) &&
+    return (!search || text.includes(search)) &&
+      (!status || normalizeVehicleStatus(v.status) === status) &&
       (!customer || name.toLowerCase() === customer.toLowerCase());
   });
   const byCustomer = (a,b) => String(a.customer || "").localeCompare(String(b.customer || ""), undefined, {sensitivity:"base"});
@@ -5204,8 +5209,8 @@ function renderStatusSummary() {
           const count =
             vehicles.filter(
               v =>
-                v.status ===
-                status
+                normalizeVehicleStatus(v.status) ===
+                normalizeVehicleStatus(status)
             ).length;
 
 
