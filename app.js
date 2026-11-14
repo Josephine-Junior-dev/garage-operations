@@ -1722,223 +1722,68 @@ async function(id) {
 };
 
 
-function renderVehicles() {
-
-  const body =
-    $("vehiclesTableBody");
-
-  if (!body) return;
-
-
-  const search =
-    (
-      $("vehicleSearch")
-        ?.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const status =
-    $("vehicleStatusFilter")
-      ?.value || "";
-
-
-  const list =
-    vehicles.filter(
-      v => {
-
-        const text =
-          [
-            v.registration,
-            v.customer,
-            v.model,
-            v.color
-          ]
-            .join(" ")
-            .toLowerCase();
-
-
-        return (
-          (!search ||
-            text.includes(
-              search
-            )) &&
-          (!status ||
-            v.status ===
-              status)
-        );
-
-      }
-    );
-
-
-  if (!list.length) {
-
-    body.innerHTML = `
-
-      <tr>
-
-        <td
-          colspan="11"
-          style="
-            text-align:center;
-            padding:30px;
-            color:#64748b
-          "
-        >
-          No vehicles found.
-        </td>
-
-      </tr>
-    `;
-
-    return;
-  }
-
-
-  body.innerHTML =
-    list
-      .map(v => {
-
-        const exp =
-          vehicleExpenseTotal(
-            v.id
-          );
-
-
-        const outstanding =
-          Math.max(
-            0,
-            num(v.billed) -
-              num(v.paid)
-          );
-
-
-        return `
-
-          <tr
-            onclick="showVehicleExpenses('${v.id}')"
-            title="Tap to manage this vehicle's expenses"
-            style="cursor:pointer"
-          >
-            <td>
-              <strong>
-                ${esc(
-                  v.registration
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${esc(
-                v.customer
-              )}
-            </td>
-
-            <td>
-              ${esc(
-                fmtDate(
-                  v.date_in
-                )
-              )}
-            </td>
-
-            <td>
-              ${esc(
-                v.job_type || ""
-              )}
-            </td>
-
-            <td>
-
-              <span
-                class="status status-${statusClass(
-                  v.status
-                )}"
-              >
-                ${esc(
-                  v.status || ""
-                )}
-              </span>
-
-            </td>
-
-            <td>
-              ${storageDays(v)}
-            </td>
-
-            <td>
-              ${money(v.billed)}
-            </td>
-
-            <td>
-              ${money(v.paid)}
-            </td>
-
-            <td>
-              ${money(
-                outstanding
-              )}
-            </td>
-
-            <td>
-              <strong>
-                ${money(exp)}
-              </strong>
-            </td>
-
-            <td>
-
-              <div
-                class="table-actions"
-                style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap;"
-                onclick="event.stopPropagation()"
-              >
-
-                <button
-                  class="action-btn blue"
-                  type="button"
-                  onclick="event.stopPropagation(); showVehicleExpenses('${v.id}')"
-                >
-                  Expenses
-                </button>
-
-                <button
-                  class="action-btn blue"
-                  type="button"
-                  onclick="event.stopPropagation(); shareVehicleExpenses('${v.id}')"
-                >
-                  Share
-                </button>
-
-                <button
-                  class="action-btn"
-                  type="button"
-                  onclick="event.stopPropagation(); editVehicle('${v.id}')"
-                >
-                  Edit
-                </button>
-
-                <button
-                  class="action-btn danger"
-                  type="button"
-                  onclick="event.stopPropagation(); deleteVehicle('${v.id}')"
-                >
-                  Delete
-                </button>
-
-              </div>
-
-            </td>
-
-          </tr>
-        `;
-
-      })
-      .join("");
+function getFilteredVehicles() {
+  const search = ($("vehicleSearch")?.value || "").trim().toLowerCase();
+  const status = $("vehicleStatusFilter")?.value || "";
+  const customer = $("vehicleCustomerFilter")?.value || "";
+  const sort = $("vehicleSort")?.value || "customer-asc";
+  const list = vehicles.filter(v => {
+    const name = String(v.customer || "").trim();
+    const text = [v.registration, name, v.model, v.color].join(" ").toLowerCase();
+    return (!search || text.includes(search)) && (!status || v.status === status) &&
+      (!customer || name.toLowerCase() === customer.toLowerCase());
+  });
+  const byCustomer = (a,b) => String(a.customer || "").localeCompare(String(b.customer || ""), undefined, {sensitivity:"base"});
+  list.sort((a,b) => {
+    if (sort === "customer-desc") return byCustomer(b,a);
+    if (sort === "registration-asc") return String(a.registration || "").localeCompare(String(b.registration || ""), undefined, {numeric:true,sensitivity:"base"});
+    if (sort === "date-desc") return String(b.date_in || "").localeCompare(String(a.date_in || ""));
+    if (sort === "date-asc") return String(a.date_in || "").localeCompare(String(b.date_in || ""));
+    return byCustomer(a,b);
+  });
+  return list;
 }
 
+function populateVehicleCustomerFilter() {
+  const select = $("vehicleCustomerFilter");
+  if (!select) return;
+  const selected = select.value;
+  const names = [...new Set(vehicles.map(v => String(v.customer || "").trim()).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, undefined, {sensitivity:"base"}));
+  select.innerHTML = '<option value="">All customers</option>' +
+    names.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join("");
+  const match = names.find(name => name.toLowerCase() === selected.toLowerCase());
+  if (match) select.value = match;
+}
+
+function renderVehicles() {
+  const body = $("vehiclesTableBody");
+  if (!body) return;
+  populateVehicleCustomerFilter();
+  const list = getFilteredVehicles();
+  if (!list.length) {
+    body.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#64748b">No vehicles found for the selected customer or filters.</td></tr>';
+    return;
+  }
+  body.innerHTML = list.map(v => {
+    const exp = vehicleExpenseTotal(v.id);
+    const outstanding = Math.max(0, num(v.billed) - num(v.paid));
+    return `
+      <tr onclick="showVehicleExpenses('${v.id}')" title="Tap to manage this vehicle's expenses" style="cursor:pointer">
+        <td><strong>${esc(v.registration)}</strong></td><td>${esc(v.customer)}</td>
+        <td>${esc(fmtDate(v.date_in))}</td><td>${esc(v.job_type || "")}</td>
+        <td><span class="status status-${statusClass(v.status)}">${esc(v.status || "")}</span></td>
+        <td>${storageDays(v)}</td><td>${money(v.billed)}</td><td>${money(v.paid)}</td>
+        <td>${money(outstanding)}</td><td><strong>${money(exp)}</strong></td>
+        <td><div class="table-actions" style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap" onclick="event.stopPropagation()">
+          <button class="action-btn blue" type="button" onclick="event.stopPropagation();showVehicleExpenses('${v.id}')">Expenses</button>
+          <button class="action-btn blue" type="button" onclick="event.stopPropagation();shareVehicleExpenses('${v.id}')">Share</button>
+          <button class="action-btn" type="button" onclick="event.stopPropagation();editVehicle('${v.id}')">Edit</button>
+          <button class="action-btn danger" type="button" onclick="event.stopPropagation();deleteVehicle('${v.id}')">Delete</button>
+        </div></td>
+      </tr>`;
+  }).join("");
+}
 
 /* =========================================================
    EXPENSES
@@ -5950,49 +5795,8 @@ function() {
 
 
 function filteredVehicleListForPrint() {
-
-  const search =
-    (
-      $("vehicleSearch")
-        ?.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const status =
-    $("vehicleStatusFilter")
-      ?.value || "";
-
-
-  return vehicles.filter(
-    v => {
-
-      const text =
-        [
-          v.registration,
-          v.customer,
-          v.model,
-          v.color
-        ]
-          .join(" ")
-          .toLowerCase();
-
-
-      return (
-        (!search ||
-          text.includes(
-            search
-          )) &&
-        (!status ||
-          v.status ===
-            status)
-      );
-
-    }
-  );
+  return getFilteredVehicles();
 }
-
 
 window.printExpenses =
 function() {
@@ -7163,6 +6967,8 @@ function bindSearchEvents() {
       "vehicleStatusFilter",
       renderVehicles
     ],
+    ["vehicleCustomerFilter", renderVehicles],
+    ["vehicleSort", renderVehicles],
 
 
     [
